@@ -66,20 +66,6 @@ export default function Dashboard() {
           <p className="mt-2 text-white/80">
             Generate a personalized workout in seconds. Smart progressions, form & safety tips, built-in rest timer.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={() => nav('/generate')}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition"
-            >
-              <Zap className="h-5 w-5" /> Generate Workout
-            </button>
-            <button
-              onClick={() => nav('/history')}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-white/90 hover:bg-white/10 transition"
-            >
-              <History className="h-5 w-5" /> View History
-            </button>
-          </div>
         </div>
       </section>
 

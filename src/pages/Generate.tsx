@@ -1,5 +1,5 @@
 // src/pages/Generate.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
@@ -22,6 +22,7 @@ export default function Generate() {
   const nav = useNavigate()
   const [type, setType] = useState<string>()
   const [duration, setDuration] = useState<number>()
+  const [equipment, setEquipment] = useState<string[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +42,8 @@ export default function Generate() {
         const complete = !!(p.experience && p.goals?.length && p.personal?.height && p.personal?.weight)
         if (!complete) { nav('/onboarding'); return }
         setProfile(p)
+        // Initialize equipment from profile
+        setEquipment(p.equipment || [])
       } catch (error) {
         console.error('Error fetching profile:', error)
         // If there's a permission error, redirect to auth
@@ -51,13 +54,6 @@ export default function Generate() {
 
   const disabled = !type || !duration || loading
 
-  const profileSummary = useMemo(() => {
-    if (!profile) return ''
-    const g = (profile.goals || []).slice(0, 2).join(' • ')
-    const eq = (profile.equipment || []).slice(0, 2).join(' • ') || 'Bodyweight'
-    return [profile.experience, g, eq].filter(Boolean).join(' • ')
-  }, [profile])
-
   async function generate() {
     if (disabled || !profile) return
     setError(null)
@@ -67,7 +63,7 @@ export default function Generate() {
     const payload = {
       experience: profile.experience,
       goals: profile.goals,
-      equipment: profile.equipment,
+      equipment: equipment,
       personalInfo: profile.personal,
       injuries: profile.injuries,
       workoutType: type,
@@ -141,23 +137,12 @@ export default function Generate() {
           <p className="mt-2 text-white/80">
             Tailored to your goals, experience, equipment and injuries—powered by GPT-4o-mini.
           </p>
-          {profile && (
-            <div className="mt-3 text-sm text-white/70">
-              <span className="opacity-80">Profile: </span>{profileSummary}
-              <button
-                onClick={() => nav('/profile')}
-                className="ml-3 underline decoration-white/30 hover:decoration-white"
-              >
-                Edit
-              </button>
-            </div>
-          )}
         </section>
 
         {/* Options */}
-        <section className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="mt-8 space-y-6">
           {/* Type */}
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">Workout Type</h3>
               {type && <span className="text-xs text-white/70">Selected: {type}</span>}
@@ -180,8 +165,10 @@ export default function Generate() {
             </div>
           </div>
 
-          {/* Duration */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          {/* Duration and Equipment */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Duration */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">Duration</h3>
               {duration && <span className="text-xs text-white/70">{duration} min</span>}
@@ -202,7 +189,41 @@ export default function Generate() {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-xs text-white/60">Tip: Short on time? Try 15–30 min HIIT or Core Focus.</p>
+              <p className="mt-3 text-xs text-white/60">Tip: Short on time? Try 15–30 min HIIT or Core Focus.</p>
+            </div>
+
+            {/* Equipment */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold">Available Equipment</h3>
+                {equipment.length > 0 && <span className="text-xs text-white/70">{equipment.length} selected</span>}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {profile?.equipment?.map((eq) => (
+                  <button
+                    key={eq}
+                    onClick={() => {
+                      setEquipment(prev =>
+                        prev.includes(eq)
+                          ? prev.filter(e => e !== eq)
+                          : [...prev, eq]
+                      )
+                    }}
+                    className={[
+                      'rounded-full border px-4 py-2 text-sm transition',
+                      equipment.includes(eq)
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-500'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'
+                    ].join(' ')}
+                  >
+                    {eq}
+                  </button>
+                )) || (
+                  <p className="text-sm text-white/60">No equipment configured in profile</p>
+                )}
+              </div>
+              <p className="mt-3 text-xs text-white/60">Select equipment you have available for this workout.</p>
+            </div>
           </div>
         </section>
 
