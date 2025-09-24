@@ -23,14 +23,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubDoc: (() => void) | null = null
+    let unsubAuth: (() => void) | null = null
 
-    // Handle redirect result first
-    const handleRedirectResult = async () => {
+    const initializeAuth = async () => {
+      // Handle redirect result first, before setting up the auth listener
       try {
+        console.log('🔐 SessionProvider: Checking for redirect result...')
         const result = await getRedirectResult(auth)
         if (result) {
           console.log('🔐 SessionProvider: Google sign-in redirect successful:', result.user.email)
-          // The onAuthStateChanged will be triggered automatically
+          // The onAuthStateChanged will be triggered automatically after this
+        } else {
+          console.log('🔐 SessionProvider: No redirect result found')
         }
       } catch (error: any) {
         console.error('🔐 SessionProvider: Error handling redirect result:', error)
@@ -40,13 +44,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           alert('Failed to complete Google sign-in. Please try again.')
         }
       }
-    }
 
-    // Handle redirect result on mount
-    handleRedirectResult()
-
-    // 1) watch auth state
-    const unsubAuth = onAuthStateChanged(auth, async (u) => {
+      // Now set up the auth state listener
+      unsubAuth = onAuthStateChanged(auth, async (u) => {
       console.log('🔐 SessionProvider: Auth state changed:', u?.email || 'signed out')
 
       // Clean up any existing document listener first
@@ -139,11 +139,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           }
         )
       }, 100) // Small delay to ensure auth state is stable
-    })
+      })
+    }
+
+    // Initialize the auth flow
+    initializeAuth()
 
     return () => {
       // Clean up both auth and document listeners
-      unsubAuth()
+      if (unsubAuth) {
+        unsubAuth()
+      }
       if (unsubDoc) {
         unsubDoc()
       }
