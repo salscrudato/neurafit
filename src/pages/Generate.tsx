@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
+import { EQUIPMENT } from '../config/onboarding'
 
 const TYPES = [
-  'Full Body','Upper Body','Lower Body','Cardio','Strength','HIIT','Core Focus',
-  'Yoga/Pilates','Bodyweight','Push/Pull Split','Circuit','Other'
+  'Full Body','Upper Body','Lower Body','Cardio','HIIT','Core Focus',
+  'Yoga/Pilates','Circuit','Chest/Triceps','Back/Biceps','Shoulders','Legs/Glutes'
 ] as const
 const DUR = [15, 30, 45, 60, 75, 90] as const
 
@@ -199,7 +200,7 @@ export default function Generate() {
                 {equipment.length > 0 && <span className="text-xs text-white/70">{equipment.length} selected</span>}
               </div>
               <div className="flex flex-wrap gap-2">
-                {profile?.equipment?.map((eq) => (
+                {EQUIPMENT.map((eq) => (
                   <button
                     key={eq}
                     onClick={() => {
@@ -218,9 +219,7 @@ export default function Generate() {
                   >
                     {eq}
                   </button>
-                )) || (
-                  <p className="text-sm text-white/60">No equipment configured in profile</p>
-                )}
+                ))}
               </div>
               <p className="mt-3 text-xs text-white/60">Select equipment you have available for this workout.</p>
             </div>
