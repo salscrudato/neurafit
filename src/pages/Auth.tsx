@@ -82,15 +82,6 @@ export default function Auth() {
           <button
             onClick={googleLogin}
             disabled={loading}
-            className="w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <Zap className="h-5 w-5" />
-            Start Your AI Journey
-          </button>
-
-          <button
-            onClick={googleLogin}
-            disabled={loading}
             className="w-full bg-white border border-gray-300 text-gray-700 px-6 py-4 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             {/* Google glyph */}
