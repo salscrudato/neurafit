@@ -1,0 +1,22 @@
+{
+  "name": "NeuraFit - AI Workout Generator",
+  "short_name": "NeuraFit",
+  "description": "Generate personalized AI workouts tailored to your goals, experience, and equipment",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#1f2937",
+  "background_color": "#ffffff",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr"
+}

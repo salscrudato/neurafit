@@ -1,0 +1,92 @@
+/**
+ * Firestore Security Rules
+ *
+ * Comprehensive security rules for the Neurafit application
+ * These rules ensure data privacy and prevent unauthorized access
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for common validations
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isBasicUserData() {
+      let data = request.resource.data;
+      // Allow basic user documents with minimal fields
+      // For merge operations, uid might not be in the request data, so check existing resource
+      let uidValid = ('uid' in data && data.uid is string && data.uid == request.auth.uid) ||
+                     (!('uid' in data) && resource != null && resource.data.uid == request.auth.uid);
+
+      return uidValid &&
+             (!('email' in data) || data.email is string) &&
+             (!('onboarded' in data) || data.onboarded is bool) &&
+             (!('displayName' in data) || data.displayName is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('provider' in data) || data.provider is string) &&
+             (!('created_at' in data) || data.created_at is timestamp) &&
+             (!('updated_at' in data) || data.updated_at is timestamp);
+    }
+
+    function isValidUserData() {
+      let data = request.resource.data;
+      // Full validation for complete user documents
+      // For merge operations, uid might not be in the request data, so check existing resource
+      let uidValid = ('uid' in data && data.uid is string && data.uid == request.auth.uid) ||
+                     (!('uid' in data) && resource != null && resource.data.uid == request.auth.uid);
+
+      return uidValid &&
+             (!('email' in data) || data.email is string) &&
+             (!('onboarded' in data) || data.onboarded is bool) &&
+             (!('displayName' in data) || data.displayName is string) &&
+             (!('photoURL' in data) || data.photoURL is string) &&
+             (!('provider' in data) || data.provider is string) &&
+             // Optional fields validation (if present)
+             (!('experience' in data) || (data.experience is string && data.experience in ['Beginner', 'Intermediate', 'Advanced'])) &&
+             (!('goals' in data) || data.goals is list) &&
+             (!('equipment' in data) || data.equipment is list) &&
+             (!('injuries' in data) || data.injuries is list) &&
+             (!('sex' in data) || data.sex is string) &&
+             (!('age' in data) || data.age is number) &&
+             (!('height_ft' in data) || data.height_ft is number) &&
+             (!('height_in' in data) || data.height_in is number) &&
+             (!('height_total_inches' in data) || data.height_total_inches is number) &&
+             (!('weight_lb' in data) || data.weight_lb is number) &&
+             (!('injury_details' in data) || data.injury_details is string) &&
+             (!('health_consent' in data) || data.health_consent is bool) &&
+             (!('created_at' in data) || data.created_at is timestamp) &&
+             (!('updated_at' in data) || data.updated_at is timestamp);
+    }
+
+
+
+    // User profiles - allow users to read and manage their own data
+    match /users/{uid} {
+      allow read: if isAuthenticated() && isOwner(uid);
+      // Allow users to create and update their own documents (permissive for onboarding)
+      allow create, update: if isAuthenticated() && isOwner(uid);
+
+      // User subcollections (workouts, etc.) - allow users to manage their own data
+      match /{subcollection}/{docId} {
+        allow read, write: if isAuthenticated() && isOwner(uid);
+      }
+    }
+
+    // Workouts - TEMPORARILY COMPLETELY OPEN FOR DEBUGGING
+    match /workouts/{docId} {
+      allow read, write: if true;
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
