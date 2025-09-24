@@ -1,7 +1,9 @@
 // src/components/AppHeader.tsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X, Zap, Home, Dumbbell, History, User } from 'lucide-react'
+import { signOut } from 'firebase/auth'
+import { auth } from '../lib/firebase'
+import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut } from 'lucide-react'
 
 export default function AppHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -17,6 +19,17 @@ export default function AppHeader() {
   const handleNavigation = (path: string) => {
     nav(path)
     setIsMenuOpen(false)
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth)
+      nav('/')
+      setIsMenuOpen(false)
+    } catch (e) {
+      console.error('Sign out failed', e)
+      alert('Sign out failed. Please try again.')
+    }
   }
 
   return (
@@ -74,6 +87,18 @@ export default function AppHeader() {
                   </button>
                 )
               })}
+
+              {/* Divider */}
+              <div className="my-2 h-px bg-gray-200" />
+
+              {/* Sign Out */}
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="font-medium">Sign out</span>
+              </button>
             </div>
           </div>
         </>

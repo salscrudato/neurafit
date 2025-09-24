@@ -1,9 +1,9 @@
 // src/pages/Profile.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { signOut } from 'firebase/auth'
+
 import { auth, db } from '../lib/firebase'
-import { useNavigate } from 'react-router-dom'
+
 import {
   EXPERIENCE_LEVELS,
   GOALS,
@@ -67,7 +67,6 @@ function GridSelect({
 
 /* -------------------- Profile page -------------------- */
 export default function Profile() {
-  const nav = useNavigate()
   const uid = auth.currentUser?.uid || ''
   const displayId = auth.currentUser?.email || auth.currentUser?.phoneNumber || 'User'
 
@@ -148,15 +147,7 @@ export default function Profile() {
     setDraft(JSON.parse(JSON.stringify(saved)))
   }
 
-  const logout = async () => {
-    try {
-      await signOut(auth)
-      nav('/')
-    } catch (e) {
-      console.error('Sign out failed', e)
-      alert('Sign out failed. Please try again.')
-    }
-  }
+
 
   if (loading) {
     return (
@@ -183,17 +174,9 @@ export default function Profile() {
       <main className="relative mx-auto max-w-4xl px-6 pb-14 pt-6">
         {/* Identity */}
         <div className="mb-6 rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">Signed in as</div>
-              <div className="text-lg font-semibold text-gray-900">{displayId}</div>
-            </div>
-            <button
-              onClick={logout}
-              className="rounded-xl border border-gray-200 bg-white/70 px-4 py-2 text-gray-700 hover:bg-white hover:border-gray-300 transition-all duration-200"
-            >
-              Sign out
-            </button>
+          <div>
+            <div className="text-sm text-gray-500">Signed in as</div>
+            <div className="text-lg font-semibold text-gray-900">{displayId}</div>
           </div>
         </div>
 
