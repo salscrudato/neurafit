@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
-import { ArrowLeft, Clock, Calendar, CheckCircle, XCircle, Weight, Zap } from 'lucide-react'
+import { ArrowLeft, Clock, Calendar, CheckCircle, XCircle, Weight } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 
 type Exercise = {
