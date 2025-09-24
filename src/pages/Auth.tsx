@@ -2,37 +2,17 @@
 import { useEffect, useState } from 'react'
 import { auth } from '../lib/firebase'
 import {
-  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-  RecaptchaVerifier, signInWithPhoneNumber
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect
 } from 'firebase/auth'
-import type { ConfirmationResult } from 'firebase/auth'
 import { Zap, Brain, Target, Shield } from 'lucide-react'
 import type { ReactElement } from 'react'
 
 export default function Auth() {
-  const [phone, setPhone] = useState('')
-  const [confirm, setConfirm] = useState<ConfirmationResult | null>(null)
-  const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
 
   // Initialize component
   useEffect(() => {
     setLoading(false)
-  }, [])
-
-  // Cleanup reCAPTCHA on unmount
-  useEffect(() => {
-    return () => {
-      // Cleanup on unmount
-      if ((window as any).recaptchaVerifier) {
-        try {
-          ;(window as any).recaptchaVerifier.clear()
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-        ;(window as any).recaptchaVerifier = null
-      }
-    }
   }, [])
 
   const googleLogin = async () => {
@@ -69,87 +49,7 @@ export default function Auth() {
     }
   }
 
-  const sendOtp = async () => {
-    if (!phone) return
-    setLoading(true)
-    try {
-      // Create recaptcha verifier if it doesn't exist
-      if (!(window as any).recaptchaVerifier) {
-        ;(window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: () => {
-            // reCAPTCHA solved, allow signInWithPhoneNumber
-          },
-          'expired-callback': () => {
-            // Reset on expiration
-            if ((window as any).recaptchaVerifier) {
-              ;(window as any).recaptchaVerifier.clear()
-              ;(window as any).recaptchaVerifier = null
-            }
-          }
-        })
-      }
-      const appVerifier = (window as any).recaptchaVerifier
-      const cr = await signInWithPhoneNumber(auth, phone, appVerifier)
-      setConfirm(cr)
-    } catch (error: any) {
-      console.error('Error sending OTP:', error)
 
-      // Show user-friendly error message
-      let errorMessage = 'Failed to send verification code. '
-      if (error.code === 'auth/invalid-app-credential') {
-        errorMessage += 'Please try using Google Sign-In instead.'
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage += 'Too many attempts. Please try again later.'
-      } else if (error.code === 'auth/invalid-phone-number') {
-        errorMessage += 'Please enter a valid phone number with country code (e.g., +1234567890).'
-      } else {
-        errorMessage += 'Please try Google Sign-In instead.'
-      }
-
-      alert(errorMessage)
-
-      // Reset recaptcha on error
-      if ((window as any).recaptchaVerifier) {
-        try {
-          ;(window as any).recaptchaVerifier.clear()
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-        ;(window as any).recaptchaVerifier = null
-      }
-
-      // Close the phone modal on error
-      setPhone('')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const verifyOtp = async () => {
-    if (!confirm || !code) return
-    setLoading(true)
-    try {
-      await confirm.confirm(code)
-    } catch (error: any) {
-      console.error('Error verifying OTP:', error)
-
-      let errorMessage = 'Invalid verification code. '
-      if (error.code === 'auth/invalid-verification-code') {
-        errorMessage += 'Please check the code and try again.'
-      } else if (error.code === 'auth/code-expired') {
-        errorMessage += 'The code has expired. Please request a new one.'
-        setConfirm(null)
-        setCode('')
-      } else {
-        errorMessage += 'Please try again.'
-      }
-
-      alert(errorMessage)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -203,20 +103,6 @@ export default function Auth() {
             Continue with Google
           </button>
 
-          <div className="text-center">
-            <button
-              onClick={() => setPhone('+')}
-              disabled={loading}
-              className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors disabled:opacity-60"
-            >
-              Or sign in with phone number
-            </button>
-          </div>
-        </div>
-
-        <div className="text-center text-xs text-gray-500 mb-8">
-          <p>Phone authentication may not work in development.</p>
-          <p>Google Sign-In is recommended for the best experience.</p>
         </div>
 
         {/* Powered by AI Badge */}
@@ -260,68 +146,7 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Phone Auth Modal */}
-        {confirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-semibold mb-4">Enter Verification Code</h3>
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter 6-digit code"
-                inputMode="numeric"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirm(null)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={verifyOtp}
-                  disabled={loading || !code}
-                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-60"
-                >
-                  Verify
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Phone Input Modal */}
-        {!confirm && phone && phone !== '' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-semibold mb-4">Enter Phone Number</h3>
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="+1 (555) 123-4567"
-                inputMode="tel"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setPhone('')}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={sendOtp}
-                  disabled={loading || !phone}
-                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-60"
-                >
-                  Send Code
-                </button>
-                <div id="recaptcha-container"></div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
 
