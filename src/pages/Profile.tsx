@@ -215,24 +215,27 @@ export default function Profile() {
           </Section>
 
           <Section title="Personal" desc="Ranges help personalize while keeping exact numbers private.">
-            <div className="mb-3">
-              <div className="mb-1 text-xs text-slate-600">Sex</div>
-              <div className="flex flex-wrap gap-2">
-                {SEX_OPTIONS.map(s => (
-                  <Pill
-                    key={s}
-                    active={draft.personal?.sex === s}
-                    onClick={() => setDraft(d => ({ ...d, personal: { ...d.personal, sex: s } }))}
-                  >
-                    {s}
-                  </Pill>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-6">
+              {/* Sex Options */}
               <div>
-                <div className="mb-1 text-xs text-slate-600">Height</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="mb-3 text-sm font-semibold text-gray-700">Gender</div>
+                <div className="grid grid-cols-3 gap-3">
+                  {SEX_OPTIONS.map(s => (
+                    <Pill
+                      key={s}
+                      active={draft.personal?.sex === s}
+                      onClick={() => setDraft(d => ({ ...d, personal: { ...d.personal, sex: s } }))}
+                    >
+                      {s}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Height Range */}
+              <div>
+                <div className="mb-3 text-sm font-semibold text-gray-700">Height Range</div>
+                <div className="grid grid-cols-3 gap-3">
                   {HEIGHT_RANGES.map(h => (
                     <Pill
                       key={h}
@@ -244,9 +247,11 @@ export default function Profile() {
                   ))}
                 </div>
               </div>
+
+              {/* Weight Range */}
               <div>
-                <div className="mb-1 text-xs text-slate-600">Weight</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="mb-3 text-sm font-semibold text-gray-700">Weight Range</div>
+                <div className="grid grid-cols-3 gap-3">
                   {WEIGHT_RANGES.map(w => (
                     <Pill
                       key={w}
