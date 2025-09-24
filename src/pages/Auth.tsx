@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { auth } from '../lib/firebase'
 import {
-  GoogleAuthProvider, signInWithRedirect, getRedirectResult,
+  GoogleAuthProvider, signInWithRedirect,
   RecaptchaVerifier, signInWithPhoneNumber
 } from 'firebase/auth'
 import type { ConfirmationResult } from 'firebase/auth'
@@ -15,29 +15,10 @@ export default function Auth() {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Handle Google Sign-In redirect result
+  // Initialize component
   useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth)
-        if (result) {
-          // User successfully signed in via redirect
-          console.log('Google sign-in successful:', result.user)
-          // SessionProvider will handle the routing automatically
-        }
-      } catch (error: any) {
-        console.error('Error handling redirect result:', error)
-        if (error.code === 'auth/account-exists-with-different-credential') {
-          alert('An account already exists with the same email address but different sign-in credentials.')
-        } else if (error.code !== 'auth/popup-closed-by-user') {
-          alert('Failed to complete Google sign-in. Please try again.')
-        }
-      }
-      // Always set loading to false after handling redirect result
-      setLoading(false)
-    }
-
-    handleRedirectResult()
+    // Just set loading to false on mount - let SessionProvider handle auth state
+    setLoading(false)
   }, [])
 
   // Cleanup reCAPTCHA on unmount

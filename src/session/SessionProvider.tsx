@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { onAuthStateChanged, type User } from 'firebase/auth'
+import { onAuthStateChanged, getRedirectResult, type User } from 'firebase/auth'
 import { auth, db } from '../lib/firebase'
 import { doc, onSnapshot, getDoc } from 'firebase/firestore'
 import type { UserProfile } from './types'
@@ -24,8 +24,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let unsubDoc: (() => void) | null = null
 
+    // Handle redirect result first
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth)
+        if (result) {
+          console.log('SessionProvider: Google sign-in redirect successful:', result.user.email)
+          // The onAuthStateChanged will be triggered automatically
+        }
+      } catch (error: any) {
+        console.error('SessionProvider: Error handling redirect result:', error)
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          alert('An account already exists with the same email address but different sign-in credentials.')
+        } else if (error.code !== 'auth/popup-closed-by-user') {
+          alert('Failed to complete Google sign-in. Please try again.')
+        }
+      }
+    }
+
+    // Handle redirect result on mount
+    handleRedirectResult()
+
     // 1) watch auth state
     const unsubAuth = onAuthStateChanged(auth, async (u) => {
+      console.log('SessionProvider: Auth state changed:', u?.email || 'signed out')
+
       // Clean up any existing document listener first
       if (unsubDoc) {
         unsubDoc()
@@ -36,11 +59,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setProfile(null)
 
       if (!u) {
+        console.log('SessionProvider: Setting status to signedOut')
         setStatus('signedOut')
         return
       }
 
       // 2) load profile once quickly; then keep in sync live
+      console.log('SessionProvider: Loading profile for user:', u.uid)
       setStatus('loading')
       const ref = doc(db, 'users', u.uid)
 
@@ -49,14 +74,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const snap = await getDoc(ref)
         if (snap.exists()) {
           const p = snap.data() as UserProfile
+          console.log('SessionProvider: Profile found:', p)
           setProfile(p)
-          setStatus(isProfileComplete(p) ? 'ready' : 'needsOnboarding')
+          const isComplete = isProfileComplete(p)
+          console.log('SessionProvider: Profile complete?', isComplete)
+          setStatus(isComplete ? 'ready' : 'needsOnboarding')
         } else {
+          console.log('SessionProvider: No profile found, needs onboarding')
           setProfile(null)
           setStatus('needsOnboarding')
         }
       } catch (error) {
-        console.warn('Error loading profile:', error)
+        console.warn('SessionProvider: Error loading profile:', error)
         // if read fails, still try live stream
       }
 

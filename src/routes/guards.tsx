@@ -4,10 +4,25 @@ import type { ReactNode } from 'react'
 
 // Landing gate at "/"
 export function HomeGate({ authPage }: { authPage: ReactNode }) {
-  const { status } = useSession()
-  if (status === 'loading') return <ScreenLoader />
-  if (status === 'signedOut') return <>{authPage}</>
-  if (status === 'needsOnboarding') return <Navigate to="/onboarding" replace />
+  const { status, user, profile } = useSession()
+
+  console.log('HomeGate: Current status:', status)
+  console.log('HomeGate: User:', user?.email || 'none')
+  console.log('HomeGate: Profile exists:', !!profile)
+
+  if (status === 'loading') {
+    console.log('HomeGate: Showing loader')
+    return <ScreenLoader />
+  }
+  if (status === 'signedOut') {
+    console.log('HomeGate: Showing auth page')
+    return <>{authPage}</>
+  }
+  if (status === 'needsOnboarding') {
+    console.log('HomeGate: Redirecting to onboarding')
+    return <Navigate to="/onboarding" replace />
+  }
+  console.log('HomeGate: Redirecting to dashboard')
   return <Navigate to="/dashboard" replace />
 }
 
