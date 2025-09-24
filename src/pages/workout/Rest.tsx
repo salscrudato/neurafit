@@ -1,6 +1,7 @@
 // src/pages/workout/Rest.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AppHeader from '../../components/AppHeader'
 
 export default function Rest() {
   const nav = useNavigate()
@@ -98,24 +99,21 @@ export default function Rest() {
   const offset = circumference * (1 - progress)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white">
-      {/* Header */}
-      <header className="mx-auto max-w-4xl px-5 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-emerald-400 to-cyan-400 ring-1 ring-white/10" />
-          <span className="font-semibold">Neurafit</span>
-        </div>
-        <button onClick={() => nav('/workout/run')} className="text-sm text-white/80 hover:text-white">
-          Back to workout
-        </button>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+      </div>
+
+      <AppHeader />
 
       {/* Body */}
-      <main className="mx-auto max-w-4xl px-5 pb-20">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8 backdrop-blur text-center">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 opacity-20 blur-3xl" />
-          <h1 className="text-3xl font-bold tracking-tight">Rest</h1>
-          <p className="mt-1 text-white/70 text-sm">Auto-continue when the timer ends.</p>
+      <main className="relative mx-auto max-w-4xl px-5 pb-20 pt-6">
+        <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/70 backdrop-blur-sm p-6 md:p-8 shadow-lg text-center">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 blur-3xl" />
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Rest</h1>
+          <p className="mt-1 text-gray-600 text-sm">Auto-continue when the timer ends.</p>
 
           {/* Timer */}
           <div className="mt-6 grid place-items-center">
@@ -138,20 +136,20 @@ export default function Rest() {
                 </defs>
               </svg>
               <div className="absolute inset-0 grid place-items-center">
-                <div className="text-5xl font-mono tabular-nums" aria-live="polite">{Math.max(0, sec)}s</div>
+                <div className="text-5xl font-mono tabular-nums text-gray-900" aria-live="polite">{Math.max(0, sec)}s</div>
               </div>
             </div>
           </div>
 
           {/* Next up */}
-          <div className="mt-6 inline-flex items-start gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-left">
-            <div className="mt-1 h-6 w-6 grid place-items-center rounded-lg bg-white/10 ring-1 ring-white/15">
+          <div className="mt-6 inline-flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-left">
+            <div className="mt-1 h-6 w-6 grid place-items-center rounded-lg bg-blue-100 ring-1 ring-blue-200">
               <NextIcon />
             </div>
             <div>
-              <div className="text-sm text-white/70">Next up</div>
-              <div className="font-semibold">{nextName}</div>
-              {nextLabel && <div className="text-sm text-white/70">{nextLabel}</div>}
+              <div className="text-sm text-gray-600">Next up</div>
+              <div className="font-semibold text-gray-900">{nextName}</div>
+              {nextLabel && <div className="text-sm text-gray-600">{nextLabel}</div>}
             </div>
           </div>
 
@@ -159,25 +157,25 @@ export default function Rest() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => addSeconds(-15)}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 hover:bg-white/10"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 shadow-sm"
             >
               −15s
             </button>
             <button
               onClick={togglePause}
-              className="rounded-xl bg-emerald-500 px-6 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
+              className="rounded-xl bg-emerald-500 px-6 py-2 font-semibold text-white hover:bg-emerald-400 shadow-sm"
             >
               {paused ? 'Resume' : 'Pause'}
             </button>
             <button
               onClick={() => addSeconds(+15)}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 hover:bg-white/10"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 shadow-sm"
             >
               +15s
             </button>
             <button
               onClick={skip}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 hover:bg-white/10"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 shadow-sm"
             >
               Skip
             </button>
@@ -191,7 +189,7 @@ export default function Rest() {
 /* --------- Inline icon --------- */
 function NextIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
+    <svg viewBox="0 0 24 24" className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.8}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
     </svg>
   )

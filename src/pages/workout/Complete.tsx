@@ -2,6 +2,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../../lib/firebase'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AppHeader from '../../components/AppHeader'
 
 export default function Complete() {
   const nav = useNavigate()
@@ -49,10 +50,30 @@ export default function Complete() {
     })()
   }, [])
   return (
-    <div className="p-6 text-center max-w-md mx-auto">
-      <h1 className="text-3xl font-bold mb-4">Workout Complete! 🎉</h1>
-      <p className="mb-6">Nice work.</p>
-      <button onClick={()=>nav('/dashboard')} className="px-5 py-3 bg-blue-600 text-white rounded-lg">Back to Home</button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+      </div>
+
+      <AppHeader />
+
+      <div className="relative flex items-center justify-center min-h-[80vh]">
+        <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-3xl p-8 text-center max-w-md mx-6 shadow-lg">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl">🎉</span>
+          </div>
+          <h1 className="text-3xl font-bold mb-4 text-gray-900">Workout Complete!</h1>
+          <p className="mb-6 text-gray-600">Great job! Your workout has been saved to your history.</p>
+          <button
+            onClick={() => nav('/dashboard')}
+            className="w-full px-6 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:scale-[1.02] transition-all duration-200 shadow-md"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

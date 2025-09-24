@@ -1,7 +1,8 @@
 // src/pages/workout/Exercise.tsx
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lightbulb, Shield } from 'lucide-react'
+import AppHeader from '../../components/AppHeader'
 
 type ExerciseT = {
   name: string
@@ -12,11 +13,6 @@ type ExerciseT = {
   safetyTips?: string[]
   restSeconds?: number
   usesWeight?: boolean      // true if this exercise uses external weights
-}
-
-type SetWeight = {
-  setNumber: number
-  weight: number | null     // weight in lbs, null if not entered
 }
 
 type PlanT = { exercises: ExerciseT[] }
@@ -119,35 +115,31 @@ export default function Exercise() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white">
-      {/* Top bar */}
-      <header className="mx-auto max-w-4xl px-5 py-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-emerald-400 to-cyan-400 ring-1 ring-white/10" />
-            <span className="font-semibold">Neurafit</span>
-          </div>
-          <button onClick={() => nav('/workout/preview')} className="text-sm text-white/80 hover:text-white">
-            Preview
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+      </div>
+
+      <AppHeader />
+
+      {/* Progress bar */}
+      <div className="relative mx-auto max-w-4xl px-5 pt-4">
+        <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+          <span>Exercise {i + 1} of {totalExercises}</span>
+          <span>{progressPct}%</span>
         </div>
-        {/* progress */}
-        <div className="mt-4">
-          <div className="mb-1 flex items-center justify-between text-xs text-white/70">
-            <span>Exercise {i + 1} of {totalExercises}</span>
-            <span>{progressPct}%</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded bg-white/10">
-            <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progressPct}%` }} />
-          </div>
+        <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+          <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all" style={{ width: `${progressPct}%` }} />
         </div>
-      </header>
+      </div>
 
       {/* Exercise card */}
-      <main className="mx-auto max-w-4xl px-5 pb-28">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 opacity-20 blur-3xl" />
-          <h1 className="text-2xl font-bold tracking-tight">{ex.name}</h1>
+      <main className="relative mx-auto max-w-4xl px-5 pb-28">
+        <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/70 backdrop-blur-sm p-6 shadow-lg">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 blur-3xl" />
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">{ex.name}</h1>
 
           {/* chips */}
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
@@ -169,7 +161,7 @@ export default function Exercise() {
 
           {/* how-to */}
           {ex.description && (
-            <p className="mt-4 text-white/90 leading-relaxed">
+            <p className="mt-4 text-gray-700 leading-relaxed">
               <span className="font-medium">How to do it: </span>{ex.description}
             </p>
           )}
@@ -177,20 +169,20 @@ export default function Exercise() {
           {/* tips */}
           {Array.isArray(ex.formTips) && ex.formTips.length > 0 && (
             <div className="mt-5">
-              <div className="mb-1 font-medium flex items-center gap-2">
+              <div className="mb-1 font-medium text-blue-700 flex items-center gap-2">
                 <Lightbulb className="h-4 w-4" /> Form tips
               </div>
-              <ul className="list-disc list-inside text-white/80 text-sm space-y-1">
+              <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                 {ex.formTips.slice(0, 3).map((t, idx) => <li key={idx}>{t}</li>)}
               </ul>
             </div>
           )}
           {Array.isArray(ex.safetyTips) && ex.safetyTips.length > 0 && (
             <div className="mt-4">
-              <div className="mb-1 font-medium text-amber-300 flex items-center gap-2">
+              <div className="mb-1 font-medium text-orange-600 flex items-center gap-2">
                 <Shield className="h-4 w-4" /> Safety
               </div>
-              <ul className="list-disc list-inside text-amber-200/90 text-sm space-y-1">
+              <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                 {ex.safetyTips.slice(0, 3).map((t, idx) => <li key={idx}>{t}</li>)}
               </ul>
             </div>
@@ -199,17 +191,17 @@ export default function Exercise() {
       </main>
 
       {/* Sticky controls */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-slate-950/80 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-between gap-3">
           <button
             onClick={skipExercise}
-            className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white/90 hover:bg-white/10"
+            className="rounded-xl border border-gray-300 bg-white/70 px-4 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200"
           >
             Skip
           </button>
           <button
             onClick={completeSet}
-            className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
+            className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] transition-all duration-200 shadow-md"
           >
             Complete Set
           </button>
@@ -222,7 +214,7 @@ export default function Exercise() {
 /* ---------- Small components ---------- */
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1">
+    <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-gray-700 text-xs">
       {children}
     </span>
   )
@@ -253,11 +245,11 @@ function WeightInput({
   }
 
   return (
-    <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+    <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="font-medium text-white/90">Weight for Set {setNumber}</div>
-          <div className="text-sm text-white/70">Enter weight in lbs (optional)</div>
+          <div className="font-medium text-gray-900">Weight for Set {setNumber}</div>
+          <div className="text-sm text-gray-600">Enter weight in lbs (optional)</div>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -269,13 +261,13 @@ function WeightInput({
             placeholder="0"
             min="0"
             step="0.5"
-            className="w-20 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-white placeholder-white/50 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+            className="w-20 rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
           />
-          <span className="text-sm text-white/70">lbs</span>
+          <span className="text-sm text-gray-600">lbs</span>
         </div>
       </div>
       {currentWeight !== null && (
-        <div className="mt-2 text-xs text-emerald-400">
+        <div className="mt-2 text-xs text-green-600">
           ✓ {currentWeight} lbs recorded
         </div>
       )}
@@ -286,11 +278,19 @@ function WeightInput({
 function EmptyState() {
   const nav = useNavigate()
   return (
-    <div className="min-h-screen grid place-items-center bg-white">
-      <div className="max-w-md text-center">
-        <h2 className="text-xl font-semibold mb-2">No plan found</h2>
-        <p className="text-slate-600 mb-4">Generate a workout to start your session.</p>
-        <button onClick={() => nav('/generate')} className="rounded-lg bg-slate-900 text-white px-4 py-2">Generate</button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      <AppHeader />
+      <div className="relative grid place-items-center pt-20">
+        <div className="max-w-md text-center bg-white/70 backdrop-blur-sm border border-gray-200 rounded-3xl p-8 shadow-lg">
+          <h2 className="text-xl font-semibold mb-2 text-gray-900">No plan found</h2>
+          <p className="text-gray-600 mb-4">Generate a workout to start your session.</p>
+          <button
+            onClick={() => nav('/generate')}
+            className="px-6 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:scale-[1.02] transition-all duration-200 shadow-md"
+          >
+            Generate Workout
+          </button>
+        </div>
       </div>
     </div>
   )

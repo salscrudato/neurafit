@@ -1,6 +1,7 @@
 // src/pages/Generate.tsx
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AppHeader from '../components/AppHeader'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import { EQUIPMENT } from '../config/onboarding'
@@ -115,27 +116,21 @@ export default function Generate() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white">
-      {/* Top bar */}
-      <header className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg ring-1 ring-white/10" />
-          <span className="text-lg font-semibold tracking-tight">Neurafit</span>
-        </div>
-        <button
-          onClick={() => nav('/dashboard')}
-          className="text-sm text-white/80 hover:text-white transition"
-        >
-          Dashboard
-        </button>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+      </div>
 
-      <main className="mx-auto max-w-6xl px-6 pb-16">
+      <AppHeader />
+
+      <main className="relative mx-auto max-w-6xl px-6 pb-16 pt-6">
         {/* Hero card */}
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8 backdrop-blur-lg relative overflow-hidden">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 opacity-20 blur-3xl" />
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Generate your next workout</h1>
-          <p className="mt-2 text-white/80">
+        <section className="rounded-3xl border border-blue-100/50 bg-white/70 backdrop-blur-sm p-6 md:p-8 relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-400 opacity-10 blur-3xl" />
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Generate your next workout</h1>
+          <p className="mt-2 text-gray-600">
             Tailored to your goals, experience, equipment and injuries—powered by GPT-4o-mini.
           </p>
         </section>
@@ -143,10 +138,10 @@ export default function Generate() {
         {/* Options */}
         <section className="mt-8 space-y-6">
           {/* Type */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold">Workout Type</h3>
-              {type && <span className="text-xs text-white/70">Selected: {type}</span>}
+              <h3 className="font-semibold text-gray-900">Workout Type</h3>
+              {type && <span className="text-xs text-gray-500">Selected: {type}</span>}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {TYPES.map((t) => (
@@ -154,10 +149,10 @@ export default function Generate() {
                   key={t}
                   onClick={() => setType(t)}
                   className={[
-                    'rounded-xl border px-4 py-3 text-left transition',
+                    'rounded-xl border px-4 py-3 text-left transition-all duration-200',
                     type === t
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-500'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'
+                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
+                      : 'bg-white/70 border-gray-200 hover:border-blue-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
                   ].join(' ')}
                 >
                   {t}
@@ -169,10 +164,10 @@ export default function Generate() {
           {/* Duration and Equipment */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Duration */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold">Duration</h3>
-              {duration && <span className="text-xs text-white/70">{duration} min</span>}
+              <h3 className="font-semibold text-gray-900">Duration</h3>
+              {duration && <span className="text-xs text-gray-500">{duration} min</span>}
             </div>
             <div className="flex flex-wrap gap-2">
               {DUR.map((m) => (
@@ -180,24 +175,24 @@ export default function Generate() {
                   key={m}
                   onClick={() => setDuration(m)}
                   className={[
-                    'rounded-full border px-4 py-2 text-sm transition',
+                    'rounded-full border px-4 py-2 text-sm transition-all duration-200',
                     duration === m
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-500'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-500 shadow-md scale-[1.02]'
+                      : 'bg-white/70 border-gray-200 hover:border-emerald-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
                   ].join(' ')}
                 >
                   {m} min
                 </button>
               ))}
             </div>
-              <p className="mt-3 text-xs text-white/60">Tip: Short on time? Try 15–30 min HIIT or Core Focus.</p>
+
             </div>
 
             {/* Equipment */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold">Available Equipment</h3>
-                {equipment.length > 0 && <span className="text-xs text-white/70">{equipment.length} selected</span>}
+                <h3 className="font-semibold text-gray-900">Available Equipment</h3>
+                {equipment.length > 0 && <span className="text-xs text-gray-500">{equipment.length} selected</span>}
               </div>
               <div className="flex flex-wrap gap-2">
                 {EQUIPMENT.map((eq) => (
@@ -211,39 +206,38 @@ export default function Generate() {
                       )
                     }}
                     className={[
-                      'rounded-full border px-4 py-2 text-sm transition',
+                      'rounded-full border px-4 py-2 text-sm transition-all duration-200',
                       equipment.includes(eq)
-                        ? 'bg-emerald-500 text-slate-950 border-emerald-500'
-                        : 'bg-white/5 border-white/10 hover:bg-white/10 text-white'
+                        ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white border-orange-500 shadow-md scale-[1.02]'
+                        : 'bg-white/70 border-gray-200 hover:border-orange-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
                     ].join(' ')}
                   >
                     {eq}
                   </button>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-white/60">Select equipment you have available for this workout.</p>
+
             </div>
           </div>
         </section>
 
         {/* Error */}
         {error && (
-          <div className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-amber-200">
+          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 shadow-sm">
             {error}
           </div>
         )}
 
         {/* Generate CTA */}
-        <div className="mt-8 flex items-center justify-between">
-          <div className="text-sm text-white/70">AI will return a set-by-set plan with rest timers and safety tips.</div>
+        <div className="mt-8 flex justify-end">
           <button
             onClick={generate}
             disabled={disabled}
             className={[
-              'rounded-xl px-6 py-3 font-semibold',
+              'rounded-xl px-6 py-3 font-semibold transition-all duration-300 shadow-sm',
               disabled
-                ? 'bg-emerald-500/40 text-white/80 cursor-not-allowed'
-                : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95'
             ].join(' ')}
           >
             {loading ? 'Generating…' : 'Generate workout'}

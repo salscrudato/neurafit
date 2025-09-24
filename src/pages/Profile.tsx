@@ -13,6 +13,7 @@ import {
   WEIGHT_RANGES,
   INJURY_OPTIONS
 } from '../config/onboarding'
+import AppHeader from '../components/AppHeader'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -30,10 +31,10 @@ type ProfileData = {
 /* -------------------- Small UI primitives -------------------- */
 function Section({ title, desc, children }: {title:string; desc?:string; children:React.ReactNode}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 sm:p-5 shadow-sm">
       <div className="mb-3">
-        <h3 className="font-semibold">{title}</h3>
-        {desc && <p className="text-sm text-slate-600">{desc}</p>}
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {desc && <p className="text-sm text-gray-600">{desc}</p>}
       </div>
       {children}
     </div>
@@ -44,8 +45,8 @@ function Pill({ active, children, onClick }: {active?:boolean; children:React.Re
     <button
       onClick={onClick}
       className={[
-        'px-3 py-2 rounded-xl border text-sm transition',
-        active ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 border-slate-200'
+        'px-3 py-2 rounded-xl border text-sm transition-all duration-200',
+        active ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]' : 'bg-white/70 hover:bg-white border-gray-200 hover:border-blue-300 text-gray-700 hover:scale-[1.01]'
       ].join(' ')}
     >
       {children}
@@ -159,35 +160,37 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-white">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <AppHeader />
+        <div className="grid place-items-center pt-20">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white">
-      {/* Header */}
-      <header className="mx-auto max-w-4xl px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg ring-1 ring-white/10" />
-          <span className="text-lg font-semibold tracking-tight">Neurafit</span>
-        </div>
-        <button onClick={() => nav('/dashboard')} className="text-sm text-white/80 hover:text-white">Dashboard</button>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+      </div>
+
+      <AppHeader />
 
       {/* Body */}
-      <main className="mx-auto max-w-4xl px-6 pb-14">
+      <main className="relative mx-auto max-w-4xl px-6 pb-14 pt-6">
         {/* Identity */}
-        <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-white/70">Signed in as</div>
-              <div className="text-lg font-semibold">{displayId}</div>
+              <div className="text-sm text-gray-500">Signed in as</div>
+              <div className="text-lg font-semibold text-gray-900">{displayId}</div>
             </div>
             <button
               onClick={logout}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-white/90 hover:bg-white/10"
+              className="rounded-xl border border-gray-200 bg-white/70 px-4 py-2 text-gray-700 hover:bg-white hover:border-gray-300 transition-all duration-200"
             >
               Sign out
             </button>

@@ -83,24 +83,35 @@ function validStep(step: number, d: Draft): boolean {
 function Progress({ step, total }: { step: number; total: number }) {
   const pct = Math.round((step / total) * 100)
   return (
-    <div className="w-full">
-      <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
-        <span>Step {step} of {total}</span>
-        <span>{pct}%</span>
+    <div className="w-full mb-8">
+      <div className="mb-3 flex items-center justify-between text-sm text-gray-600">
+        <span className="font-medium">Step {step} of {total}</span>
+        <span className="text-blue-600 font-semibold">{pct}%</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded bg-slate-100">
-        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+      <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100 shadow-inner">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full shadow-sm"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="mt-2 flex justify-between">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className={`h-2 w-2 rounded-full transition-all duration-300 ${
+              i < step ? 'bg-blue-500 scale-110' : 'bg-gray-200'
+            }`}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-function SectionTitle({ kicker, title, desc }: { kicker: string; title: string; desc?: string }) {
+function SectionTitle({ title }: { title: string }) {
   return (
-    <div className="mb-5">
-      <div className="text-[11px] uppercase tracking-widest text-emerald-600">{kicker}</div>
-      <h2 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h2>
-      {desc && <p className="mt-1 text-sm text-slate-600">{desc}</p>}
+    <div className="mb-6 text-center">
+      <h2 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h2>
     </div>
   )
 }
@@ -114,25 +125,14 @@ function SelectCard({
       onClick={onClick}
       disabled={disabled}
       className={[
-        'group relative w-full rounded-2xl border p-4 text-sm transition',
-        'text-left shadow-sm',
+        'group relative w-full rounded-2xl border p-5 text-sm transition-all duration-300',
+        'text-left shadow-sm hover:shadow-md',
         active
-          ? 'border-blue-600 bg-blue-600 text-white'
-          : 'border-slate-200 bg-white hover:border-slate-300',
+          ? 'border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg scale-[1.02]'
+          : 'border-gray-200 bg-white/70 backdrop-blur-sm hover:border-blue-300 hover:bg-white hover:scale-[1.01]',
         disabled ? 'opacity-50 cursor-not-allowed' : '',
       ].join(' ')}
     >
-      {/* checkmark bubble */}
-      <span
-        className={[
-          'absolute right-3 top-3 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[10px]',
-          active
-            ? 'bg-blue-400 text-white border-blue-400'
-            : 'bg-white text-transparent border-slate-200 group-hover:text-slate-300',
-        ].join(' ')}
-      >
-        ✓
-      </span>
       {children}
     </button>
   )
@@ -142,15 +142,17 @@ function MultiGrid({
   items, selected, onToggle, cols = 2, allowNone
 }: { items: string[]; selected: string[]; onToggle: (v: string) => void; cols?: 1 | 2; allowNone?: boolean }) {
   return (
-    <div className={`grid gap-2 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+    <div className={`grid gap-3 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
       {items.map((v) => (
         <SelectCard
           key={v}
           active={selected.includes(v)}
           onClick={() => onToggle(v)}
         >
-          {v}
-          {allowNone && v.startsWith('None') && <span className="ml-2 text-xs text-slate-400">(clears others)</span>}
+          <div className="text-center font-medium">
+            {v}
+            {allowNone && v.startsWith('None') && <span className="ml-2 text-xs opacity-70">(clears others)</span>}
+          </div>
         </SelectCard>
       ))}
     </div>
@@ -166,10 +168,10 @@ function PrimaryButton({
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
       className={[
-        'px-5 py-2 rounded-lg font-medium',
+        'px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-sm',
         disabled
-          ? 'bg-blue-600/40 text-white/70 pointer-events-none'
-          : 'bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-600',
+          ? 'bg-gray-300 text-gray-500 pointer-events-none'
+          : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95',
       ].join(' ')}
     >
       {children}
@@ -184,10 +186,10 @@ function SecondaryButton({ children, onClick, disabled }: { children: React.Reac
       onClick={disabled ? undefined : onClick}
       aria-disabled={disabled}
       className={[
-        'px-4 py-2 rounded-lg border',
+        'px-5 py-3 rounded-xl border font-medium transition-all duration-300',
         disabled
-          ? 'border-slate-200 text-slate-400 pointer-events-none'
-          : 'border-slate-200 text-slate-700 hover:bg-slate-50',
+          ? 'border-gray-200 text-gray-400 pointer-events-none'
+          : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md hover:scale-105 active:scale-95',
       ].join(' ')}
     >
       {children}
@@ -239,12 +241,12 @@ export default function Onboarding() {
 
   const header = useMemo(() => {
     switch (step) {
-      case 1: return { kicker: 'Experience', title: 'What’s your training level?', desc: 'We’ll calibrate difficulty and progression automatically.' }
-      case 2: return { kicker: 'Goals', title: 'What are you aiming for?', desc: 'Choose one or more goals to shape exercise selection and volume.' }
-      case 3: return { kicker: 'Equipment', title: 'What do you have access to?', desc: 'We’ll only include movements you can actually do.' }
-      case 4: return { kicker: 'Personal', title: 'Tell us about you', desc: 'Ranges keep things private while enabling personalization.' }
-      case 5: return { kicker: 'Injuries', title: 'Any injuries or limitations?', desc: 'We’ll avoid risky movements and include safe alternatives.' }
-      default: return { kicker: '', title: '', desc: '' }
+      case 1: return { title: 'What’s your training level?'}
+      case 2: return { title: 'What are you aiming for?'}
+      case 3: return { title: 'What do you have access to?'}
+      case 4: return { title: 'Tell us about you'}
+      case 5: return { title: 'Any injuries or limitations?'}
+      default: return { title: '' }
     }
   }, [step])
 
@@ -300,48 +302,53 @@ export default function Onboarding() {
 
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-white">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+      <div className="min-h-screen grid place-items-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+          <p className="text-sm text-gray-600">Loading your profile...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50" onKeyDown={onKeyDown} tabIndex={0}>
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-3xl px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-emerald-400 to-cyan-400 ring-1 ring-black/10" />
-            <span className="font-semibold">Neurafit</span>
-          </div>
-          <span className="text-xs text-slate-500">Onboarding</span>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30" onKeyDown={onKeyDown} tabIndex={0}>
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.05),transparent_50%)]" />
+
+
 
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-5 py-6 pb-24">
+      <div className="relative mx-auto max-w-3xl px-6 pt-12 pb-28">
         <Progress step={step} total={total} />
         <SectionTitle {...header} />
 
         {/* STEP 1 — EXPERIENCE */}
         {step === 1 && (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
             {EXPERIENCE_LEVELS.map((level) => (
               <SelectCard
                 key={level}
                 active={draft.experience === level}
                 onClick={() => setDraft((d) => ({ ...d, experience: level }))}
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded-lg ${draft.experience === level ? 'bg-blue-500' : 'bg-blue-100'}`}>
-                    {level === 'Beginner' && <BookOpen className={`h-5 w-5 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
-                    {level === 'Intermediate' && <Zap className={`h-5 w-5 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
-                    {level === 'Expert' && <Trophy className={`h-5 w-5 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                <div className="flex items-center gap-4 mb-3">
+                  <div className={`p-3 rounded-xl transition-all duration-300 ${
+                    draft.experience === level
+                      ? 'bg-white/20 border border-white/30'
+                      : 'bg-blue-50 border border-blue-100'
+                  }`}>
+                    {level === 'Beginner' && <BookOpen className={`h-6 w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Intermediate' && <Zap className={`h-6 w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Expert' && <Trophy className={`h-6 w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
                   </div>
-                  <div className="text-base font-medium">{level}</div>
+                  <div className="text-lg font-bold">{level}</div>
                 </div>
-                <div className="text-sm text-white/80 sm:text-slate-600 sm:group-hover:text-slate-700">
+                <div className={`text-sm leading-relaxed ${
+                  draft.experience === level
+                    ? 'text-white/90'
+                    : 'text-gray-600 group-hover:text-gray-700'
+                }`}>
                   {level === 'Beginner' && 'Perfect for those just starting their fitness journey or returning after a break.'}
                   {level === 'Intermediate' && 'You have consistent training experience and understand basic movement patterns.'}
                   {level === 'Expert' && 'You have years of training experience and advanced knowledge of programming.'}
@@ -381,31 +388,34 @@ export default function Onboarding() {
 
         {/* STEP 4 — PERSONAL */}
         {step === 4 && (
-          <div className="grid gap-5">
+          <div className="grid gap-8">
             {/* Sex Options - Single Row */}
-            <div className="grid grid-cols-3 gap-3">
-              {SEX_OPTIONS.map((s) => (
-                <SelectCard
-                  key={s}
-                  active={draft.personal.sex === s}
-                  onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, sex: s } }))}
-                >
-                  {s}
-                </SelectCard>
-              ))}
+            <div>
+              <div className="mb-4 text-sm font-semibold text-gray-700 text-center">Gender</div>
+              <div className="grid grid-cols-3 gap-4">
+                {SEX_OPTIONS.map((s) => (
+                  <SelectCard
+                    key={s}
+                    active={draft.personal.sex === s}
+                    onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, sex: s } }))}
+                  >
+                    <div className="text-center font-medium">{s}</div>
+                  </SelectCard>
+                ))}
+              </div>
             </div>
 
             {/* Height - 2x3 Grid */}
             <div>
-              <div className="mb-2 text-xs font-medium text-slate-600">Height</div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="mb-4 text-sm font-semibold text-gray-700 text-center">Height Range</div>
+              <div className="grid grid-cols-3 gap-3">
                 {HEIGHT_RANGES.map((h) => (
                   <SelectCard
                     key={h}
                     active={draft.personal.height === h}
                     onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, height: h } }))}
                   >
-                    {h}
+                    <div className="text-center font-medium">{h}</div>
                   </SelectCard>
                 ))}
               </div>
@@ -413,15 +423,15 @@ export default function Onboarding() {
 
             {/* Weight - 2x3 Grid */}
             <div>
-              <div className="mb-2 text-xs font-medium text-slate-600">Weight</div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="mb-4 text-sm font-semibold text-gray-700 text-center">Weight Range</div>
+              <div className="grid grid-cols-3 gap-3">
                 {WEIGHT_RANGES.map((w) => (
                   <SelectCard
                     key={w}
                     active={draft.personal.weight === w}
                     onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, weight: w } }))}
                   >
-                    {w}
+                    <div className="text-center font-medium">{w}</div>
                   </SelectCard>
                 ))}
               </div>
@@ -431,7 +441,8 @@ export default function Onboarding() {
 
         {/* STEP 5 — INJURIES */}
         {step === 5 && (
-          <div className="grid gap-4">
+          <div className="grid gap-6">
+            <div className="mb-2 text-sm font-semibold text-gray-700 text-center">Current Injuries or Limitations</div>
             <MultiGrid
               items={INJURY_OPTIONS}
               selected={draft.injuries.list}
@@ -447,13 +458,13 @@ export default function Onboarding() {
               cols={2}
             />
             <div>
-              <label className="mb-2 block text-xs font-medium text-slate-600">Notes (optional)</label>
+              <label className="mb-3 block text-sm font-semibold text-gray-700">Additional Notes (optional)</label>
               <textarea
                 value={draft.injuries.notes}
                 onChange={(e) => setDraft((d) => ({ ...d, injuries: { ...d.injuries, notes: e.target.value } }))}
                 placeholder="e.g., mild runner’s knee on right leg; avoid deep flexion"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500"
-                rows={3}
+                className="w-full rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                rows={4}
               />
             </div>
           </div>
@@ -461,13 +472,13 @@ export default function Onboarding() {
       </div>
 
       {/* Fixed Footer Nav */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/90 backdrop-blur">
-        <div className="mx-auto max-w-3xl px-5 py-3 flex items-center justify-between">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200/50 bg-white/90 backdrop-blur-md shadow-lg">
+        <div className="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
           <SecondaryButton onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={atStart}>
             Back
           </SecondaryButton>
 
-          <div className="hidden text-xs text-slate-500 sm:block">
+          <div className="hidden text-xs text-gray-500 sm:block max-w-xs text-center">
             {step === 1 && 'Tip: Be honest about level—your plan adapts.'}
             {step === 2 && 'Tip: Multiple goals are okay; we’ll balance.'}
             {step === 3 && 'Tip: Select all equipment you have access to.'}
@@ -504,25 +515,18 @@ function GoalCard({
     <button
       onClick={onClick}
       className={`
-        relative p-4 rounded-xl border-2 transition-all duration-200 text-center
+        group relative p-3 rounded-2xl border-2 transition-all duration-300 text-center shadow-sm hover:shadow-lg
         ${active
-          ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-          : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+          ? 'bg-gradient-to-br from-blue-500 to-indigo-600 border-blue-500 text-white shadow-lg scale-[1.02]'
+          : 'bg-white/70 backdrop-blur-sm border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-white hover:scale-[1.01]'
         }
       `}
     >
-      {active && (
-        <div className="absolute -top-2 -right-2 h-6 w-6 bg-blue-400 rounded-full flex items-center justify-center">
-          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-      )}
       <div className="flex flex-col items-center space-y-2">
-        <div className={`${active ? 'text-white' : 'text-blue-600'}`}>
-          {getGoalIcon(goal, "h-8 w-8")}
+        <div className={`transition-transform duration-300 group-hover:scale-110 ${active ? 'text-white' : 'text-blue-600'}`}>
+          {getGoalIcon(goal, "h-6 w-6")}
         </div>
-        <div className="text-sm font-medium leading-tight">
+        <div className="text-xs font-semibold leading-tight">
           {goal}
         </div>
       </div>
@@ -544,25 +548,18 @@ function EquipmentCard({
     <button
       onClick={onClick}
       className={`
-        relative p-4 rounded-xl border-2 transition-all duration-200 text-center
+        group relative p-3 rounded-2xl border-2 transition-all duration-300 text-center shadow-sm hover:shadow-lg
         ${active
-          ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
-          : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+          ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-500 text-white shadow-lg scale-[1.02]'
+          : 'bg-white/70 backdrop-blur-sm border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-white hover:scale-[1.01]'
         }
       `}
     >
-      {active && (
-        <div className="absolute -top-2 -right-2 h-6 w-6 bg-blue-400 rounded-full flex items-center justify-center">
-          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </div>
-      )}
       <div className="flex flex-col items-center space-y-2">
-        <div className={`${active ? 'text-white' : 'text-blue-600'}`}>
-          {getEquipmentIcon(equipment, "h-8 w-8")}
+        <div className={`transition-transform duration-300 group-hover:scale-110 ${active ? 'text-white' : 'text-emerald-600'}`}>
+          {getEquipmentIcon(equipment, "h-6 w-6")}
         </div>
-        <div className="text-sm font-medium leading-tight">
+        <div className="text-xs font-semibold leading-tight">
           {equipment}
         </div>
       </div>
