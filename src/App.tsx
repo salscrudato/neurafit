@@ -9,6 +9,7 @@ import Exercise from './pages/workout/Exercise'
 import Rest from './pages/workout/Rest'
 import Complete from './pages/workout/Complete'
 import History from './pages/History'
+import WorkoutDetail from './pages/WorkoutDetail'
 import Profile from './pages/Profile'
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
@@ -94,6 +95,14 @@ export default function App() {
           element={
             <RequireProfile>
               <History />
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/workout/:workoutId"
+          element={
+            <RequireProfile>
+              <WorkoutDetail />
             </RequireProfile>
           }
         />

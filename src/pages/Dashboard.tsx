@@ -1,17 +1,9 @@
 // src/pages/Dashboard.tsx
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { auth, db } from '../lib/firebase'
-import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
+import { auth } from '../lib/firebase'
 import { Zap, History, User } from 'lucide-react'
 import type { ReactElement } from 'react'
-
-type Workout = {
-  workoutType: string
-  duration: number
-  exercises?: { name: string; sets: number; reps: string | number }[]
-  timestamp?: any
-}
 
 export default function Dashboard() {
   const nav = useNavigate()
@@ -21,24 +13,7 @@ export default function Dashboard() {
     return String(n).split(' ')[0]
   }, [user])
 
-  const [last, setLast] = useState<Workout | null>(null)
 
-  // fetch most recent workout (optional, silent failure)
-  useEffect(() => {
-    const uid = auth.currentUser?.uid
-    if (!uid) return
-    ;(async () => {
-      try {
-        const q = query(
-          collection(db, 'users', uid, 'workouts'),
-          orderBy('timestamp', 'desc'),
-          limit(1)
-        )
-        const snap = await getDocs(q)
-        if (!snap.empty) setLast(snap.docs[0].data() as Workout)
-      } catch { /* ignore */ }
-    })()
-  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white">
@@ -91,43 +66,7 @@ export default function Dashboard() {
         />
       </section>
 
-      {/* Last workout snapshot */}
-      <section className="mx-auto max-w-6xl px-6 mt-8 pb-12">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold">Last workout</h3>
-            {last && (
-              <button
-                onClick={() => nav('/history')}
-                className="text-sm text-white/70 hover:text-white"
-              >
-                See all
-              </button>
-            )}
-          </div>
-          {!last ? (
-            <p className="text-white/70 text-sm">No workouts yet. Generate your first plan to get started.</p>
-          ) : (
-            <div className="grid gap-2">
-              <div className="text-white/90">
-                {last.workoutType} • {last.duration} min
-              </div>
-              {Array.isArray(last.exercises) && (
-                <ul className="text-sm text-white/75 list-disc list-inside space-y-1">
-                  {last.exercises.slice(0, 3).map((e, i) => (
-                    <li key={i}>
-                      {e.name} — {e.sets}×{e.reps}
-                    </li>
-                  ))}
-                  {last.exercises.length > 3 && (
-                    <li className="text-white/50">+ {last.exercises.length - 3} more</li>
-                  )}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
+
     </div>
   )
 }

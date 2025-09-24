@@ -73,7 +73,8 @@ REQUIREMENTS:
       "reps": number | string,    // number OR time like "30s"
       "formTips": string[],       // up to 3 concise tips
       "safetyTips": string[],     // up to 3 concise cautions or modifications
-      "restSeconds": number       // 30–120 recommended
+      "restSeconds": number,      // 30–120 recommended
+      "usesWeight": boolean       // true if this exercise typically uses external weights (dumbbells, barbells, kettlebells, etc.), false for bodyweight exercises
     }
   ]
 }
@@ -81,6 +82,7 @@ REQUIREMENTS:
 - Calibrate difficulty to experience and goals. Prefer safe progressions for beginners.
 - Keep the plan realistic for the total duration (include warm-up or cool-down when appropriate by naming them as exercises).
 - Keep all strings plain text (no bullets, no emojis); keep sentences short and clear.
+- Set "usesWeight" to true for exercises that typically use external weights like dumbbells, barbells, kettlebells, medicine balls, etc. Set to false for bodyweight exercises, cardio, stretching, or exercises using resistance bands.
 `.trim()
 
       // Call OpenAI

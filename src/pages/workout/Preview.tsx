@@ -11,6 +11,7 @@ type Exercise = {
   formTips?: string[]
   safetyTips?: string[]
   restSeconds?: number
+  usesWeight?: boolean      // true if this exercise uses external weights
 }
 
 type Plan = { exercises: Exercise[] }
@@ -68,7 +69,11 @@ export default function Preview() {
             You can tap each exercise to view instructions, form and safety tips.
           </div>
           <button
-            onClick={() => nav('/workout/run')}
+            onClick={() => {
+              // Store workout start time
+              sessionStorage.setItem('nf_workout_start_time', Date.now().toString())
+              nav('/workout/run')
+            }}
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition"
           >
             <Play className="h-5 w-5" /> Start Workout

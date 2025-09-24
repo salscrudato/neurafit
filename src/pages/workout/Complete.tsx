@@ -14,15 +14,34 @@ export default function Complete() {
         const uid = auth.currentUser?.uid
         if (!uid) return
 
+        // Get weight data if it exists
+        const savedWeights = sessionStorage.getItem('nf_workout_weights')
+        const workoutWeights = savedWeights ? JSON.parse(savedWeights) : {}
+
+        // Calculate actual workout duration
+        const startTimeStr = sessionStorage.getItem('nf_workout_start_time')
+        const actualDuration = startTimeStr
+          ? Math.round((Date.now() - parseInt(startTimeStr)) / 1000 / 60) // Convert to minutes
+          : duration // Fallback to planned duration if start time not available
+
+        // Enhance exercises with weight data
+        const exercisesWithWeights = plan.exercises.map((exercise: any, exerciseIndex: number) => ({
+          ...exercise,
+          weights: workoutWeights[exerciseIndex] || null
+        }))
+
         await addDoc(collection(db, 'users', uid, 'workouts'), {
           timestamp: serverTimestamp(),
           workoutType: type,
-          duration,
-          exercises: plan.exercises
+          duration: actualDuration,
+          plannedDuration: duration, // Keep the planned duration for reference
+          exercises: exercisesWithWeights
         })
 
         // Clear the session storage after successful save
         sessionStorage.removeItem('nf_workout_plan')
+        sessionStorage.removeItem('nf_workout_weights')
+        sessionStorage.removeItem('nf_workout_start_time')
       } catch (error) {
         console.error('Error saving workout:', error)
         // Don't block the user, but log the error

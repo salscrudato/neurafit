@@ -11,6 +11,12 @@ type ExerciseT = {
   formTips?: string[]
   safetyTips?: string[]
   restSeconds?: number
+  usesWeight?: boolean      // true if this exercise uses external weights
+}
+
+type SetWeight = {
+  setNumber: number
+  weight: number | null     // weight in lbs, null if not entered
 }
 
 type PlanT = { exercises: ExerciseT[] }
@@ -27,6 +33,27 @@ export default function Exercise() {
   const [i, setI] = useState(0)        // exercise index
   const [setNo, setSetNo] = useState(1) // current set (1-based)
 
+  // Weight tracking state - stores weight for each exercise and set
+  const [workoutWeights, setWorkoutWeights] = useState<Record<number, Record<number, number | null>>>(() => {
+    const savedWeights = sessionStorage.getItem('nf_workout_weights')
+    return savedWeights ? JSON.parse(savedWeights) : {}
+  })
+
+  // Update weight for current exercise and set
+  const updateWeight = (weight: number | null) => {
+    setWorkoutWeights(prev => {
+      const updated = {
+        ...prev,
+        [i]: {
+          ...prev[i],
+          [setNo]: weight
+        }
+      }
+      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+      return updated
+    })
+  }
+
   // return-from-rest state
   useEffect(() => {
     const nxt = sessionStorage.getItem('nf_return')
@@ -36,6 +63,19 @@ export default function Exercise() {
       sessionStorage.removeItem('nf_return')
     }
   }, [])
+
+  // Clear weight data when starting a fresh workout (not returning from rest)
+  useEffect(() => {
+    const isReturningFromRest = sessionStorage.getItem('nf_return')
+    if (!isReturningFromRest && i === 0 && setNo === 1) {
+      // Only clear if we're starting fresh (not returning from rest)
+      const hasExistingWeights = sessionStorage.getItem('nf_workout_weights')
+      if (hasExistingWeights) {
+        sessionStorage.removeItem('nf_workout_weights')
+        setWorkoutWeights({})
+      }
+    }
+  }, []) // Only run once on mount
 
   const ex = list[i] as ExerciseT
 
@@ -62,6 +102,16 @@ export default function Exercise() {
   }
 
   const skipExercise = () => {
+    // Mark this exercise as skipped by creating an empty weights object
+    setWorkoutWeights(prev => {
+      const updated = {
+        ...prev,
+        [i]: {} // Empty object indicates exercise was skipped
+      }
+      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+      return updated
+    })
+
     if (i < list.length - 1) return goRest(i + 1, 1, Math.min(30, ex.restSeconds ?? 30))
     nav('/workout/complete')
   }
@@ -105,6 +155,17 @@ export default function Exercise() {
             <Chip>Reps: {ex.reps}</Chip>
             <Chip>Rest: {ex.restSeconds ?? 60}s</Chip>
           </div>
+
+          {/* Weight input for exercises that use weights */}
+          {ex.usesWeight && (
+            <div className="mt-4">
+              <WeightInput
+                currentWeight={workoutWeights[i]?.[setNo] || null}
+                onWeightChange={updateWeight}
+                setNumber={setNo}
+              />
+            </div>
+          )}
 
           {/* how-to */}
           {ex.description && (
@@ -164,6 +225,61 @@ function Chip({ children }: { children: React.ReactNode }) {
     <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1">
       {children}
     </span>
+  )
+}
+
+function WeightInput({
+  currentWeight,
+  onWeightChange,
+  setNumber
+}: {
+  currentWeight: number | null
+  onWeightChange: (weight: number | null) => void
+  setNumber: number
+}) {
+  const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
+
+  const handleSubmit = () => {
+    const weight = inputValue.trim() === '' ? null : parseFloat(inputValue)
+    if (weight !== null && (isNaN(weight) || weight < 0)) return // Invalid input
+    onWeightChange(weight)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit()
+      ;(e.target as HTMLInputElement).blur()
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="font-medium text-white/90">Weight for Set {setNumber}</div>
+          <div className="text-sm text-white/70">Enter weight in lbs (optional)</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleSubmit}
+            onKeyDown={handleKeyDown}
+            placeholder="0"
+            min="0"
+            step="0.5"
+            className="w-20 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-white placeholder-white/50 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+          />
+          <span className="text-sm text-white/70">lbs</span>
+        </div>
+      </div>
+      {currentWeight !== null && (
+        <div className="mt-2 text-xs text-emerald-400">
+          ✓ {currentWeight} lbs recorded
+        </div>
+      )}
+    </div>
   )
 }
 
