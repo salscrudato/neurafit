@@ -18,7 +18,15 @@ import {
   Waves,
   ArrowUp,
   Cable,
-  Circle as Ball
+  Circle as Ball,
+  Scale,
+  Flame,
+  Target,
+  Heart,
+  Sparkles,
+  Shield,
+  Brain,
+  Move
 } from 'lucide-react'
 import {
   EXPERIENCE_LEVELS,
@@ -345,11 +353,16 @@ export default function Onboarding() {
 
         {/* STEP 2 — GOALS */}
         {step === 2 && (
-          <MultiGrid
-            items={GOALS}
-            selected={draft.goals}
-            onToggle={(v) => setDraft((d) => ({ ...d, goals: toggle(d.goals, v) }))}
-          />
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {GOALS.map((goal) => (
+              <GoalCard
+                key={goal}
+                goal={goal}
+                active={draft.goals.includes(goal)}
+                onClick={() => setDraft((d) => ({ ...d, goals: toggle(d.goals, goal) }))}
+              />
+            ))}
+          </div>
         )}
 
         {/* STEP 3 — EQUIPMENT */}
@@ -477,6 +490,46 @@ export default function Onboarding() {
   )
 }
 
+/* ---------- Goal Card Component ---------- */
+function GoalCard({
+  goal,
+  active,
+  onClick
+}: {
+  goal: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative p-4 rounded-xl border-2 transition-all duration-200 text-center
+        ${active
+          ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+          : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+        }
+      `}
+    >
+      {active && (
+        <div className="absolute -top-2 -right-2 h-6 w-6 bg-blue-400 rounded-full flex items-center justify-center">
+          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+      )}
+      <div className="flex flex-col items-center space-y-2">
+        <div className={`${active ? 'text-white' : 'text-blue-600'}`}>
+          {getGoalIcon(goal, "h-8 w-8")}
+        </div>
+        <div className="text-sm font-medium leading-tight">
+          {goal}
+        </div>
+      </div>
+    </button>
+  )
+}
+
 /* ---------- Equipment Card Component ---------- */
 function EquipmentCard({
   equipment,
@@ -546,6 +599,34 @@ function getEquipmentIcon(equipment: string, className: string = "h-6 w-6") {
       return <Cable className={className} />
     default:
       return <Circle className={className} />
+  }
+}
+
+/* ---------- Goal Icons ---------- */
+function getGoalIcon(goal: string, className: string = "h-6 w-6") {
+  switch (goal) {
+    case 'Weight Loss':
+      return <Scale className={className} />
+    case 'Build Muscle':
+      return <Flame className={className} />
+    case 'Strength':
+      return <Dumbbell className={className} />
+    case 'Stamina':
+      return <Heart className={className} />
+    case 'Tone':
+      return <Sparkles className={className} />
+    case 'General Health':
+      return <Shield className={className} />
+    case 'Increase Flexibility':
+      return <Move className={className} />
+    case 'Sports Performance':
+      return <Trophy className={className} />
+    case 'Mental Health':
+      return <Brain className={className} />
+    case 'Injury Prevention':
+      return <Shield className={className} />
+    default:
+      return <Target className={className} />
   }
 }
 
