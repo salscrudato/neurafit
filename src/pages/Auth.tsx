@@ -96,14 +96,6 @@ export default function Auth() {
 
         </div>
 
-        {/* Powered by AI Badge */}
-        <div className="flex items-center justify-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full">
-            <Brain className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-600">Powered by Advanced AI</span>
-          </div>
-        </div>
-
         {/* Why Choose NeuraFit Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-center mb-2">Why Choose NeuraFit?</h2>
