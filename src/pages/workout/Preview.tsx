@@ -1,7 +1,7 @@
 // src/pages/workout/Preview.tsx
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Timer, List, Hash, Play, Lightbulb, Shield, ChevronDown } from 'lucide-react'
+import { List, Hash, Play, Lightbulb, Shield, ChevronDown } from 'lucide-react'
 
 type Exercise = {
   name: string
@@ -23,20 +23,8 @@ export default function Preview() {
   const { plan, type, duration } = JSON.parse(saved) as { plan: Plan; type: string; duration: number }
   const exercises = Array.isArray(plan?.exercises) ? plan.exercises : []
 
-  const stats = useMemo(() => {
-    const totalSets = exercises.reduce((s, e) => s + (Number(e.sets) || 0), 0)
-    const totalRests =
-      exercises.reduce((s, e) => s + (Math.max(0, (e.sets || 0) - 1)) * (e.restSeconds || 60), 0) // between sets
-    // Very rough time proxy: 40s per set unless reps is time-based
-    const workSeconds = exercises.reduce((s, e) => {
-      const perSet =
-        typeof e.reps === 'string' && /\d+\s*(s|sec)/i.test(String(e.reps))
-          ? parseInt(String(e.reps)) || 30
-          : 40
-      return s + (e.sets || 0) * perSet
-    }, 0)
-    const est = Math.round((workSeconds + totalRests) / 60)
-    return { totalSets, est }
+  const totalSets = useMemo(() => {
+    return exercises.reduce((s, e) => s + (Number(e.sets) || 0), 0)
   }, [exercises])
 
   return (
@@ -59,8 +47,7 @@ export default function Preview() {
           </h1>
           <div className="mt-3 flex flex-wrap gap-3 text-sm text-white/80">
             <Badge><List className="h-4 w-4" /> {exercises.length} exercises</Badge>
-            <Badge><Hash className="h-4 w-4" /> {stats.totalSets} total sets</Badge>
-            <Badge><Timer className="h-4 w-4" /> ~{stats.est} min estimated</Badge>
+            <Badge><Hash className="h-4 w-4" /> {totalSets} total sets</Badge>
           </div>
         </div>
       </section>
