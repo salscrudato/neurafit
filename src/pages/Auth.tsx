@@ -6,7 +6,7 @@ import {
   RecaptchaVerifier, signInWithPhoneNumber
 } from 'firebase/auth'
 import type { ConfirmationResult } from 'firebase/auth'
-import { Zap, Timer, History } from 'lucide-react'
+import { Zap, Brain, Target, Shield } from 'lucide-react'
 import type { ReactElement } from 'react'
 
 export default function Auth() {
@@ -17,8 +17,13 @@ export default function Auth() {
 
   // Invisible reCAPTCHA for phone auth
   useEffect(() => {
-    if (!(window as any).recaptchaVerifier) {
-      ;(window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'phone-login', { size: 'invisible' })
+    // Only create recaptcha verifier when we actually need it
+    return () => {
+      // Cleanup on unmount
+      if ((window as any).recaptchaVerifier) {
+        ;(window as any).recaptchaVerifier.clear()
+        ;(window as any).recaptchaVerifier = null
+      }
     }
   }, [])
 
@@ -27,6 +32,17 @@ export default function Auth() {
     try {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
+    } catch (error: any) {
+      console.error('Error with Google login:', error)
+
+      if (error.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, no need to show error
+        return
+      } else if (error.code === 'auth/popup-blocked') {
+        alert('Popup was blocked. Please allow popups for this site and try again.')
+      } else {
+        alert('Failed to sign in with Google. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -36,9 +52,54 @@ export default function Auth() {
     if (!phone) return
     setLoading(true)
     try {
+      // Create recaptcha verifier if it doesn't exist
+      if (!(window as any).recaptchaVerifier) {
+        ;(window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => {
+            // reCAPTCHA solved, allow signInWithPhoneNumber
+          },
+          'expired-callback': () => {
+            // Reset on expiration
+            if ((window as any).recaptchaVerifier) {
+              ;(window as any).recaptchaVerifier.clear()
+              ;(window as any).recaptchaVerifier = null
+            }
+          }
+        })
+      }
       const appVerifier = (window as any).recaptchaVerifier
       const cr = await signInWithPhoneNumber(auth, phone, appVerifier)
       setConfirm(cr)
+    } catch (error: any) {
+      console.error('Error sending OTP:', error)
+
+      // Show user-friendly error message
+      let errorMessage = 'Failed to send verification code. '
+      if (error.code === 'auth/invalid-app-credential') {
+        errorMessage += 'Please try using Google Sign-In instead.'
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage += 'Too many attempts. Please try again later.'
+      } else if (error.code === 'auth/invalid-phone-number') {
+        errorMessage += 'Please enter a valid phone number with country code (e.g., +1234567890).'
+      } else {
+        errorMessage += 'Please try Google Sign-In instead.'
+      }
+
+      alert(errorMessage)
+
+      // Reset recaptcha on error
+      if ((window as any).recaptchaVerifier) {
+        try {
+          ;(window as any).recaptchaVerifier.clear()
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        ;(window as any).recaptchaVerifier = null
+      }
+
+      // Close the phone modal on error
+      setPhone('')
     } finally {
       setLoading(false)
     }
@@ -49,135 +110,200 @@ export default function Auth() {
     setLoading(true)
     try {
       await confirm.confirm(code)
+    } catch (error: any) {
+      console.error('Error verifying OTP:', error)
+
+      let errorMessage = 'Invalid verification code. '
+      if (error.code === 'auth/invalid-verification-code') {
+        errorMessage += 'Please check the code and try again.'
+      } else if (error.code === 'auth/code-expired') {
+        errorMessage += 'The code has expired. Please request a new one.'
+        setConfirm(null)
+        setCode('')
+      } else {
+        errorMessage += 'Please try again.'
+      }
+
+      alert(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white selection:bg-emerald-400/20 selection:text-emerald-50">
-      {/* Top Nav / Brand */}
-      <header className="mx-auto max-w-6xl px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Simple logo mark */}
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-emerald-400 to-cyan-400 shadow-lg ring-1 ring-white/20" />
-          <span className="text-lg font-semibold tracking-tight">Neurafit</span>
+    <div className="min-h-screen bg-white text-gray-900">
+      {/* Main Content */}
+      <div className="max-w-md mx-auto px-6 py-8">
+        {/* Header Badge */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full">
+            <Zap className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-600">AI-Powered Fitness Technology</span>
+          </div>
         </div>
-        <a
-          href="#features"
-          className="text-sm text-white/70 hover:text-white transition-colors"
-        >
-          Features
-        </a>
-      </header>
 
-      {/* Hero / Landing Section */}
-      <main className="mx-auto max-w-6xl px-6 pt-2 pb-16">
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Copy */}
-          <div>
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight">
-              <span className="bg-gradient-to-r from-emerald-300 via-cyan-300 to-white bg-clip-text text-transparent">
-                Your AI-Powered Personal Fitness Coach
-              </span>
-            </h1>
-            <p className="mt-4 text-white/80 text-lg leading-relaxed">
-              Generate personalized, equipment-aware workouts in seconds.
-              Clear guidance, rest timers, and progress history—built for busy people.
-            </p>
+        {/* Hero Title */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold leading-tight mb-4">
+            Transform Your Body with{' '}
+            <span className="text-blue-600">AI-Powered</span>{' '}
+            <span className="text-teal-600">Precision</span>
+          </h1>
+          <p className="text-gray-600 text-lg leading-relaxed">
+            Experience personalized workout plans that evolve with you. Our advanced AI
+            analyzes your progress, adapts to your goals, and delivers{' '}
+            <span className="text-blue-600 font-medium">results that matter.</span>
+          </p>
+        </div>
 
-            {/* Auth Actions */}
-            <div className="mt-8 space-y-4 max-w-md">
-              <button
-                onClick={googleLogin}
-                disabled={loading}
-                className="group w-full inline-flex items-center justify-center gap-3 rounded-xl bg-white text-slate-900 px-4 py-3 font-medium ring-1 ring-white/10 hover:bg-white/95 active:bg-white/90 transition disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
-              >
-                {/* Google glyph */}
-                <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
-                  <path fill="#EA4335" d="M24 9.5c3.94 0 7.48 1.53 10.2 4.02l6.8-6.8C36.84 2.61 30.77 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.96 6.18C12.3 13 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.44-4.75H24v9.01h12.65c-.55 2.94-2.23 5.43-4.74 7.11l7.24 5.62C43.99 36.76 46.5 30.79 46.5 24z"/>
-                  <path fill="#FBBC05" d="M10.52 27.6A14.47 14.47 0 0 1 9.5 24c0-1.25.17-2.46.48-3.6l-7.96-6.18A24 24 0 0 0 0 24c0 3.84.9 7.47 2.5 10.68l8.02-7.08z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.9-5.83l-7.24-5.62c-2.01 1.36-4.59 2.16-8.66 2.16-6.26 0-11.7-3.5-13.48-8.52l-8.02 7.08C6.51 42.62 14.62 48 24 48z"/>
-                </svg>
-                Continue with Google
-              </button>
+        {/* CTA Buttons */}
+        <div className="space-y-3 mb-8">
+          <button
+            onClick={googleLogin}
+            disabled={loading}
+            className="w-full bg-blue-600 text-white px-6 py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Zap className="h-5 w-5" />
+            Start Your AI Journey
+          </button>
 
-              {/* Phone Auth */}
-              <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-4 ring-1 ring-inset ring-white/5">
-                <label className="block text-sm text-white/80 mb-2">
-                  Phone (E.164, e.g. +15551234567)
-                </label>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 outline-none placeholder:text-white/50 focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:outline-none"
-                  placeholder="+1…"
-                  inputMode="tel"
-                />
-                {!confirm ? (
-                  <button
-                    id="phone-login"
-                    onClick={sendOtp}
-                    disabled={loading || !phone}
-                    className="mt-3 w-full rounded-xl bg-slate-900 px-4 py-3 font-medium ring-1 ring-white/10 hover:bg-slate-800 active:bg-slate-800/90 transition disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
-                  >
-                    Send code
-                  </button>
-                ) : (
-                  <div className="mt-3 space-y-3">
-                    <input
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 outline-none placeholder:text-white/50 focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:outline-none"
-                      placeholder="Enter code"
-                      inputMode="numeric"
-                    />
-                    <button
-                      onClick={verifyOtp}
-                      disabled={loading || !code}
-                      className="w-full rounded-xl bg-emerald-500 text-slate-950 px-4 py-3 font-semibold hover:bg-emerald-400 active:bg-emerald-400/90 transition disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
-                    >
-                      Verify
-                    </button>
-                  </div>
-                )}
+          <button
+            onClick={googleLogin}
+            disabled={loading}
+            className="w-full bg-white border border-gray-300 text-gray-700 px-6 py-4 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          >
+            {/* Google glyph */}
+            <svg className="h-5 w-5" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.94 0 7.48 1.53 10.2 4.02l6.8-6.8C36.84 2.61 30.77 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.96 6.18C12.3 13 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.44-4.75H24v9.01h12.65c-.55 2.94-2.23 5.43-4.74 7.11l7.24 5.62C43.99 36.76 46.5 30.79 46.5 24z"/>
+              <path fill="#FBBC05" d="M10.52 27.6A14.47 14.47 0 0 1 9.5 24c0-1.25.17-2.46.48-3.6l-7.96-6.18A24 24 0 0 0 0 24c0 3.84.9 7.47 2.5 10.68l8.02-7.08z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.9-5.83l-7.24-5.62c-2.01 1.36-4.59 2.16-8.66 2.16-6.26 0-11.7-3.5-13.48-8.52l-8.02 7.08C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="text-center">
+            <button
+              onClick={() => setPhone('+')}
+              disabled={loading}
+              className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors disabled:opacity-60"
+            >
+              Or sign in with phone number
+            </button>
+          </div>
+        </div>
+
+        <div className="text-center text-xs text-gray-500 mb-8">
+          <p>Phone authentication may not work in development.</p>
+          <p>Google Sign-In is recommended for the best experience.</p>
+        </div>
+
+        {/* Powered by AI Badge */}
+        <div className="flex items-center justify-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full">
+            <Brain className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-600">Powered by Advanced AI</span>
+          </div>
+        </div>
+
+        {/* Why Choose NeuraFit Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-center mb-2">Why Choose NeuraFit?</h2>
+          <p className="text-gray-600 text-center mb-8">
+            Experience the perfect blend of cutting-edge AI technology and personalized fitness coaching
+          </p>
+
+          {/* Feature Cards */}
+          <div className="space-y-6">
+            <FeatureCard
+              icon={<Brain className="h-6 w-6" />}
+              title="AI-Powered Workouts"
+              desc="Personalized training plans that adapt to your progress and goals using advanced machine learning."
+              bgColor="bg-blue-50"
+              iconColor="text-blue-600"
+            />
+            <FeatureCard
+              icon={<Target className="h-6 w-6" />}
+              title="Goal-Focused Training"
+              desc="Every workout is optimized to help you reach your specific fitness objectives faster."
+              bgColor="bg-green-50"
+              iconColor="text-green-600"
+            />
+            <FeatureCard
+              icon={<Shield className="h-6 w-6" />}
+              title="Safety First"
+              desc="Built-in injury prevention with form guidance and recovery recommendations."
+              bgColor="bg-orange-50"
+              iconColor="text-orange-600"
+            />
+          </div>
+        </div>
+
+        {/* Phone Auth Modal */}
+        {confirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+              <h3 className="text-lg font-semibold mb-4">Enter Verification Code</h3>
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter 6-digit code"
+                inputMode="numeric"
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirm(null)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={verifyOtp}
+                  disabled={loading || !code}
+                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-60"
+                >
+                  Verify
+                </button>
               </div>
-
-              <p className="text-xs text-white/60">
-                By continuing you agree to our Terms & Privacy.
-              </p>
             </div>
           </div>
+        )}
 
-          {/* Visual / Feature Cards */}
-          <div id="features" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-            <FeatureCard
-              icon={<Zap className="h-5 w-5" />}
-              title="Instant, Personalized Plans"
-              desc="Tell us your goals, experience, equipment & injuries—get a precise plan in seconds using GPT-4o-mini."
-              gradient="from-fuchsia-400 to-pink-400"
-            />
-            <FeatureCard
-              icon={<Timer className="h-5 w-5" />}
-              title="Guided Flow & Rest Timer"
-              desc="Clear instructions, form & safety tips, and an elegant progress-circle rest timer between sets."
-              gradient="from-cyan-400 to-emerald-400"
-            />
-            <FeatureCard
-              icon={<History className="h-5 w-5" />}
-              title="History & Insights"
-              desc="Your completed sessions are saved automatically so you can review progress and repeat favorites."
-              gradient="from-amber-400 to-orange-500"
-            />
+        {/* Phone Input Modal */}
+        {!confirm && phone && phone !== '' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+              <h3 className="text-lg font-semibold mb-4">Enter Phone Number</h3>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="+1 (555) 123-4567"
+                inputMode="tel"
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPhone('')}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={sendOtp}
+                  disabled={loading || !phone}
+                  className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-60"
+                >
+                  Send Code
+                </button>
+                <div id="recaptcha-container"></div>
+              </div>
+            </div>
           </div>
-        </section>
-      </main>
-
-      <footer className="mx-auto max-w-6xl px-6 pb-10 text-center text-sm text-white/50">
-        © {new Date().getFullYear()} Neurafit. All rights reserved.
-      </footer>
+        )}
+      </div>
     </div>
+
   )
 }
 
@@ -188,25 +314,24 @@ function FeatureCard({
   icon,
   title,
   desc,
-  gradient,
+  bgColor,
+  iconColor,
 }: {
   icon: ReactElement
   title: string
   desc: string
-  gradient: string
+  bgColor: string
+  iconColor: string
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition-transform duration-300 ease-out hover:-translate-y-0.5 hover:bg-white/10 hover:border-white/15">
-      <div className={`pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-gradient-to-tr ${gradient} opacity-30 blur-2xl`} />
-      <div className="flex items-start gap-3">
-        <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+    <div className="text-center">
+      <div className={`w-16 h-16 ${bgColor} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+        <div className={iconColor}>
           {icon}
         </div>
-        <div>
-          <h3 className="font-semibold tracking-tight">{title}</h3>
-          <p className="mt-1 text-sm text-white/80 leading-relaxed">{desc}</p>
-        </div>
       </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-600 text-sm leading-relaxed">{desc}</p>
     </div>
   )
 }
