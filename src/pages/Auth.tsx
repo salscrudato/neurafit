@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { auth } from '../lib/firebase'
 import {
-  GoogleAuthProvider, signInWithRedirect,
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
   RecaptchaVerifier, signInWithPhoneNumber
 } from 'firebase/auth'
 import type { ConfirmationResult } from 'firebase/auth'
@@ -17,7 +17,6 @@ export default function Auth() {
 
   // Initialize component
   useEffect(() => {
-    // Just set loading to false on mount - let SessionProvider handle auth state
     setLoading(false)
   }, [])
 
@@ -38,18 +37,34 @@ export default function Auth() {
 
   const googleLogin = async () => {
     setLoading(true)
+    const provider = new GoogleAuthProvider()
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    })
+
     try {
-      const provider = new GoogleAuthProvider()
-      // Add custom parameters to ensure we get a fresh sign-in
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      })
-      await signInWithRedirect(auth, provider)
-      // Note: signInWithRedirect doesn't return immediately, it redirects the page
-      // The result will be handled in the useEffect hook
+      // Try popup first
+      await signInWithPopup(auth, provider)
+      // Success - SessionProvider will handle the rest
     } catch (error: any) {
-      console.error('Error with Google login:', error)
-      alert('Failed to sign in with Google. Please try again.')
+      console.log('Popup failed, trying redirect:', error.code)
+
+      // If popup fails due to COOP or being blocked, fall back to redirect
+      if (error.code === 'auth/popup-blocked' ||
+          error.code === 'auth/popup-closed-by-user' ||
+          error.message?.includes('Cross-Origin-Opener-Policy')) {
+        try {
+          await signInWithRedirect(auth, provider)
+          // Redirect will happen, don't set loading to false
+          return
+        } catch (redirectError: any) {
+          console.error('Redirect also failed:', redirectError)
+          alert('Failed to sign in with Google. Please try again.')
+        }
+      } else {
+        console.error('Google sign-in error:', error)
+        alert('Failed to sign in with Google. Please try again.')
+      }
       setLoading(false)
     }
   }

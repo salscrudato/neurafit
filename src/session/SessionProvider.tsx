@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { onAuthStateChanged, getRedirectResult, type User } from 'firebase/auth'
+import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, db } from '../lib/firebase'
 import { doc, onSnapshot, getDoc } from 'firebase/firestore'
 import type { UserProfile } from './types'
@@ -23,31 +23,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubDoc: (() => void) | null = null
-    let unsubAuth: (() => void) | null = null
 
-    const initializeAuth = async () => {
-      // Handle redirect result first, before setting up the auth listener
-      try {
-        console.log('🔐 SessionProvider: Checking for redirect result...')
-        const result = await getRedirectResult(auth)
-        if (result) {
-          console.log('🔐 SessionProvider: Google sign-in redirect successful:', result.user.email)
-          // The onAuthStateChanged will be triggered automatically after this
-        } else {
-          console.log('🔐 SessionProvider: No redirect result found')
-        }
-      } catch (error: any) {
-        console.error('🔐 SessionProvider: Error handling redirect result:', error)
-        if (error.code === 'auth/account-exists-with-different-credential') {
-          alert('An account already exists with the same email address but different sign-in credentials.')
-        } else if (error.code !== 'auth/popup-closed-by-user') {
-          alert('Failed to complete Google sign-in. Please try again.')
-        }
-      }
-
-      // Now set up the auth state listener
-      unsubAuth = onAuthStateChanged(auth, async (u) => {
-      console.log('🔐 SessionProvider: Auth state changed:', u?.email || 'signed out')
+    // Simple auth state listener - no complex redirect handling
+    const unsubAuth = onAuthStateChanged(auth, async (u) => {
+      console.log('🔐 Auth state:', u?.email || 'signed out')
 
       // Clean up any existing document listener first
       if (unsubDoc) {
@@ -59,39 +38,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setProfile(null)
 
       if (!u) {
-        console.log('🔐 SessionProvider: Setting status to signedOut')
         setStatus('signedOut')
         return
       }
 
-      // 2) load profile once quickly; then keep in sync live
-      console.log('🔐 SessionProvider: Loading profile for user:', u.uid)
+      // Load profile
       setStatus('loading')
       const ref = doc(db, 'users', u.uid)
 
-      // optional fast first read
       try {
         const snap = await getDoc(ref)
         if (snap.exists()) {
           const p = snap.data() as UserProfile
-          console.log('🔐 SessionProvider: Profile found:', JSON.stringify(p, null, 2))
           setProfile(p)
           const isComplete = isProfileComplete(p)
-          console.log('🔐 SessionProvider: Profile complete?', isComplete, {
-            hasExperience: !!p.experience,
-            hasGoals: !!(p.goals && p.goals.length > 0),
-            hasHeight: !!p.personal?.height,
-            hasWeight: !!p.personal?.weight
-          })
+          console.log('🔐 Profile complete:', isComplete)
           setStatus(isComplete ? 'ready' : 'needsOnboarding')
         } else {
-          console.log('🔐 SessionProvider: No profile found, needs onboarding')
+          console.log('🔐 No profile found, needs onboarding')
           setProfile(null)
           setStatus('needsOnboarding')
         }
       } catch (error) {
-        console.warn('🔐 SessionProvider: Error loading profile:', error)
-        // if read fails, still try live stream
+        console.warn('🔐 Error loading profile:', error)
         setProfile(null)
         setStatus('needsOnboarding')
       }
@@ -139,17 +108,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           }
         )
       }, 100) // Small delay to ensure auth state is stable
-      })
-    }
-
-    // Initialize the auth flow
-    initializeAuth()
+    })
 
     return () => {
       // Clean up both auth and document listeners
-      if (unsubAuth) {
-        unsubAuth()
-      }
+      unsubAuth()
       if (unsubDoc) {
         unsubDoc()
       }
