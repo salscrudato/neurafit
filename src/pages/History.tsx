@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { auth, db } from '../lib/firebase'
-import { collection, getDocs, orderBy, query, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 
 export default function History() {
   const [items, setItems] = useState<any[]>([])

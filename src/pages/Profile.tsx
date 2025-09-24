@@ -281,10 +281,11 @@ export default function Profile() {
               selected={draft.injuries?.list ?? []}
               onToggle={(v) =>
                 setDraft(d => {
-                  if (v === 'None') return { ...d, injuries: { ...d.injuries, list: ['None'] } }
-                  const list = (d.injuries?.list ?? []).filter(x => x !== 'None')
+                  const currentInjuries = d.injuries || { list: [], notes: '' }
+                  if (v === 'None') return { ...d, injuries: { ...currentInjuries, list: ['None'] } }
+                  const list = (currentInjuries.list || []).filter(x => x !== 'None')
                   const next = list.includes(v) ? list.filter(x => x !== v) : [...list, v]
-                  return { ...d, injuries: { ...d.injuries, list: next } }
+                  return { ...d, injuries: { ...currentInjuries, list: next } }
                 })
               }
               twoCol
@@ -294,7 +295,10 @@ export default function Profile() {
               rows={3}
               placeholder="Notes (optional)…"
               value={draft.injuries?.notes ?? ''}
-              onChange={(e) => setDraft(d => ({ ...d, injuries: { ...d.injuries, notes: e.target.value } }))}
+              onChange={(e) => setDraft(d => {
+                const currentInjuries = d.injuries || { list: [], notes: '' }
+                return { ...d, injuries: { ...currentInjuries, notes: e.target.value } }
+              })}
             />
           </Section>
         </div>

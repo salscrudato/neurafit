@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { auth } from '../lib/firebase'
 import {
-  GoogleAuthProvider, signInWithPopup,
+  GoogleAuthProvider, signInWithRedirect, getRedirectResult,
   RecaptchaVerifier, signInWithPhoneNumber
 } from 'firebase/auth'
 import type { ConfirmationResult } from 'firebase/auth'
@@ -15,13 +15,41 @@ export default function Auth() {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Invisible reCAPTCHA for phone auth
+  // Handle Google Sign-In redirect result
   useEffect(() => {
-    // Only create recaptcha verifier when we actually need it
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth)
+        if (result) {
+          // User successfully signed in via redirect
+          console.log('Google sign-in successful:', result.user)
+          // SessionProvider will handle the routing automatically
+        }
+      } catch (error: any) {
+        console.error('Error handling redirect result:', error)
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          alert('An account already exists with the same email address but different sign-in credentials.')
+        } else if (error.code !== 'auth/popup-closed-by-user') {
+          alert('Failed to complete Google sign-in. Please try again.')
+        }
+      }
+      // Always set loading to false after handling redirect result
+      setLoading(false)
+    }
+
+    handleRedirectResult()
+  }, [])
+
+  // Cleanup reCAPTCHA on unmount
+  useEffect(() => {
     return () => {
       // Cleanup on unmount
       if ((window as any).recaptchaVerifier) {
-        ;(window as any).recaptchaVerifier.clear()
+        try {
+          ;(window as any).recaptchaVerifier.clear()
+        } catch (e) {
+          // Ignore cleanup errors
+        }
         ;(window as any).recaptchaVerifier = null
       }
     }
@@ -31,19 +59,16 @@ export default function Auth() {
     setLoading(true)
     try {
       const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
+      // Add custom parameters to ensure we get a fresh sign-in
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      })
+      await signInWithRedirect(auth, provider)
+      // Note: signInWithRedirect doesn't return immediately, it redirects the page
+      // The result will be handled in the useEffect hook
     } catch (error: any) {
       console.error('Error with Google login:', error)
-
-      if (error.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, no need to show error
-        return
-      } else if (error.code === 'auth/popup-blocked') {
-        alert('Popup was blocked. Please allow popups for this site and try again.')
-      } else {
-        alert('Failed to sign in with Google. Please try again.')
-      }
-    } finally {
+      alert('Failed to sign in with Google. Please try again.')
       setLoading(false)
     }
   }

@@ -60,6 +60,7 @@ export default function Rest() {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext
       audioCtxRef.current = audioCtxRef.current || new AudioCtx()
       const ctx = audioCtxRef.current
+      if (!ctx) return
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.frequency.value = frequency
