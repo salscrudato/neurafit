@@ -87,17 +87,7 @@ export default function Rest() {
   const togglePause = () => setPaused(p => !p)
   const skip = () => setSec(0)
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === ' ') { e.preventDefault(); togglePause() }
-      if (e.key === 'ArrowRight') { e.preventDefault(); skip() }
-      if (e.key === 'ArrowUp') { e.preventDefault(); addSeconds(+15) }
-      if (e.key === 'ArrowDown') { e.preventDefault(); addSeconds(-15) }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+
 
   // Circular progress
   const r = 54
@@ -187,14 +177,9 @@ export default function Rest() {
             <button
               onClick={skip}
               className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 hover:bg-white/10"
-              title="ArrowRight"
             >
               Skip
             </button>
-          </div>
-
-          <div className="mt-3 text-xs text-white/60">
-            Shortcuts: Space = Pause/Resume · ↑/+15s · ↓/−15s · → Skip
           </div>
         </div>
       </main>

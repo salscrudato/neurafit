@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
+import { Zap, History, User } from 'lucide-react'
+import type { ReactElement } from 'react'
 
 type Workout = {
   workoutType: string
@@ -69,13 +71,13 @@ export default function Dashboard() {
               onClick={() => nav('/generate')}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition"
             >
-              <BoltIcon /> Generate Workout
+              <Zap className="h-5 w-5" /> Generate Workout
             </button>
             <button
               onClick={() => nav('/history')}
               className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-white/90 hover:bg-white/10 transition"
             >
-              <HistoryIcon /> View History
+              <History className="h-5 w-5" /> View History
             </button>
           </div>
         </div>
@@ -87,19 +89,19 @@ export default function Dashboard() {
           title="Generate Workout"
           desc="AI-tailored plans from goals, experience, equipment & injuries."
           gradient="from-fuchsia-400 to-pink-400"
-          icon={<BoltIcon />}
+          icon={<Zap className="h-5 w-5" />}
         />
         <DashCard onClick={() => nav('/history')}
           title="Workout History"
           desc="Auto-saved sessions to review, repeat, and track progress."
           gradient="from-cyan-400 to-emerald-400"
-          icon={<HistoryIcon />}
+          icon={<History className="h-5 w-5" />}
         />
         <DashCard onClick={() => nav('/profile')}
           title="Profile"
           desc="Update goals, equipment, or injuries to keep plans accurate."
           gradient="from-amber-400 to-orange-500"
-          icon={<UserIcon />}
+          icon={<User className="h-5 w-5" />}
         />
       </section>
 
@@ -150,7 +152,7 @@ function DashCard({
 }: {
   title: string
   desc: string
-  icon: JSX.Element
+  icon: ReactElement
   gradient: string
   onClick: () => void
 }) {
@@ -172,27 +174,3 @@ function DashCard({
   )
 }
 
-/* ---------- Inline icons (no external deps) ---------- */
-function BoltIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 3L4 14h7l-1 7 9-11h-7l1-7z" />
-    </svg>
-  )
-}
-function HistoryIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12a9 9 0 1 0 3-6.708M3 3v6h6" />
-      <path strokeLinecap="round" d="M12 7v5l3 2" />
-    </svg>
-  )
-}
-function UserIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 21a8 8 0 1 1 12 0" />
-    </svg>
-  )
-}

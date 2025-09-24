@@ -3,6 +3,32 @@ import { useEffect, useMemo, useState } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
+import {
+  BookOpen,
+  Zap,
+  Trophy,
+  User,
+  Dumbbell,
+  Weight,
+  Zap as ResistanceBand,
+  Circle,
+  Settings,
+  Monitor,
+  Bike,
+  Waves,
+  ArrowUp,
+  Cable,
+  Circle as Ball
+} from 'lucide-react'
+import {
+  EXPERIENCE_LEVELS,
+  GOALS,
+  EQUIPMENT,
+  SEX_OPTIONS,
+  HEIGHT_RANGES,
+  WEIGHT_RANGES,
+  INJURY_OPTIONS
+} from '../config/onboarding'
 
 /** ---------------- DATA ---------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -15,19 +41,7 @@ type Profile = {
   injuries?: Injuries
 }
 
-const EXPERIENCE = ['Beginner', 'Intermediate', 'Expert'] as const
-const GOALS = [
-  'Weight Loss', 'Build Muscle', 'Increase Strength', 'Improve Endurance',
-  'Increase Flexibility', 'Tone Up', 'Sports Performance', 'Overall Health',
-]
-const EQUIP = [
-  'None (Bodyweight)', 'Dumbbells', 'Barbell', 'Kettlebell', 'Resistance Bands',
-  'Bench', 'Pull-up Bar', 'Treadmill', 'Exercise Bike', 'Medicine Ball',
-]
-const SEX = ['Male', 'Female', 'Prefer not to say']
-const HEIGHT = ["<5'0", "5'0–5'5", "5'6–5'9", "5'10–6'1", "6'2–6'5", ">6'5"]
-const WEIGHT = ['<120lb', '120–149', '150–179', '180–209', '210–239', '240+lb']
-const INJURIES = ['None', 'Knee', 'Lower Back', 'Shoulder', 'Ankle', 'Wrist/Elbow', 'Neck', 'Other']
+// Constants are now imported from ../config/onboarding.ts
 
 type Draft = {
   experience: string | null
@@ -50,7 +64,7 @@ function validStep(step: number, d: Draft): boolean {
   switch (step) {
     case 1: return !!d.experience
     case 2: return d.goals.length > 0
-    case 3: return d.equipment.length > 0 // allow "None (Bodyweight)"
+    case 3: return d.equipment.length > 0
     case 4: return !!d.personal.sex && !!d.personal.height && !!d.personal.weight
     case 5: return true
     default: return false
@@ -95,7 +109,7 @@ function SelectCard({
         'group relative w-full rounded-2xl border p-4 text-sm transition',
         'text-left shadow-sm',
         active
-          ? 'border-slate-900 bg-slate-900 text-white'
+          ? 'border-blue-600 bg-blue-600 text-white'
           : 'border-slate-200 bg-white hover:border-slate-300',
         disabled ? 'opacity-50 cursor-not-allowed' : '',
       ].join(' ')}
@@ -105,7 +119,7 @@ function SelectCard({
         className={[
           'absolute right-3 top-3 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[10px]',
           active
-            ? 'bg-emerald-400 text-slate-900 border-emerald-400'
+            ? 'bg-blue-400 text-white border-blue-400'
             : 'bg-white text-transparent border-slate-200 group-hover:text-slate-300',
         ].join(' ')}
       >
@@ -146,8 +160,8 @@ function PrimaryButton({
       className={[
         'px-5 py-2 rounded-lg font-medium',
         disabled
-          ? 'bg-emerald-600/40 text-white/70 pointer-events-none'
-          : 'bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-600',
+          ? 'bg-blue-600/40 text-white/70 pointer-events-none'
+          : 'bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-600',
       ].join(' ')}
     >
       {children}
@@ -298,24 +312,31 @@ export default function Onboarding() {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-3xl px-5 py-6">
+      <div className="mx-auto max-w-3xl px-5 py-6 pb-24">
         <Progress step={step} total={total} />
         <SectionTitle {...header} />
 
         {/* STEP 1 — EXPERIENCE */}
         {step === 1 && (
           <div className="grid gap-3 sm:grid-cols-3">
-            {EXPERIENCE.map((level) => (
+            {EXPERIENCE_LEVELS.map((level) => (
               <SelectCard
                 key={level}
                 active={draft.experience === level}
                 onClick={() => setDraft((d) => ({ ...d, experience: level }))}
               >
-                <div className="text-base">{level}</div>
-                <div className="mt-1 text-xs text-white/80 sm:text-slate-500 sm:group-hover:text-slate-600">
-                  {level === 'Beginner' && 'Start steady & master form'}
-                  {level === 'Intermediate' && 'Progressive overload & balance'}
-                  {level === 'Expert' && 'Advanced programming & intensity'}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`p-2 rounded-lg ${draft.experience === level ? 'bg-blue-500' : 'bg-blue-100'}`}>
+                    {level === 'Beginner' && <BookOpen className={`h-5 w-5 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Intermediate' && <Zap className={`h-5 w-5 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Expert' && <Trophy className={`h-5 w-5 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                  </div>
+                  <div className="text-base font-medium">{level}</div>
+                </div>
+                <div className="text-sm text-white/80 sm:text-slate-600 sm:group-hover:text-slate-700">
+                  {level === 'Beginner' && 'Perfect for those just starting their fitness journey or returning after a break.'}
+                  {level === 'Intermediate' && 'You have consistent training experience and understand basic movement patterns.'}
+                  {level === 'Expert' && 'You have years of training experience and advanced knowledge of programming.'}
                 </div>
               </SelectCard>
             ))}
@@ -333,19 +354,24 @@ export default function Onboarding() {
 
         {/* STEP 3 — EQUIPMENT */}
         {step === 3 && (
-          <MultiGrid
-            items={EQUIP}
-            selected={draft.equipment}
-            onToggle={(v) => setDraft((d) => ({ ...d, equipment: toggle(d.equipment, v, true) }))}
-            allowNone
-          />
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {EQUIPMENT.map((equipment) => (
+              <EquipmentCard
+                key={equipment}
+                equipment={equipment}
+                active={draft.equipment.includes(equipment)}
+                onClick={() => setDraft((d) => ({ ...d, equipment: toggle(d.equipment, equipment) }))}
+              />
+            ))}
+          </div>
         )}
 
         {/* STEP 4 — PERSONAL */}
         {step === 4 && (
           <div className="grid gap-5">
-            <div className="flex flex-wrap gap-2">
-              {SEX.map((s) => (
+            {/* Sex Options - Single Row */}
+            <div className="grid grid-cols-3 gap-3">
+              {SEX_OPTIONS.map((s) => (
                 <SelectCard
                   key={s}
                   active={draft.personal.sex === s}
@@ -355,34 +381,36 @@ export default function Onboarding() {
                 </SelectCard>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="mb-2 text-xs font-medium text-slate-600">Height</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {HEIGHT.map((h) => (
-                    <SelectCard
-                      key={h}
-                      active={draft.personal.height === h}
-                      onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, height: h } }))}
-                    >
-                      {h}
-                    </SelectCard>
-                  ))}
-                </div>
+
+            {/* Height - 2x3 Grid */}
+            <div>
+              <div className="mb-2 text-xs font-medium text-slate-600">Height</div>
+              <div className="grid grid-cols-3 gap-2">
+                {HEIGHT_RANGES.map((h) => (
+                  <SelectCard
+                    key={h}
+                    active={draft.personal.height === h}
+                    onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, height: h } }))}
+                  >
+                    {h}
+                  </SelectCard>
+                ))}
               </div>
-              <div>
-                <div className="mb-2 text-xs font-medium text-slate-600">Weight</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {WEIGHT.map((w) => (
-                    <SelectCard
-                      key={w}
-                      active={draft.personal.weight === w}
-                      onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, weight: w } }))}
-                    >
-                      {w}
-                    </SelectCard>
-                  ))}
-                </div>
+            </div>
+
+            {/* Weight - 2x3 Grid */}
+            <div>
+              <div className="mb-2 text-xs font-medium text-slate-600">Weight</div>
+              <div className="grid grid-cols-3 gap-2">
+                {WEIGHT_RANGES.map((w) => (
+                  <SelectCard
+                    key={w}
+                    active={draft.personal.weight === w}
+                    onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, weight: w } }))}
+                  >
+                    {w}
+                  </SelectCard>
+                ))}
               </div>
             </div>
           </div>
@@ -392,7 +420,7 @@ export default function Onboarding() {
         {step === 5 && (
           <div className="grid gap-4">
             <MultiGrid
-              items={INJURIES}
+              items={INJURY_OPTIONS}
               selected={draft.injuries.list}
               onToggle={(v) =>
                 setDraft((d) => {
@@ -419,8 +447,8 @@ export default function Onboarding() {
         )}
       </div>
 
-      {/* Sticky Footer Nav */}
-      <div className="sticky bottom-0 border-t bg-white/90 backdrop-blur">
+      {/* Fixed Footer Nav */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/90 backdrop-blur">
         <div className="mx-auto max-w-3xl px-5 py-3 flex items-center justify-between">
           <SecondaryButton onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={atStart}>
             Back
@@ -429,7 +457,7 @@ export default function Onboarding() {
           <div className="hidden text-xs text-slate-500 sm:block">
             {step === 1 && 'Tip: Be honest about level—your plan adapts.'}
             {step === 2 && 'Tip: Multiple goals are okay; we’ll balance.'}
-            {step === 3 && 'Tip: Pick “None (Bodyweight)” for no equipment.'}
+            {step === 3 && 'Tip: Select all equipment you have access to.'}
             {step === 4 && 'Tip: Ranges personalize without exact numbers.'}
             {step === 5 && 'Tip: Selecting “None” clears other injuries.'}
           </div>
@@ -448,3 +476,76 @@ export default function Onboarding() {
     </div>
   )
 }
+
+/* ---------- Equipment Card Component ---------- */
+function EquipmentCard({
+  equipment,
+  active,
+  onClick
+}: {
+  equipment: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        relative p-4 rounded-xl border-2 transition-all duration-200 text-center
+        ${active
+          ? 'bg-blue-600 border-blue-600 text-white shadow-lg'
+          : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+        }
+      `}
+    >
+      {active && (
+        <div className="absolute -top-2 -right-2 h-6 w-6 bg-blue-400 rounded-full flex items-center justify-center">
+          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+      )}
+      <div className="flex flex-col items-center space-y-2">
+        <div className={`${active ? 'text-white' : 'text-blue-600'}`}>
+          {getEquipmentIcon(equipment, "h-8 w-8")}
+        </div>
+        <div className="text-sm font-medium leading-tight">
+          {equipment}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+/* ---------- Equipment Icons ---------- */
+function getEquipmentIcon(equipment: string, className: string = "h-6 w-6") {
+  switch (equipment) {
+    case 'Bodyweight':
+      return <User className={className} />
+    case 'Dumbbells':
+      return <Dumbbell className={className} />
+    case 'Barbells':
+      return <Weight className={className} />
+    case 'Resistance Bands':
+      return <ResistanceBand className={className} />
+    case 'Kettlebells':
+      return <Circle className={className} />
+    case 'Medicine Balls':
+      return <Ball className={className} />
+    case 'Weight Machines':
+      return <Settings className={className} />
+    case 'Treadmill':
+      return <Monitor className={className} />
+    case 'Stationary Bike':
+      return <Bike className={className} />
+    case 'Rowing Machine':
+      return <Waves className={className} />
+    case 'Pull-Up Bar':
+      return <ArrowUp className={className} />
+    case 'Cable Machine':
+      return <Cable className={className} />
+    default:
+      return <Circle className={className} />
+  }
+}
+

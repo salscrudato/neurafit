@@ -1,6 +1,7 @@
 // src/pages/workout/Exercise.tsx
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Lightbulb, Shield } from 'lucide-react'
 
 type ExerciseT = {
   name: string
@@ -65,15 +66,7 @@ export default function Exercise() {
     nav('/workout/complete')
   }
 
-  // keyboard shortcuts
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === ' ') { e.preventDefault(); completeSet() } // Space: complete set
-      if (e.key.toLowerCase() === 's') { e.preventDefault(); skipExercise() } // S: skip
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [i, setNo, ex])
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white">
@@ -124,7 +117,7 @@ export default function Exercise() {
           {Array.isArray(ex.formTips) && ex.formTips.length > 0 && (
             <div className="mt-5">
               <div className="mb-1 font-medium flex items-center gap-2">
-                <LightIcon /> Form tips
+                <Lightbulb className="h-4 w-4" /> Form tips
               </div>
               <ul className="list-disc list-inside text-white/80 text-sm space-y-1">
                 {ex.formTips.slice(0, 3).map((t, idx) => <li key={idx}>{t}</li>)}
@@ -134,7 +127,7 @@ export default function Exercise() {
           {Array.isArray(ex.safetyTips) && ex.safetyTips.length > 0 && (
             <div className="mt-4">
               <div className="mb-1 font-medium text-amber-300 flex items-center gap-2">
-                <ShieldIcon /> Safety
+                <Shield className="h-4 w-4" /> Safety
               </div>
               <ul className="list-disc list-inside text-amber-200/90 text-sm space-y-1">
                 {ex.safetyTips.slice(0, 3).map((t, idx) => <li key={idx}>{t}</li>)}
@@ -151,13 +144,13 @@ export default function Exercise() {
             onClick={skipExercise}
             className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white/90 hover:bg-white/10"
           >
-            Skip (S)
+            Skip
           </button>
           <button
             onClick={completeSet}
             className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
           >
-            Complete Set (Space)
+            Complete Set
           </button>
         </div>
       </div>
@@ -187,18 +180,3 @@ function EmptyState() {
   )
 }
 
-/* ---------- Inline icons ---------- */
-function LightIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3M12 18v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M3 12h3M18 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
-    </svg>
-  )
-}
-function ShieldIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z" />
-    </svg>
-  )
-}

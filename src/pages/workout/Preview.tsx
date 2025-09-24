@@ -1,6 +1,7 @@
 // src/pages/workout/Preview.tsx
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Timer, List, Hash, Play, Lightbulb, Shield, ChevronDown } from 'lucide-react'
 
 type Exercise = {
   name: string
@@ -57,9 +58,9 @@ export default function Preview() {
             {type} <span className="text-white/70">—</span> {duration} min
           </h1>
           <div className="mt-3 flex flex-wrap gap-3 text-sm text-white/80">
-            <Badge><ListIcon/> {exercises.length} exercises</Badge>
-            <Badge><HashIcon/> {stats.totalSets} total sets</Badge>
-            <Badge><TimerIcon/> ~{stats.est} min estimated</Badge>
+            <Badge><List className="h-4 w-4" /> {exercises.length} exercises</Badge>
+            <Badge><Hash className="h-4 w-4" /> {stats.totalSets} total sets</Badge>
+            <Badge><Timer className="h-4 w-4" /> ~{stats.est} min estimated</Badge>
           </div>
         </div>
       </section>
@@ -83,7 +84,7 @@ export default function Preview() {
             onClick={() => nav('/workout/run')}
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400 transition"
           >
-            <PlayIcon /> Start Workout
+            <Play className="h-5 w-5" /> Start Workout
           </button>
         </div>
       </div>
@@ -111,7 +112,7 @@ function ExerciseItem({ ex, index }: { ex: Exercise; index: number }) {
             {ex.restSeconds ? <span className="ml-2 text-white/60">• Rest: {ex.restSeconds}s</span> : null}
           </div>
         </div>
-        <CaretIcon open={open} />
+        <ChevronDown className={`h-5 w-5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -119,7 +120,7 @@ function ExerciseItem({ ex, index }: { ex: Exercise; index: number }) {
           {ex.description && <p className="mb-3 leading-relaxed">{ex.description}</p>}
           {!!ex.formTips?.length && (
             <div className="mb-3">
-              <div className="mb-1 font-medium flex items-center gap-2"><LightIcon/> Form tips</div>
+              <div className="mb-1 font-medium flex items-center gap-2"><Lightbulb className="h-4 w-4" /> Form tips</div>
               <ul className="list-disc list-inside text-white/80 space-y-1">
                 {ex.formTips.slice(0,3).map((t, i) => <li key={i}>{t}</li>)}
               </ul>
@@ -127,7 +128,7 @@ function ExerciseItem({ ex, index }: { ex: Exercise; index: number }) {
           )}
           {!!ex.safetyTips?.length && (
             <div>
-              <div className="mb-1 font-medium text-amber-300 flex items-center gap-2"><ShieldIcon/> Safety</div>
+              <div className="mb-1 font-medium text-amber-300 flex items-center gap-2"><Shield className="h-4 w-4" /> Safety</div>
               <ul className="list-disc list-inside text-amber-200/90 space-y-1">
                 {ex.safetyTips.slice(0,3).map((t, i) => <li key={i}>{t}</li>)}
               </ul>
@@ -160,53 +161,3 @@ function Badge({ children }: { children: React.ReactNode }) {
   )
 }
 
-/* ---------------- Inline Icons ---------------- */
-function TimerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <circle cx="12" cy="13" r="8" /><path strokeLinecap="round" d="M12 9v4l3 2" /><path d="M9 3h6" strokeLinecap="round" />
-    </svg>
-  )
-}
-function ListIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-    </svg>
-  )
-}
-function HashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 9h14M5 15h14M9 3L7 21M17 3l-2 18" />
-    </svg>
-  )
-}
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  )
-}
-function LightIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3M12 18v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M3 12h3M18 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
-    </svg>
-  )
-}
-function ShieldIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z" />
-    </svg>
-  )
-}
-function CaretIcon({ open }: { open: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className={`h-5 w-5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}

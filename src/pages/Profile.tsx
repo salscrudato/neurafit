@@ -4,6 +4,15 @@ import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { auth, db } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
+import {
+  EXPERIENCE_LEVELS,
+  GOALS,
+  EQUIPMENT,
+  SEX_OPTIONS,
+  HEIGHT_RANGES,
+  WEIGHT_RANGES,
+  INJURY_OPTIONS
+} from '../config/onboarding'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -16,12 +25,7 @@ type ProfileData = {
   injuries?: Injuries
 }
 
-const EXPERIENCE = ['Beginner','Intermediate','Expert'] as const
-const GOALS = ['Weight Loss','Build Muscle','Increase Strength','Improve Endurance','Increase Flexibility','Tone Up','Sports Performance','Overall Health']
-const EQUIP = ['None (Bodyweight)','Dumbbells','Barbell','Kettlebell','Resistance Bands','Bench','Pull-up Bar','Treadmill','Exercise Bike','Medicine Ball']
-const SEX = ['Male','Female','Prefer not to say']
-const HEIGHT = ["<5'0","5'0–5'5","5'6–5'9","5'10–6'1","6'2–6'5",">6'5"]
-const WEIGHT = ['<120lb','120–149','150–179','180–209','210–239','240+lb']
+// Constants are now imported from ../config/onboarding.ts
 
 /* -------------------- Small UI primitives -------------------- */
 function Section({ title, desc, children }: {title:string; desc?:string; children:React.ReactNode}) {
@@ -194,7 +198,7 @@ export default function Profile() {
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Section title="Experience" desc="We calibrate volume, intensity, and progressions.">
             <div className="flex flex-wrap gap-2">
-              {EXPERIENCE.map(l => (
+              {EXPERIENCE_LEVELS.map(l => (
                 <Pill
                   key={l}
                   active={draft.experience === l}
@@ -216,7 +220,7 @@ export default function Profile() {
 
           <Section title="Equipment" desc="Only movements using your equipment are included.">
             <GridSelect
-              items={EQUIP}
+              items={EQUIPMENT}
               selected={draft.equipment ?? []}
               onToggle={(v) => setDraft(d => ({ ...d, equipment: toggle(d.equipment, v, true) }))}
               twoCol
@@ -228,7 +232,7 @@ export default function Profile() {
             <div className="mb-3">
               <div className="mb-1 text-xs text-slate-600">Sex</div>
               <div className="flex flex-wrap gap-2">
-                {SEX.map(s => (
+                {SEX_OPTIONS.map(s => (
                   <Pill
                     key={s}
                     active={draft.personal?.sex === s}
@@ -243,7 +247,7 @@ export default function Profile() {
               <div>
                 <div className="mb-1 text-xs text-slate-600">Height</div>
                 <div className="grid grid-cols-2 gap-2">
-                  {HEIGHT.map(h => (
+                  {HEIGHT_RANGES.map(h => (
                     <Pill
                       key={h}
                       active={draft.personal?.height === h}
@@ -257,7 +261,7 @@ export default function Profile() {
               <div>
                 <div className="mb-1 text-xs text-slate-600">Weight</div>
                 <div className="grid grid-cols-2 gap-2">
-                  {WEIGHT.map(w => (
+                  {WEIGHT_RANGES.map(w => (
                     <Pill
                       key={w}
                       active={draft.personal?.weight === w}
@@ -273,7 +277,7 @@ export default function Profile() {
 
           <Section title="Injuries" desc="We’ll avoid risky movements and include safe modifications.">
             <GridSelect
-              items={['None','Knee','Lower Back','Shoulder','Ankle','Wrist/Elbow','Neck','Other']}
+              items={INJURY_OPTIONS}
               selected={draft.injuries?.list ?? []}
               onToggle={(v) =>
                 setDraft(d => {
