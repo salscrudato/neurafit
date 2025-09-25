@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https"
 import { defineSecret } from "firebase-functions/params"
 import type { Request, Response } from "express"
 import OpenAI from "openai"
+import { getAdaptiveState, calculateRecentCompletionRate, generateProgressionNote } from "./lib/personalization"
 
 // Define the secret
 const openaiApiKey = defineSecret("OPENAI_API_KEY")
@@ -45,7 +46,37 @@ export const generateWorkout = onRequest(
         injuries,
         workoutType,
         duration,
+        uid,
+        targetIntensity,
+        progressionNote,
       } = req.body || {}
+
+      // Handle adaptive personalization
+      let finalTargetIntensity = targetIntensity || 1.0
+      let finalProgressionNote = progressionNote || ''
+
+      // If uid provided but no targetIntensity, fetch from adaptive state
+      if (uid && !targetIntensity) {
+        try {
+          const adaptiveState = await getAdaptiveState(uid)
+          finalTargetIntensity = adaptiveState.difficultyScalar
+
+          // Calculate recent completion rate if not available
+          let recentCompletion = adaptiveState.recentCompletionRate
+          if (recentCompletion === undefined) {
+            recentCompletion = await calculateRecentCompletionRate(uid)
+          }
+
+          finalProgressionNote = generateProgressionNote(
+            1.0, // baseline
+            finalTargetIntensity,
+            adaptiveState.lastFeedback
+          )
+        } catch (error) {
+          console.error('Error fetching adaptive state:', error)
+          // Continue with defaults
+        }
+      }
 
       // Build a structured prompt for GPT
       // Build a structured prompt for GPT
@@ -60,6 +91,12 @@ User:
 - Height: ${personalInfo?.heightRange || personalInfo?.height || "—"}
 - Weight: ${personalInfo?.weightRange || personalInfo?.weight || "—"}
 - Injuries: ${(injuries?.list?.length ? injuries.list.join(", ") : "None")} ${injuries?.notes ? "(" + injuries.notes + ")" : ""}
+
+TRAINING ADJUSTMENT:
+- targetIntensity: ${finalTargetIntensity.toFixed(2)} where 1.0 is baseline; >1.0 = harder, <1.0 = easier.
+- Safely scale sets/reps/time/load/rest to match targetIntensity; prefer modest increases (≤10%) between sessions unless targetIntensity <0.8 or >1.2.
+- Never violate injuries/equipment constraints.
+${finalProgressionNote ? `- Note: ${finalProgressionNote}` : ''}
 
 REQUIREMENTS:
 - Output ONLY valid JSON (no markdown, no code fences, no prose before/after).
@@ -103,7 +140,17 @@ REQUIREMENTS:
       // Validate JSON output
       try {
         const json = JSON.parse(text)
-        res.json(json)
+
+        // Add metadata to response
+        const response = {
+          ...json,
+          metadata: {
+            targetIntensity: finalTargetIntensity,
+            progressionNote: finalProgressionNote || undefined
+          }
+        }
+
+        res.json(response)
         return
       } catch {
         res.status(502).json({ error: "Bad AI JSON", raw: text })

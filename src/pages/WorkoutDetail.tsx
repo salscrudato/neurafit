@@ -111,6 +111,17 @@ export default function WorkoutDetail() {
     })
   }
 
+  const formatEndTime = (timestamp: any, duration: number) => {
+    if (!timestamp) return 'Unknown time'
+    const startDate = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const endDate = new Date(startDate.getTime() + duration * 60 * 1000) // Add duration in milliseconds
+    return endDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
   const calculateExerciseStats = (exercise: Exercise) => {
     const hasWeights = exercise.weights && Object.values(exercise.weights).some(w => w !== null && w > 0)
     const totalSets = exercise.sets
@@ -166,9 +177,9 @@ export default function WorkoutDetail() {
       <main className="relative max-w-4xl mx-auto px-6 py-8">
         {/* Workout Overview */}
         <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{workout.workoutType}</h1>
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3">{workout.workoutType}</h1>
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
@@ -180,13 +191,11 @@ export default function WorkoutDetail() {
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-blue-600">{workout.duration}</div>
-              <div className="text-sm text-gray-600">
-                {workout.plannedDuration && workout.duration !== workout.plannedDuration
-                  ? `actual (${workout.plannedDuration} planned)`
-                  : 'minutes'
-                }
+            <div className="text-right ml-6">
+              <div className="text-3xl font-bold text-blue-600 mb-1">{workout.duration}</div>
+              <div className="text-sm text-gray-600 mb-2">minutes</div>
+              <div className="text-xs text-gray-500">
+                Ended {formatEndTime(workout.timestamp, workout.duration)}
               </div>
             </div>
           </div>

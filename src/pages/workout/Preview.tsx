@@ -1,8 +1,9 @@
 // src/pages/workout/Preview.tsx
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { List, Hash, Play, Lightbulb, Shield, ChevronDown } from 'lucide-react'
+import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Brain } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
+import { isIntensityCalibrationEnabled } from '../../config/features'
 
 type Exercise = {
   name: string
@@ -22,8 +23,13 @@ export default function Preview() {
   const saved = sessionStorage.getItem('nf_workout_plan')
   if (!saved) return <EmptyState />
 
-  const { plan, type, duration } = JSON.parse(saved) as { plan: Plan; type: string; duration: number }
+  const { plan, type, duration } = JSON.parse(saved) as {
+    plan: Plan & { metadata?: { targetIntensity?: number; progressionNote?: string } };
+    type: string;
+    duration: number
+  }
   const exercises = Array.isArray(plan?.exercises) ? plan.exercises : []
+  const targetIntensity = plan?.metadata?.targetIntensity || 1.0
 
   const totalSets = useMemo(() => {
     return exercises.reduce((s, e) => s + (Number(e.sets) || 0), 0)
@@ -49,6 +55,12 @@ export default function Preview() {
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             <Badge><List className="h-4 w-4" /> {exercises.length} exercises</Badge>
             <Badge><Hash className="h-4 w-4" /> {totalSets} total sets</Badge>
+            {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
+              <Badge className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500">
+                <Brain className="h-3 w-3" />
+                Calibrated: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
+              </Badge>
+            )}
           </div>
         </div>
       </section>
@@ -153,9 +165,9 @@ function EmptyState() {
   )
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+    <span className={className || "inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700"}>
       {children}
     </span>
   )

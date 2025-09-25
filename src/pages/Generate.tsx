@@ -2,9 +2,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 import { EQUIPMENT } from '../config/onboarding'
+import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
+import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
+import { Brain } from 'lucide-react'
 
 const TYPES = [
   'Full Body','Upper Body','Lower Body','Cardio','HIIT','Core Focus',
@@ -28,6 +31,8 @@ export default function Generate() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [targetIntensity, setTargetIntensity] = useState<number>(1.0)
+  const [progressionNote, setProgressionNote] = useState<string>('')
 
   // Fetch profile on mount
   useEffect(() => {
@@ -46,6 +51,11 @@ export default function Generate() {
         setProfile(p)
         // Initialize equipment from profile
         setEquipment(p.equipment || [])
+
+        // Fetch recent workout feedback to determine intensity adjustment
+        if (isAdaptivePersonalizationEnabled()) {
+          await fetchAdaptiveIntensity(uid)
+        }
       } catch (error) {
         console.error('Error fetching profile:', error)
         // If there's a permission error, redirect to auth
@@ -54,6 +64,123 @@ export default function Generate() {
     })()
   }, [nav])
 
+  // Fetch adaptive intensity based on recent workout feedback
+  const fetchAdaptiveIntensity = async (uid: string) => {
+    try {
+      // Get recent workouts with feedback
+      const workoutsRef = collection(db, 'users', uid, 'workouts')
+      const q = query(workoutsRef, orderBy('timestamp', 'desc'), limit(5))
+      const snapshot = await getDocs(q)
+
+      if (snapshot.empty) {
+        setTargetIntensity(1.0)
+        setProgressionNote('')
+        return
+      }
+
+      // Find the most recent workout with feedback
+      let lastFeedback: 'easy' | 'right' | 'hard' | null = null
+      let recentCompletionRate = 0.8 // default
+      let totalSets = 0
+      let completedSets = 0
+
+      snapshot.docs.forEach(doc => {
+        const workout = doc.data()
+
+        // Get the most recent feedback
+        if (!lastFeedback && workout.feedback) {
+          lastFeedback = workout.feedback
+        }
+
+        // Calculate completion rate from all recent workouts
+        if (workout.exercises && Array.isArray(workout.exercises)) {
+          workout.exercises.forEach((exercise: any) => {
+            if (exercise.weights && typeof exercise.weights === 'object') {
+              const setCount = exercise.sets || Object.keys(exercise.weights).length
+              totalSets += setCount
+
+              Object.values(exercise.weights).forEach((weight: any) => {
+                if (weight !== null) {
+                  completedSets++
+                }
+              })
+            } else {
+              totalSets += exercise.sets || 0
+              completedSets += exercise.sets || 0
+            }
+          })
+        }
+      })
+
+      if (totalSets > 0) {
+        recentCompletionRate = completedSets / totalSets
+      }
+
+      // Compute target intensity using the same logic as backend
+      let newIntensity = 1.0 // baseline
+
+      if (lastFeedback) {
+        switch (lastFeedback) {
+          case 'easy':
+            newIntensity += 0.1
+            break
+          case 'hard':
+            newIntensity -= 0.1
+            break
+          case 'right':
+            newIntensity += 0.02
+            break
+        }
+      }
+
+      // Apply completion rate bias
+      if (recentCompletionRate < 0.6) {
+        newIntensity -= 0.05
+      } else if (recentCompletionRate > 0.9) {
+        newIntensity += 0.05
+      }
+
+      // Clamp to safe bounds
+      newIntensity = Math.max(0.6, Math.min(1.4, newIntensity))
+
+      setTargetIntensity(newIntensity)
+
+      // Generate progression note
+      const intensityChange = (newIntensity - 1.0) * 100
+      if (lastFeedback) {
+        const feedbackText = {
+          easy: 'user rated last workout too easy',
+          hard: 'user rated last workout too hard',
+          right: 'user rated last workout just right'
+        }[lastFeedback]
+
+        if (Math.abs(intensityChange) < 1) {
+          setProgressionNote(`${feedbackText}; maintain current difficulty level`)
+        } else {
+          setProgressionNote(
+            intensityChange > 0
+              ? `${feedbackText}; increase difficulty ~${Math.round(Math.abs(intensityChange))}% safely`
+              : `${feedbackText}; decrease difficulty ~${Math.round(Math.abs(intensityChange))}% safely`
+          )
+        }
+      } else {
+        setProgressionNote(
+          newIntensity > 1.0
+            ? `Increase difficulty ~${Math.round((newIntensity - 1.0) * 100)}% safely`
+            : newIntensity < 1.0
+              ? `Decrease difficulty ~${Math.round((1.0 - newIntensity) * 100)}% safely`
+              : 'Maintain baseline difficulty'
+        )
+      }
+
+    } catch (error) {
+      console.error('Error fetching adaptive intensity:', error)
+      logAdaptivePersonalizationError(uid, String(error), 'adaptive_intensity_fetch')
+      setTargetIntensity(1.0)
+      setProgressionNote('')
+    }
+  }
+
   const disabled = !type || !duration || loading
 
   async function generate() {
@@ -61,7 +188,8 @@ export default function Generate() {
     setError(null)
     setLoading(true)
 
-    // Minimal payload
+    // Enhanced payload with adaptive personalization
+    const uid = auth.currentUser?.uid
     const payload = {
       experience: profile.experience,
       goals: profile.goals,
@@ -70,6 +198,9 @@ export default function Generate() {
       injuries: profile.injuries,
       workoutType: type,
       duration,
+      uid,
+      targetIntensity,
+      progressionNote,
     }
 
     const url = import.meta.env.VITE_WORKOUT_FN_URL as string
@@ -89,6 +220,18 @@ export default function Generate() {
         if (!plan?.exercises || !Array.isArray(plan.exercises)) {
           throw new Error('Invalid AI response')
         }
+
+        // Log telemetry for workout generation with intensity
+        if (uid && isAdaptivePersonalizationEnabled()) {
+          logWorkoutGeneratedWithIntensity(
+            uid,
+            targetIntensity,
+            type,
+            duration,
+            Boolean(progressionNote)
+          )
+        }
+
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
         nav('/workout/preview')
       } finally {
@@ -134,6 +277,32 @@ export default function Generate() {
             Tailored to your goals, experience, equipment and injuries—powered by GPT-4o-mini.
           </p>
         </section>
+
+        {/* Intensity Calibration Indicator */}
+        {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
+          <section className="mt-6">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 backdrop-blur-sm p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
+                  <Brain className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900">
+                    Intensity Calibrated: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
+                  </div>
+                  {progressionNote && (
+                    <div className="text-sm text-gray-600 mt-1 capitalize">
+                      {progressionNote}
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Based on your feedback
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Options */}
         <section className="mt-8 space-y-6">

@@ -3,7 +3,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
-import WorkoutTestValidator from '../components/WorkoutTestValidator'
+
 
 export default function TestWorkout() {
   const nav = useNavigate()
@@ -24,7 +24,10 @@ export default function TestWorkout() {
           </button>
         </div>
 
-        <WorkoutTestValidator />
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Test Workout</h2>
+          <p className="text-gray-600">Test functionality has been removed.</p>
+        </div>
       </main>
     </div>
   )

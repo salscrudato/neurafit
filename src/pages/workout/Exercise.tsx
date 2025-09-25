@@ -47,7 +47,7 @@ export default function Exercise() {
         }
       }
       sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      console.log(`🏋️ Weight entered for set ${setNo} of ${ex.name}:`, weight)
+      console.log(`[WEIGHT] Weight entered for set ${setNo} of ${ex.name}:`, weight)
       return updated
     })
   }
@@ -68,7 +68,7 @@ export default function Exercise() {
     const isReturningFromRest = sessionStorage.getItem('nf_return')
     const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
 
-    console.log('🔍 Weight clearing check - returning from rest:', !!isReturningFromRest, 'i:', i, 'setNo:', setNo, 'hasStartTime:', !!hasWorkoutStartTime)
+    console.log('[DEBUG] Weight clearing check - returning from rest:', !!isReturningFromRest, 'i:', i, 'setNo:', setNo, 'hasStartTime:', !!hasWorkoutStartTime)
 
     // Only clear weights if:
     // 1. Not returning from rest AND
@@ -76,17 +76,17 @@ export default function Exercise() {
     // 3. No workout start time (meaning we haven't started the workout yet)
     if (!isReturningFromRest && i === 0 && setNo === 1 && !hasWorkoutStartTime) {
       const hasExistingWeights = sessionStorage.getItem('nf_workout_weights')
-      console.log('🔍 Clearing existing weights for fresh workout:', hasExistingWeights)
+      console.log('[DEBUG] Clearing existing weights for fresh workout:', hasExistingWeights)
       if (hasExistingWeights) {
         sessionStorage.removeItem('nf_workout_weights')
         setWorkoutWeights({})
-        console.log('🧹 Weight data cleared for fresh workout')
+        console.log('[CLEAR] Weight data cleared for fresh workout')
       }
 
       // Set workout start time to prevent future clearing
       if (!hasWorkoutStartTime) {
         sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
-        console.log('⏰ Workout start time set')
+        console.log('[TIME] Workout start time set')
       }
     }
   }, []) // Only run once on mount
@@ -120,7 +120,7 @@ export default function Exercise() {
         }
       }
       sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      console.log(`✅ Set ${setNo} of ${ex.name} marked as COMPLETE:`, updated[i][setNo])
+      console.log(`[COMPLETE] Set ${setNo} of ${ex.name} marked as COMPLETE:`, updated[i][setNo])
       return updated
     })
 
@@ -143,7 +143,7 @@ export default function Exercise() {
         }
       }
       sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      console.log(`❌ Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
+      console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
       return updated
     })
 
