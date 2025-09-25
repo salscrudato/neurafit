@@ -1,5 +1,6 @@
 // src/pages/Auth.tsx
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import {
   GoogleAuthProvider, signInWithPopup, signInWithRedirect
@@ -137,11 +138,14 @@ export default function Auth() {
         </div>
 
         {/* Footer */}
-        <div className="text-center pt-8 border-t border-gray-100">
+        <div className="text-center pt-8 border-t border-gray-100/80">
           <p className="text-xs text-gray-500 leading-relaxed">
-            By continuing, you agree to our terms of service and privacy policy.
+            By continuing, you agree to our{' '}
+            <Link to="/terms" className="text-blue-600 hover:text-blue-700 underline">terms of service</Link>
+            {' '}and{' '}
+            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 underline">privacy policy</Link>.
             <br />
-            <span className="text-gray-400">Secure authentication powered by Google</span>
+            <span className="text-gray-400 font-medium">Secure authentication powered by Google</span>
           </p>
         </div>
       </div>

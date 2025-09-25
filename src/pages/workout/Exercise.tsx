@@ -36,6 +36,7 @@ export default function Exercise() {
   })
 
   // Update weight for current exercise and set
+  // RULE 3: If a set is complete and a weight is entered, the set should be marked as complete and the weight should be stored and displayed
   const updateWeight = (weight: number | null) => {
     setWorkoutWeights(prev => {
       const updated = {
@@ -46,6 +47,7 @@ export default function Exercise() {
         }
       }
       sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+      console.log(`🏋️ Weight entered for set ${setNo} of ${ex.name}:`, weight)
       return updated
     })
   }
@@ -60,15 +62,31 @@ export default function Exercise() {
     }
   }, [])
 
-  // Clear weight data when starting a fresh workout (not returning from rest)
+  // Clear weight data ONLY when starting a completely fresh workout
+  // This should only happen when navigating directly to /workout/run from /workout/preview
   useEffect(() => {
     const isReturningFromRest = sessionStorage.getItem('nf_return')
-    if (!isReturningFromRest && i === 0 && setNo === 1) {
-      // Only clear if we're starting fresh (not returning from rest)
+    const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
+
+    console.log('🔍 Weight clearing check - returning from rest:', !!isReturningFromRest, 'i:', i, 'setNo:', setNo, 'hasStartTime:', !!hasWorkoutStartTime)
+
+    // Only clear weights if:
+    // 1. Not returning from rest AND
+    // 2. At the very beginning (i=0, setNo=1) AND
+    // 3. No workout start time (meaning we haven't started the workout yet)
+    if (!isReturningFromRest && i === 0 && setNo === 1 && !hasWorkoutStartTime) {
       const hasExistingWeights = sessionStorage.getItem('nf_workout_weights')
+      console.log('🔍 Clearing existing weights for fresh workout:', hasExistingWeights)
       if (hasExistingWeights) {
         sessionStorage.removeItem('nf_workout_weights')
         setWorkoutWeights({})
+        console.log('🧹 Weight data cleared for fresh workout')
+      }
+
+      // Set workout start time to prevent future clearing
+      if (!hasWorkoutStartTime) {
+        sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
+        console.log('⏰ Workout start time set')
       }
     }
   }, []) // Only run once on mount
@@ -89,6 +107,46 @@ export default function Exercise() {
   }
 
   const completeSet = () => {
+    // RULE 1: If a set is complete regardless of whether or not a weight is entered,
+    // the set should be marked as complete
+    setWorkoutWeights(prev => {
+      const currentWeight = prev[i]?.[setNo]
+      const updated = {
+        ...prev,
+        [i]: {
+          ...prev[i],
+          // If weight was already entered, keep it; otherwise use 0 to indicate completed set without weight
+          [setNo]: currentWeight !== undefined ? currentWeight : 0
+        }
+      }
+      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+      console.log(`✅ Set ${setNo} of ${ex.name} marked as COMPLETE:`, updated[i][setNo])
+      return updated
+    })
+
+    // more sets remaining in current exercise
+    if (setNo < ex.sets) return goRest(i, setNo + 1)
+    // move to next exercise
+    if (i < list.length - 1) return goRest(i + 1, 1)
+    // workout finished
+    nav('/workout/complete')
+  }
+
+  const skipSet = () => {
+    // RULE 2: If a set is skipped, it should be marked as incomplete
+    setWorkoutWeights(prev => {
+      const updated = {
+        ...prev,
+        [i]: {
+          ...prev[i],
+          [setNo]: null // null indicates skipped set (incomplete)
+        }
+      }
+      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+      console.log(`❌ Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
+      return updated
+    })
+
     // more sets remaining in current exercise
     if (setNo < ex.sets) return goRest(i, setNo + 1)
     // move to next exercise
@@ -195,16 +253,24 @@ export default function Exercise() {
         <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-between gap-3">
           <button
             onClick={skipExercise}
-            className="rounded-xl border border-gray-300 bg-white/70 px-4 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200"
+            className="rounded-xl border border-gray-300 bg-white/70 px-3 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 text-sm"
           >
-            Skip
+            Skip Exercise
           </button>
-          <button
-            onClick={completeSet}
-            className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] transition-all duration-200 shadow-md"
-          >
-            Complete Set
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={skipSet}
+              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200"
+            >
+              Skip Set
+            </button>
+            <button
+              onClick={completeSet}
+              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] transition-all duration-200 shadow-md"
+            >
+              Complete Set
+            </button>
+          </div>
         </div>
       </div>
     </div>

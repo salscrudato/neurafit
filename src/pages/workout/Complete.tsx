@@ -19,6 +19,8 @@ export default function Complete() {
         const savedWeights = sessionStorage.getItem('nf_workout_weights')
         const workoutWeights = savedWeights ? JSON.parse(savedWeights) : {}
 
+
+
         // Calculate actual workout duration
         const startTimeStr = sessionStorage.getItem('nf_workout_start_time')
         const actualDuration = startTimeStr
@@ -30,6 +32,20 @@ export default function Complete() {
           ...exercise,
           weights: workoutWeights[exerciseIndex] || null
         }))
+
+        // Debug: Log the workout data being saved
+        console.log('💾 Saving workout with the following completion data:')
+        exercisesWithWeights.forEach((exercise: any, index: number) => {
+          console.log(`Exercise ${index}: ${exercise.name}`)
+          if (exercise.weights) {
+            Object.entries(exercise.weights).forEach(([setNum, weight]) => {
+              const status = weight === null ? 'SKIPPED' : weight === 0 ? 'COMPLETED (no weight)' : `COMPLETED (${weight}lbs)`
+              console.log(`  Set ${setNum}: ${status}`)
+            })
+          } else {
+            console.log('  No weight data (should not happen with new system)')
+          }
+        })
 
         await addDoc(collection(db, 'users', uid, 'workouts'), {
           timestamp: serverTimestamp(),

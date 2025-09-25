@@ -29,11 +29,20 @@ export default function History() {
           return
         }
 
+        console.log('📚 Loading workout history for user:', uid)
         const q = query(collection(db, 'users', uid, 'workouts'), orderBy('timestamp', 'desc'))
         const snap = await getDocs(q)
-        setItems(snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkoutItem)))
+
+        const workouts = snap.docs.map(d => {
+          const data = d.data()
+          console.log('📋 Raw workout data:', { id: d.id, ...data })
+          return { id: d.id, ...data } as WorkoutItem
+        })
+
+        console.log(`📊 Loaded ${workouts.length} workouts`)
+        setItems(workouts)
       } catch (err: any) {
-        console.error('Error fetching workout history:', err)
+        console.error('❌ Error fetching workout history:', err)
         setError(err.message || 'Failed to load workout history')
       } finally {
         setLoading(false)
@@ -52,44 +61,44 @@ export default function History() {
 
   const calculateWorkoutStats = (workout: WorkoutItem) => {
     if (!workout.exercises || workout.exercises.length === 0) {
-      return { totalExercises: 0, completedExercises: 0, totalSets: 0 }
+      return { totalExercises: 0, completedExercises: 0, totalSets: 0, completedSets: 0, fullyCompletedExercises: 0 }
     }
 
     const totalExercises = workout.exercises.length
-    let completedExercises = 0
+    let completedExercises = 0 // Exercises with ANY completed sets
+    let fullyCompletedExercises = 0 // Exercises with ALL sets completed
     let totalSets = 0
+    let completedSets = 0
 
     workout.exercises.forEach(exercise => {
       totalSets += exercise.sets
 
-      // Use the same completion logic as WorkoutDetail
-      let completedSets = 0
-      const hasWeights = exercise.weights && Object.values(exercise.weights).some(w => w !== null)
+      // Calculate completed sets for this exercise using the exact same logic as WorkoutDetail
+      let exerciseCompletedSets = 0
 
-      if (exercise.usesWeight) {
-        // Weight-based exercise: count sets with recorded weights
-        completedSets = hasWeights ? Object.values(exercise.weights!).filter(w => w !== null).length : 0
+      if (exercise.weights && typeof exercise.weights === 'object') {
+        // Count all entries with non-null values (including 0 which indicates completed sets)
+        // null values indicate skipped sets
+        exerciseCompletedSets = Object.values(exercise.weights).filter(w => w !== null).length
       } else {
-        // Bodyweight exercise
-        if (exercise.weights) {
-          const hasAnyWeightData = Object.keys(exercise.weights).length > 0
-          if (hasAnyWeightData) {
-            completedSets = Object.values(exercise.weights).filter(w => w !== null).length
-          } else {
-            completedSets = 0
-          }
-        } else {
-          // Legacy data - assume completed
-          completedSets = exercise.sets
-        }
+        // No weights data means no sets were tracked (shouldn't happen with new system)
+        exerciseCompletedSets = 0
       }
 
-      if (completedSets === exercise.sets) {
+      completedSets += exerciseCompletedSets
+
+      // Exercise is considered "completed" if it has ANY completed sets
+      if (exerciseCompletedSets > 0) {
         completedExercises++
+      }
+
+      // Track fully completed exercises separately
+      if (exerciseCompletedSets === exercise.sets) {
+        fullyCompletedExercises++
       }
     })
 
-    return { totalExercises, completedExercises, totalSets }
+    return { totalExercises, completedExercises, totalSets, completedSets, fullyCompletedExercises }
   }
 
   if (loading) {
@@ -168,7 +177,25 @@ export default function History() {
           <div className="space-y-4">
             {items.map(workout => {
               const stats = calculateWorkoutStats(workout)
-              const completionRate = stats.totalExercises > 0 ? Math.round((stats.completedExercises / stats.totalExercises) * 100) : 0
+
+              // Calculate completion rate based on sets completed, not exercises
+              const setCompletionRate = stats.totalSets > 0 ? Math.round((stats.completedSets / stats.totalSets) * 100) : 0
+              const exerciseCompletionRate = stats.totalExercises > 0 ? Math.round((stats.completedExercises / stats.totalExercises) * 100) : 0
+
+              // Use set completion rate as the primary metric
+              const completionRate = setCompletionRate
+
+              // Debug logging for workout stats
+              console.log(`📊 Workout "${workout.workoutType}" stats:`, {
+                totalExercises: stats.totalExercises,
+                completedExercises: stats.completedExercises,
+                fullyCompletedExercises: stats.fullyCompletedExercises,
+                totalSets: stats.totalSets,
+                completedSets: stats.completedSets,
+                setCompletionRate: setCompletionRate,
+                exerciseCompletionRate: exerciseCompletionRate,
+                finalCompletionRate: completionRate
+              })
 
               return (
                 <button
@@ -196,13 +223,20 @@ export default function History() {
                       <div className="flex items-center gap-2 mb-1">
                         {completionRate === 100 ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : completionRate > 0 ? (
+                          <div className="h-5 w-5 rounded-full bg-orange-100 flex items-center justify-center">
+                            <div className="h-2 w-2 rounded-full bg-orange-500" />
+                          </div>
                         ) : (
-                          <XCircle className="h-5 w-5 text-orange-500" />
+                          <XCircle className="h-5 w-5 text-red-500" />
                         )}
                         <span className="text-sm font-medium text-gray-700">{completionRate}%</span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        {stats.completedExercises}/{stats.totalExercises} exercises
+                        {stats.completedSets}/{stats.totalSets} sets completed
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {stats.completedExercises}/{stats.totalExercises} exercises started
                       </div>
                     </div>
                   </div>
@@ -212,17 +246,27 @@ export default function History() {
                     <div className="border-t border-gray-100 pt-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {workout.exercises.slice(0, 4).map((exercise, index) => {
-                          const hasWeights = exercise.weights && Object.values(exercise.weights).some(w => w !== null)
-                          const avgWeight = hasWeights
-                            ? Math.round(Object.values(exercise.weights!).filter(w => w !== null).reduce((sum, w) => sum + (w || 0), 0) / Object.values(exercise.weights!).filter(w => w !== null).length)
-                            : null
+                          // Calculate average weight more safely
+                          let avgWeight = null
+                          let completedSets = 0
+
+                          if (exercise.weights && typeof exercise.weights === 'object') {
+                            const weights = Object.values(exercise.weights).filter(w => w !== null && w > 0) as number[]
+                            completedSets = Object.values(exercise.weights).filter(w => w !== null).length
+
+                            if (weights.length > 0) {
+                              avgWeight = Math.round(weights.reduce((sum, w) => sum + w, 0) / weights.length)
+                            }
+                          }
 
                           return (
                             <div key={index} className="text-sm text-gray-700">
                               <span className="font-medium">{exercise.name}</span>
                               <span className="text-gray-500 ml-2">
-                                {exercise.sets}×{exercise.reps}
-                                {avgWeight && <span className="text-blue-600 ml-1">@ {avgWeight}lbs</span>}
+                                {completedSets}/{exercise.sets} sets
+                                {avgWeight && exercise.usesWeight && (
+                                  <span className="text-blue-600 ml-1">@ {avgWeight}lbs</span>
+                                )}
                               </span>
                             </div>
                           )

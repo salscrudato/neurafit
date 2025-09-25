@@ -1,0 +1,224 @@
+[
+  {
+    "workoutType": "Upper Body Strength",
+    "duration": 45,
+    "plannedDuration": 45,
+    "timestamp": "2025-09-23T12:04:58.727Z",
+    "exercises": [
+      {
+        "name": "Push-ups",
+        "sets": 3,
+        "reps": 12,
+        "usesWeight": false,
+        "description": "Classic bodyweight exercise for chest, shoulders, and triceps",
+        "formTips": [
+          "Keep your body straight",
+          "Lower chest to floor",
+          "Push up explosively"
+        ],
+        "safetyTips": [
+          "Don't let hips sag",
+          "Keep core engaged"
+        ],
+        "restSeconds": 60,
+        "weights": {
+          "1": 0,
+          "2": 0,
+          "3": null
+        }
+      },
+      {
+        "name": "Dumbbell Bench Press",
+        "sets": 4,
+        "reps": 10,
+        "usesWeight": true,
+        "description": "Compound exercise targeting chest, shoulders, and triceps",
+        "formTips": [
+          "Control the weight",
+          "Full range of motion",
+          "Squeeze chest at top"
+        ],
+        "safetyTips": [
+          "Use spotter if needed",
+          "Don't bounce weight off chest"
+        ],
+        "restSeconds": 90,
+        "weights": {
+          "1": 135,
+          "2": 135,
+          "3": 140,
+          "4": 140
+        }
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "usesWeight": true,
+        "description": "Overhead pressing movement for shoulder development",
+        "formTips": [
+          "Press straight up",
+          "Keep core tight",
+          "Control the descent"
+        ],
+        "safetyTips": [
+          "Don't arch back excessively",
+          "Warm up shoulders first"
+        ],
+        "restSeconds": 75,
+        "weights": {
+          "1": 65,
+          "2": null,
+          "3": 70
+        }
+      }
+    ]
+  },
+  {
+    "workoutType": "Lower Body Power",
+    "duration": 35,
+    "plannedDuration": 40,
+    "timestamp": "2025-09-24T12:04:58.727Z",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 15,
+        "usesWeight": false,
+        "description": "Fundamental lower body movement",
+        "formTips": [
+          "Keep chest up",
+          "Knees track over toes",
+          "Full depth"
+        ],
+        "safetyTips": [
+          "Don't let knees cave in",
+          "Keep weight on heels"
+        ],
+        "restSeconds": 45,
+        "weights": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": null
+        }
+      },
+      {
+        "name": "Goblet Squats",
+        "sets": 3,
+        "reps": 12,
+        "usesWeight": true,
+        "description": "Weighted squat variation with dumbbell",
+        "formTips": [
+          "Hold weight at chest",
+          "Elbows down",
+          "Slow descent"
+        ],
+        "safetyTips": [
+          "Don't round back",
+          "Control the weight"
+        ],
+        "restSeconds": 60,
+        "weights": {
+          "1": 35,
+          "2": 40,
+          "3": 40
+        }
+      },
+      {
+        "name": "Lunges",
+        "sets": 2,
+        "reps": "10 each leg",
+        "usesWeight": false,
+        "description": "Single-leg strength and stability exercise",
+        "formTips": [
+          "Step forward",
+          "90-degree angles",
+          "Push back to start"
+        ],
+        "safetyTips": [
+          "Don't let knee touch ground",
+          "Keep torso upright"
+        ],
+        "restSeconds": 60,
+        "weights": {
+          "1": null,
+          "2": null
+        }
+      }
+    ]
+  },
+  {
+    "workoutType": "Full Body Circuit",
+    "duration": 25,
+    "plannedDuration": 30,
+    "timestamp": "2025-09-25T12:04:58.727Z",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 3,
+        "reps": 8,
+        "usesWeight": false,
+        "description": "Full body explosive movement",
+        "formTips": [
+          "Jump up explosively",
+          "Land softly",
+          "Maintain rhythm"
+        ],
+        "safetyTips": [
+          "Don't slam down",
+          "Modify if needed"
+        ],
+        "restSeconds": 90,
+        "weights": {
+          "1": 0,
+          "2": 0,
+          "3": 0
+        }
+      },
+      {
+        "name": "Dumbbell Rows",
+        "sets": 3,
+        "reps": 12,
+        "usesWeight": true,
+        "description": "Back strengthening exercise",
+        "formTips": [
+          "Pull to hip",
+          "Squeeze shoulder blades",
+          "Control descent"
+        ],
+        "safetyTips": [
+          "Don't round back",
+          "Keep core tight"
+        ],
+        "restSeconds": 60,
+        "weights": {
+          "1": 25,
+          "2": 30,
+          "3": 30
+        }
+      },
+      {
+        "name": "Plank",
+        "sets": 2,
+        "reps": "45 seconds",
+        "usesWeight": false,
+        "description": "Core stability exercise",
+        "formTips": [
+          "Straight line",
+          "Engage core",
+          "Breathe normally"
+        ],
+        "safetyTips": [
+          "Don't let hips sag",
+          "Stop if form breaks"
+        ],
+        "restSeconds": 60,
+        "weights": {
+          "1": 0,
+          "2": 0
+        }
+      }
+    ]
+  }
+]

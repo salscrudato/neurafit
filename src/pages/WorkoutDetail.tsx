@@ -112,44 +112,30 @@ export default function WorkoutDetail() {
   }
 
   const calculateExerciseStats = (exercise: Exercise) => {
-    const hasWeights = exercise.weights && Object.values(exercise.weights).some(w => w !== null)
+    const hasWeights = exercise.weights && Object.values(exercise.weights).some(w => w !== null && w > 0)
     const totalSets = exercise.sets
 
-    // For weight-based exercises, count completed sets based on recorded weights
-    // For bodyweight exercises, we need a different approach since they don't have weights
     let completedSets = 0
     let isCompleted = false
 
-    if (exercise.usesWeight) {
-      // Weight-based exercise: count sets with recorded weights
-      completedSets = hasWeights ? Object.values(exercise.weights!).filter(w => w !== null).length : 0
-      isCompleted = completedSets === totalSets
+    if (exercise.weights) {
+      // Count all entries with non-null values (including 0 which indicates completed sets)
+      // null values indicate skipped sets
+      completedSets = Object.values(exercise.weights).filter(w => w !== null).length
     } else {
-      // Bodyweight exercise: if weights object exists but is empty/null, it was likely skipped
-      // If no weights object exists at all, assume it was completed (legacy data)
-      if (exercise.weights) {
-        // Check if any weights were recorded (shouldn't be for bodyweight, but indicates completion tracking)
-        const hasAnyWeightData = Object.keys(exercise.weights).length > 0
-        if (hasAnyWeightData) {
-          // Count non-null entries as completed sets (even if weight is 0 for bodyweight)
-          completedSets = Object.values(exercise.weights).filter(w => w !== null).length
-        } else {
-          // No weight data recorded, likely skipped
-          completedSets = 0
-        }
-      } else {
-        // Legacy data without weights tracking - assume completed
-        completedSets = totalSets
-      }
-      isCompleted = completedSets === totalSets
+      // No weights data means no sets were tracked (shouldn't happen with new system)
+      completedSets = 0
     }
+    // Exercise is considered completed if it has ANY completed sets (consistent with History.tsx)
+    isCompleted = completedSets > 0
 
     let avgWeight = null
     let maxWeight = null
     let minWeight = null
 
     if (hasWeights && exercise.usesWeight) {
-      const weights = Object.values(exercise.weights!).filter(w => w !== null) as number[]
+      // Only consider actual weight values (> 0) for statistics, not completion markers (0)
+      const weights = Object.values(exercise.weights!).filter(w => w !== null && w > 0) as number[]
       if (weights.length > 0) {
         avgWeight = Math.round(weights.reduce((sum, w) => sum + w, 0) / weights.length)
         maxWeight = Math.max(...weights)
@@ -263,12 +249,12 @@ export default function WorkoutDetail() {
                   </div>
                 </div>
 
-                {/* Weight Information */}
-                {stats.hasWeights && (
+                {/* Weight Summary for weight-based exercises */}
+                {stats.hasWeights && exercise.usesWeight && (
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Weight className="h-4 w-4 text-gray-600" />
-                      <span className="font-medium text-gray-900">Weight Details</span>
+                      <span className="font-medium text-gray-900">Weight Summary</span>
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div className="text-center">
@@ -284,27 +270,53 @@ export default function WorkoutDetail() {
                         <div className="text-gray-600">Min</div>
                       </div>
                     </div>
-                    
-                    {/* Individual Set Weights */}
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="text-xs text-gray-600 mb-2">Set-by-set weights:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(exercise.weights!).map(([setNum, weight]) => (
-                          <span
-                            key={setNum}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              weight !== null
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-500'
-                            }`}
-                          >
-                            Set {setNum}: {weight !== null ? `${weight}lbs` : 'Not recorded'}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 )}
+
+                {/* Set-by-Set Details */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-medium text-gray-900">Set Details</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {Array.from({ length: exercise.sets }, (_, i) => {
+                      const setNumber = i + 1
+                      const weight = exercise.weights?.[setNumber]
+
+                      // Determine if set is completed
+                      // weight === null means skipped
+                      // weight === 0 means completed without weight
+                      // weight > 0 means completed with weight
+                      // weight === undefined means set was never attempted (shouldn't happen)
+                      const isCompleted = weight !== null && weight !== undefined
+                      const wasAttempted = weight !== undefined
+
+                      return (
+                        <div
+                          key={setNumber}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium text-center ${
+                            !wasAttempted
+                              ? 'bg-gray-100 text-gray-600 border border-gray-200'
+                              : isCompleted
+                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              : 'bg-red-100 text-red-800 border border-red-200'
+                          }`}
+                        >
+                          <div className="font-semibold">Set {setNumber}</div>
+                          <div className="text-xs mt-1">
+                            {!wasAttempted ? (
+                              'Not attempted'
+                            ) : isCompleted ? (
+                              exercise.usesWeight && weight > 0 ? `${weight}lbs` : 'Completed'
+                            ) : (
+                              'Skipped'
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
 
 
               </div>

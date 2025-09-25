@@ -11,6 +11,7 @@ import Complete from './pages/workout/Complete'
 import History from './pages/History'
 import WorkoutDetail from './pages/WorkoutDetail'
 import Profile from './pages/Profile'
+import TestWorkout from './pages/TestWorkout'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 
@@ -119,6 +120,14 @@ export default function App() {
           element={
             <RequireProfile>
               <Profile />
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/test-workout"
+          element={
+            <RequireProfile>
+              <TestWorkout />
             </RequireProfile>
           }
         />
