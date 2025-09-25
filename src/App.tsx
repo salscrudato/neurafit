@@ -11,6 +11,9 @@ import Complete from './pages/workout/Complete'
 import History from './pages/History'
 import WorkoutDetail from './pages/WorkoutDetail'
 import Profile from './pages/Profile'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
+
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
 
@@ -28,6 +31,11 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <Routes>
+
+        {/* Public legal pages */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+
         {/* Landing: decides where to send user */}
         <Route path="/" element={<HomeGate authPage={<Auth />} />} />
 
