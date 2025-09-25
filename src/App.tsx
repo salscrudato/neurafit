@@ -17,16 +17,35 @@ import Privacy from './pages/Privacy'
 
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
+import { versionManager } from './utils/version'
 
 export default function App() {
-  // Initialize mobile optimizations
+  // Initialize mobile optimizations and version management
   useEffect(() => {
     const cleanupOrientation = lockOrientation()
     const cleanupZoom = preventZoom()
 
+    // Initialize version management
+    if (versionManager.isFirstRun()) {
+      console.log('First run or updated version detected')
+      versionManager.storeVersionInfo()
+    }
+
+    // Start version checking (check every minute)
+    versionManager.startVersionChecking(60000)
+
+    // Listen for version updates
+    const handleVersionUpdate = () => {
+      console.log('Version update detected by version manager')
+    }
+
+    window.addEventListener('versionUpdate', handleVersionUpdate)
+
     return () => {
       cleanupOrientation()
       cleanupZoom()
+      versionManager.stopVersionChecking()
+      window.removeEventListener('versionUpdate', handleVersionUpdate)
     }
   }, [])
   return (

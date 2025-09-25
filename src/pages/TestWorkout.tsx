@@ -1,5 +1,5 @@
 // src/pages/TestWorkout.tsx
-import React from 'react'
+// TestWorkout page removed React import as it's not needed
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import AppHeader from '../components/AppHeader'

@@ -3,13 +3,21 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import {
-  GoogleAuthProvider, signInWithPopup, signInWithRedirect
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword
 } from 'firebase/auth'
-import { Zap, Brain, Target, Shield } from 'lucide-react'
+import { Zap, Brain, Target, Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import type { ReactElement } from 'react'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
 
   // Initialize component
   useEffect(() => {
@@ -48,6 +56,93 @@ export default function Auth() {
       }
       setLoading(false)
     }
+  }
+
+  const validateForm = () => {
+    let isValid = true
+    setEmailError('')
+    setPasswordError('')
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email) {
+      setEmailError('Email is required')
+      isValid = false
+    } else if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address')
+      isValid = false
+    }
+
+    // Password validation
+    if (!password) {
+      setPasswordError('Password is required')
+      isValid = false
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters')
+      isValid = false
+    }
+
+    // Confirm password validation for signup
+    if (authMode === 'signup' && password !== confirmPassword) {
+      setPasswordError('Passwords do not match')
+      isValid = false
+    }
+
+    return isValid
+  }
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) return
+
+    setLoading(true)
+
+    try {
+      if (authMode === 'signup') {
+        await createUserWithEmailAndPassword(auth, email, password)
+      } else {
+        await signInWithEmailAndPassword(auth, email, password)
+      }
+      // Success - SessionProvider will handle the rest
+    } catch (error: any) {
+      console.error('Email auth error:', error)
+
+      // Handle specific Firebase auth errors
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          setEmailError('An account with this email already exists')
+          break
+        case 'auth/weak-password':
+          setPasswordError('Password is too weak')
+          break
+        case 'auth/user-not-found':
+          setEmailError('No account found with this email')
+          break
+        case 'auth/wrong-password':
+          setPasswordError('Incorrect password')
+          break
+        case 'auth/invalid-email':
+          setEmailError('Invalid email address')
+          break
+        case 'auth/too-many-requests':
+          setPasswordError('Too many failed attempts. Please try again later.')
+          break
+        default:
+          setPasswordError('Authentication failed. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleAuthMode = () => {
+    setAuthMode(authMode === 'signin' ? 'signup' : 'signin')
+    setEmail('')
+    setPassword('')
+    setConfirmPassword('')
+    setEmailError('')
+    setPasswordError('')
   }
 
 
@@ -99,6 +194,112 @@ export default function Auth() {
               {loading ? 'Signing in...' : 'Continue with Google'}
             </span>
           </button>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-gray-500 font-medium">or</span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            {/* Email Input */}
+            <div>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className={`w-full pl-12 pr-4 py-4 rounded-2xl border font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
+                    emailError
+                      ? 'border-red-300 bg-red-50/50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                  disabled={loading}
+                />
+              </div>
+              {emailError && (
+                <p className="mt-2 text-sm text-red-600 font-medium">{emailError}</p>
+              )}
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className={`w-full pl-12 pr-12 py-4 rounded-2xl border font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 ${
+                    passwordError
+                      ? 'border-red-300 bg-red-50/50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+              {passwordError && (
+                <p className="mt-2 text-sm text-red-600 font-medium">{passwordError}</p>
+              )}
+            </div>
+
+            {/* Confirm Password Input (only for signup) */}
+            {authMode === 'signup' && (
+              <div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 bg-white hover:border-gray-300 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+            >
+              {loading ? 'Please wait...' : (authMode === 'signup' ? 'Create Account' : 'Sign In')}
+            </button>
+
+            {/* Toggle Auth Mode */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={toggleAuthMode}
+                disabled={loading}
+                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200 disabled:opacity-60"
+              >
+                {authMode === 'signup'
+                  ? 'Already have an account? Sign in'
+                  : "Don't have an account? Sign up"
+                }
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* Why Choose NeuraFit Section */}
@@ -145,7 +346,7 @@ export default function Auth() {
             {' '}and{' '}
             <Link to="/privacy" className="text-blue-600 hover:text-blue-700 underline">privacy policy</Link>.
             <br />
-            <span className="text-gray-400 font-medium">Secure authentication powered by Google</span>
+            <span className="text-gray-400 font-medium">Secure authentication powered by Firebase • v1.0.0</span>
           </p>
         </div>
       </div>

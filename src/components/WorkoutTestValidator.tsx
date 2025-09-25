@@ -1,5 +1,5 @@
 // src/components/WorkoutTestValidator.tsx
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { addDoc, collection, getDocs, query, orderBy } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
 
@@ -178,14 +178,14 @@ export default function WorkoutTestValidator() {
       addResult(`✅ Retrieved ${workouts.length} workout(s)`)
 
       // Find our test workout
-      const savedWorkout = workouts.find(w => w.workoutType === testWorkout.workoutType)
+      const savedWorkout: any = workouts.find((w: any) => w.workoutType === testWorkout.workoutType)
       if (savedWorkout) {
         addResult("✅ Test workout found in history")
-        
+
         // Validate the saved data structure
         if (savedWorkout.exercises && Array.isArray(savedWorkout.exercises)) {
           addResult("✅ Exercises array structure correct")
-          
+
           savedWorkout.exercises.forEach((exercise: any, index: number) => {
             if (exercise.weights && typeof exercise.weights === 'object') {
               addResult(`✅ Exercise ${index + 1} weights structure correct`)
