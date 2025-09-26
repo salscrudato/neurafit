@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuraFit - Social Sharing Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .preview-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            background: #f9fafb;
+        }
+        .preview-image {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-right: 1rem;
+            float: left;
+        }
+        .test-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border-left: 4px solid #3b82f6;
+            background: #eff6ff;
+        }
+        .test-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .test-link:hover {
+            background: #2563eb;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status.good { background: #dcfce7; color: #166534; }
+        .status.warning { background: #fef3c7; color: #92400e; }
+        .logo-preview {
+            width: 64px;
+            height: 64px;
+            margin-right: 1rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 NeuraFit Social Sharing & SEO Test Suite</h1>
+        <p>This page helps you test and validate all the social sharing and SEO improvements made to your NeuraFit app.</p>
+        
+        <div class="test-section">
+            <h2>📱 Favicon & Icon Tests</h2>
+            <div class="preview-card">
+                <img src="/logo.svg" alt="Logo SVG" class="logo-preview">
+                <strong>Primary Logo (SVG)</strong> <span class="status good">✓ Active</span><br>
+                <small>Used for modern browsers and high-resolution displays</small>
+            </div>
+            <div class="preview-card">
+                <img src="/favicon-32x32.png" alt="Favicon 32x32" class="logo-preview">
+                <strong>Favicon 32x32</strong> <span class="status good">✓ Active</span><br>
+                <small>Standard browser tab icon</small>
+            </div>
+            <div class="preview-card">
+                <img src="/apple-touch-icon.png" alt="Apple Touch Icon" class="logo-preview">
+                <strong>Apple Touch Icon</strong> <span class="status good">✓ Active</span><br>
+                <small>iOS home screen icon</small>
+            </div>
+            <div class="preview-card">
+                <img src="/android-chrome-512x512.png" alt="Android Chrome 512" class="logo-preview">
+                <strong>Android Chrome 512x512</strong> <span class="status good">✓ Active</span><br>
+                <small>Android home screen and splash screen</small>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔗 Social Media Sharing Tests</h2>
+            <p>Test how your app appears when shared on different platforms:</p>
+            
+            <h3>Facebook Debugger</h3>
+            <a href="https://developers.facebook.com/tools/debug/?q=https://neurafit-ai-2025.web.app/" 
+               class="test-link" target="_blank">Test Facebook Sharing</a>
+            <p><small>Validates Open Graph tags and shows preview</small></p>
+            
+            <h3>Twitter Card Validator</h3>
+            <a href="https://cards-dev.twitter.com/validator" 
+               class="test-link" target="_blank">Test Twitter Cards</a>
+            <p><small>Enter your URL: https://neurafit-ai-2025.web.app/</small></p>
+            
+            <h3>LinkedIn Post Inspector</h3>
+            <a href="https://www.linkedin.com/post-inspector/" 
+               class="test-link" target="_blank">Test LinkedIn Sharing</a>
+            <p><small>Validates how your app appears in LinkedIn posts</small></p>
+            
+            <h3>WhatsApp Link Preview</h3>
+            <p><small>Send this link in WhatsApp to test: https://neurafit-ai-2025.web.app/</small></p>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔍 SEO & Technical Tests</h2>
+            
+            <h3>Google Rich Results Test</h3>
+            <a href="https://search.google.com/test/rich-results?url=https://neurafit-ai-2025.web.app/" 
+               class="test-link" target="_blank">Test Rich Results</a>
+            
+            <h3>Google Mobile-Friendly Test</h3>
+            <a href="https://search.google.com/test/mobile-friendly?url=https://neurafit-ai-2025.web.app/" 
+               class="test-link" target="_blank">Test Mobile Friendliness</a>
+            
+            <h3>PageSpeed Insights</h3>
+            <a href="https://pagespeed.web.dev/?url=https://neurafit-ai-2025.web.app/" 
+               class="test-link" target="_blank">Test Performance</a>
+            
+            <h3>PWA Manifest Validator</h3>
+            <a href="https://manifest-validator.appspot.com/" 
+               class="test-link" target="_blank">Validate PWA Manifest</a>
+            <p><small>Enter your manifest URL: https://neurafit-ai-2025.web.app/manifest.json</small></p>
+        </div>
+        
+        <div class="test-section">
+            <h2>📊 Analytics & Monitoring</h2>
+            
+            <h3>Google Search Console</h3>
+            <a href="https://search.google.com/search-console" 
+               class="test-link" target="_blank">Monitor Search Performance</a>
+            <p><small>Add your property: https://neurafit-ai-2025.web.app/</small></p>
+            
+            <h3>Bing Webmaster Tools</h3>
+            <a href="https://www.bing.com/webmasters" 
+               class="test-link" target="_blank">Monitor Bing Search</a>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 Quick Share Links</h2>
+            <p>Use these optimized sharing links for marketing:</p>
+            
+            <div style="background: white; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+                <strong>Facebook:</strong><br>
+                <code style="font-size: 0.9rem; background: #f3f4f6; padding: 0.25rem;">https://www.facebook.com/sharer/sharer.php?u=https://neurafit-ai-2025.web.app/</code>
+            </div>
+            
+            <div style="background: white; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+                <strong>Twitter:</strong><br>
+                <code style="font-size: 0.9rem; background: #f3f4f6; padding: 0.25rem;">https://twitter.com/intent/tweet?url=https://neurafit-ai-2025.web.app/&text=Transform%20your%20fitness%20with%20NeuraFit%27s%20AI-powered%20workout%20generator!</code>
+            </div>
+            
+            <div style="background: white; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+                <strong>LinkedIn:</strong><br>
+                <code style="font-size: 0.9rem; background: #f3f4f6; padding: 0.25rem;">https://www.linkedin.com/sharing/share-offsite/?url=https://neurafit-ai-2025.web.app/</code>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+            <a href="/" style="display: inline-block; padding: 1rem 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                ← Back to NeuraFit App
+            </a>
+        </div>
+    </div>
+</body>
+</html>
