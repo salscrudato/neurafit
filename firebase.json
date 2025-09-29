@@ -109,7 +109,7 @@
       }
     ],
     "predeploy": [
-      "npm run build"
+      "npm run build:deploy"
     ]
   },
   "firestore": {
