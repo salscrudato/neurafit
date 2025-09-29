@@ -1,6 +1,6 @@
 // src/components/MobileEnhancements.tsx
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronUp, X, Check, Minus, Plus } from 'lucide-react'
+import { X, Check, Minus, Plus } from 'lucide-react'
 
 // Enhanced Bottom Sheet Component
 interface BottomSheetProps {

@@ -1,5 +1,5 @@
 // src/components/EnhancedRestTimer.tsx
-import React, { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Play, Pause, SkipForward, Plus, Minus } from 'lucide-react'
 import { CircularProgress, NextExercisePreview } from './WorkoutProgress'
 

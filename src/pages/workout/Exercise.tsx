@@ -109,7 +109,13 @@ export default function Exercise() {
       console.log('[DEBUG] Clearing existing weights for fresh workout:', hasExistingWeights)
       if (hasExistingWeights) {
         sessionStorage.removeItem('nf_workout_weights')
-        setWorkoutWeights({})
+        // Clear weights using optimistic update
+        const clearAction = {
+          optimisticUpdate: () => ({}),
+          serverUpdate: async () => ({}),
+          rollback: () => initialWeights
+        }
+        weightState.executeOptimisticUpdate(clearAction)
         console.log('[CLEAR] Weight data cleared for fresh workout')
       }
 
@@ -273,14 +279,27 @@ export default function Exercise() {
 
   const skipExercise = () => {
     // Mark this exercise as skipped by creating an empty weights object
-    setWorkoutWeights(prev => {
-      const updated = {
-        ...prev,
-        [i]: {} // Empty object indicates exercise was skipped
-      }
-      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      return updated
-    })
+    const skipAction = {
+      optimisticUpdate: (data: Record<number, Record<number, number | null>>) => {
+        const updated = {
+          ...data,
+          [i]: {} // Empty object indicates exercise was skipped
+        }
+        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+        return updated
+      },
+      serverUpdate: async () => {
+        const currentData = weightState.data
+        const updated = {
+          ...currentData,
+          [i]: {}
+        }
+        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+        return updated
+      },
+      rollback: (data: Record<number, Record<number, number | null>>) => data
+    }
+    weightState.executeOptimisticUpdate(skipAction)
 
     if (i < list.length - 1) return goRest(i + 1, 1, Math.min(30, ex.restSeconds ?? 30))
     nav('/workout/complete')

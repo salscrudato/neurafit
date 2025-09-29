@@ -1,5 +1,5 @@
 // src/components/ProgressiveOverloadTracker.tsx
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { TrendingUp, Target, Award, Calendar } from 'lucide-react'
 
 interface WorkoutSession {

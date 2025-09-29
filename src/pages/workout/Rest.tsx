@@ -1,5 +1,5 @@
 // src/pages/workout/Rest.tsx
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../../components/AppHeader'
 import { EnhancedRestTimer } from '../../components/EnhancedRestTimer'

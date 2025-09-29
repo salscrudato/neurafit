@@ -138,7 +138,10 @@ export function createSetCompletionAction(
       }
     }),
     serverUpdate: async () => {
-      // Update session storage
+      // Get current weights from session storage
+      const savedWeights = sessionStorage.getItem('nf_workout_weights')
+      const currentWeights = savedWeights ? JSON.parse(savedWeights) : {}
+
       const updatedWeights = {
         ...currentWeights,
         [exerciseIndex]: {
@@ -159,10 +162,10 @@ export function useDebounce<T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): T {
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<number | null>(null)
 
   return useCallback((...args: Parameters<T>) => {
-    clearTimeout(timeoutRef.current)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => func(...args), delay)
   }, [func, delay]) as T
 }

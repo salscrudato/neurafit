@@ -1,5 +1,5 @@
 // src/components/PlateCalculator.tsx
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { Calculator, Info } from 'lucide-react'
 
 interface PlateCalculatorProps {
