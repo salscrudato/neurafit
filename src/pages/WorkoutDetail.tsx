@@ -5,6 +5,7 @@ import { auth, db } from '../lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import { ArrowLeft, Clock, Calendar, CheckCircle, XCircle, Weight } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
+import { WorkoutDetailSkeleton } from '../components/SkeletonLoaders'
 
 type Exercise = {
   name: string
@@ -62,11 +63,7 @@ export default function WorkoutDetail() {
   }, [workoutId])
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white grid place-items-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
-      </div>
-    )
+    return <WorkoutDetailSkeleton />
   }
 
   if (error || !workout) {

@@ -8,6 +8,7 @@ import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
 import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
 import { Brain } from 'lucide-react'
+import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
 
 const TYPES = [
   'Full Body','Upper Body','Lower Body','Cardio','HIIT','Core Focus',
@@ -30,6 +31,7 @@ export default function Generate() {
   const [equipment, setEquipment] = useState<string[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showProgressiveLoading, setShowProgressiveLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [targetIntensity, setTargetIntensity] = useState<number>(1.0)
   const [progressionNote, setProgressionNote] = useState<string>('')
@@ -181,12 +183,13 @@ export default function Generate() {
     }
   }
 
-  const disabled = !type || !duration || loading
+  const disabled = !type || !duration || loading || showProgressiveLoading
 
   async function generate() {
     if (disabled || !profile) return
     setError(null)
     setLoading(true)
+    setShowProgressiveLoading(true)
 
     // Enhanced payload with adaptive personalization
     const uid = auth.currentUser?.uid
@@ -255,11 +258,12 @@ export default function Generate() {
       }
     } finally {
       setLoading(false)
+      setShowProgressiveLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative safe-area-inset-bottom">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
@@ -268,7 +272,7 @@ export default function Generate() {
 
       <AppHeader />
 
-      <main className="relative mx-auto max-w-6xl px-6 pb-16 pt-6">
+      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-16 pt-6">
         {/* Hero card */}
         <section className="rounded-3xl border border-blue-100/50 bg-white/70 backdrop-blur-sm p-6 md:p-8 relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-400 opacity-10 blur-3xl" />
@@ -398,21 +402,31 @@ export default function Generate() {
         )}
 
         {/* Generate CTA */}
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex justify-center sm:justify-end">
           <button
             onClick={generate}
             disabled={disabled}
             className={[
-              'rounded-xl px-6 py-3 font-semibold transition-all duration-300 shadow-sm',
+              'rounded-xl px-8 py-4 font-semibold transition-all duration-300 shadow-sm touch-manipulation min-h-[56px] w-full sm:w-auto',
               disabled
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95'
             ].join(' ')}
           >
-            {loading ? 'Generating…' : 'Generate workout'}
+            {loading || showProgressiveLoading ? 'Generating…' : 'Generate workout'}
           </button>
         </div>
       </main>
+
+      {/* Progressive Loading Bar */}
+      <ProgressiveLoadingBar
+        isVisible={showProgressiveLoading}
+        onComplete={() => {
+          // Loading bar completes, but we wait for actual API response
+          console.log('Loading animation complete')
+        }}
+        duration={6000} // 6 seconds for a smooth experience
+      />
     </div>
   )
 }

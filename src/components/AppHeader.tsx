@@ -34,8 +34,8 @@ export default function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-enhanced border-b border-gray-100 safe-area-inset-top">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between">
           {/* Logo */}
           <button 
             onClick={() => handleNavigation('/dashboard')}
@@ -50,7 +50,7 @@ export default function AppHeader() {
           {/* Hamburger Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-3 rounded-lg hover:bg-gray-100 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? (
@@ -80,7 +80,7 @@ export default function AppHeader() {
                   <button
                     key={item.path}
                     onClick={() => handleNavigation(item.path)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900"
+                    className="w-full flex items-center gap-3 px-4 py-4 text-left rounded-xl hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900 touch-manipulation min-h-[48px]"
                   >
                     <Icon className="h-5 w-5" />
                     <span className="font-medium">{item.label}</span>
@@ -94,7 +94,7 @@ export default function AppHeader() {
               {/* Sign Out */}
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl hover:bg-red-50 transition-colors text-red-600 hover:text-red-700"
+                className="w-full flex items-center gap-3 px-4 py-4 text-left rounded-xl hover:bg-red-50 transition-colors text-red-600 hover:text-red-700 touch-manipulation min-h-[48px]"
               >
                 <LogOut className="h-5 w-5" />
                 <span className="font-medium">Sign out</span>

@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity, BarChart3, Trophy } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
+import { WorkoutHistorySkeleton } from '../components/SkeletonLoaders'
+import { WorkoutAnalytics } from '../components/WorkoutAnalytics'
+import { AchievementSystem } from '../components/AchievementSystem'
 
 type WorkoutItem = {
   id: string
@@ -19,6 +22,7 @@ export default function History() {
   const [items, setItems] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'history' | 'analytics' | 'achievements'>('history')
 
   useEffect(() => {
     (async () => {
@@ -102,14 +106,7 @@ export default function History() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white grid place-items-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading your workout history...</p>
-        </div>
-      </div>
-    )
+    return <WorkoutHistorySkeleton />
   }
 
   if (error) {
@@ -149,16 +146,64 @@ export default function History() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
             <Activity className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-600">Workout History</span>
+            <span className="text-sm font-medium text-blue-600">Fitness Dashboard</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Fitness Journey</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Track your progress and review past workouts. Click on any workout to see detailed information about your performance.
+            Track your progress, analyze your performance, and celebrate your achievements.
           </p>
         </div>
 
-        {/* Workout List */}
-        {items.length === 0 ? (
+        {/* Tab Navigation */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex bg-white rounded-2xl p-1 border border-gray-200 shadow-sm">
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                activeTab === 'history'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                History
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                activeTab === 'analytics'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('achievements')}
+              className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                activeTab === 'achievements'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                Achievements
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'history' && (
+          <>
+            {/* Workout List */}
+            {items.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Activity className="h-8 w-8 text-gray-400" />
@@ -283,6 +328,18 @@ export default function History() {
               )
             })}
           </div>
+        )}
+          </>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <WorkoutAnalytics workouts={items} timeRange="month" />
+        )}
+
+        {/* Achievements Tab */}
+        {activeTab === 'achievements' && (
+          <AchievementSystem workouts={items} />
         )}
       </main>
     </div>

@@ -14,6 +14,7 @@ import {
   INJURY_OPTIONS
 } from '../config/onboarding'
 import AppHeader from '../components/AppHeader'
+import { ProfilePageSkeleton } from '../components/SkeletonLoaders'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -150,14 +151,7 @@ export default function Profile() {
 
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <AppHeader />
-        <div className="grid place-items-center pt-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
-        </div>
-      </div>
-    )
+    return <ProfilePageSkeleton />
   }
 
   return (

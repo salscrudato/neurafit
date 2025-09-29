@@ -3,6 +3,23 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lightbulb, Shield } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
+import { useOptimisticUpdate, createWeightUpdateAction } from '../../lib/optimisticUpdates'
+import {
+  WorkoutProgressHeader,
+  SetProgressIndicator,
+  MotivationalMessage,
+  WorkoutStats
+} from '../../components/WorkoutProgress'
+import { SmartWeightInput } from '../../components/SmartWeightInput'
+import { PlateCalculator } from '../../components/PlateCalculator'
+import { ProgressiveOverloadTracker } from '../../components/ProgressiveOverloadTracker'
+import {
+  getCachedWeightHistory,
+  fetchRecentSessions,
+  isBarbellExercise,
+  type WeightHistory,
+  type WorkoutSession
+} from '../../lib/weightHistory'
 
 type ExerciseT = {
   name: string
@@ -28,28 +45,41 @@ export default function Exercise() {
 
   const [i, setI] = useState(0)        // exercise index
   const [setNo, setSetNo] = useState(1) // current set (1-based)
+  const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([])
+  const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Weight tracking state - stores weight for each exercise and set
-  const [workoutWeights, setWorkoutWeights] = useState<Record<number, Record<number, number | null>>>(() => {
+  // Weight tracking state with optimistic updates
+  const initialWeights = (() => {
     const savedWeights = sessionStorage.getItem('nf_workout_weights')
     return savedWeights ? JSON.parse(savedWeights) : {}
-  })
+  })()
 
-  // Update weight for current exercise and set
+  const weightState = useOptimisticUpdate<Record<number, Record<number, number | null>>>(initialWeights)
+  const workoutWeights = weightState.data
+
+  // Update weight for current exercise and set with optimistic updates
   // RULE 3: If a set is complete and a weight is entered, the set should be marked as complete and the weight should be stored and displayed
   const updateWeight = (weight: number | null) => {
-    setWorkoutWeights(prev => {
-      const updated = {
-        ...prev,
-        [i]: {
-          ...prev[i],
-          [setNo]: weight
+    const action = createWeightUpdateAction(
+      i,
+      setNo,
+      weight,
+      async (exerciseIndex, setNumber, weightValue) => {
+        // Server update simulation - in real app this might sync to backend
+        const updated = {
+          ...workoutWeights,
+          [exerciseIndex]: {
+            ...workoutWeights[exerciseIndex],
+            [setNumber]: weightValue
+          }
         }
+        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+        console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
       }
-      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      console.log(`[WEIGHT] Weight entered for set ${setNo} of ${ex.name}:`, weight)
-      return updated
-    })
+    )
+
+    weightState.executeOptimisticUpdate(action)
   }
 
   // return-from-rest state
@@ -93,12 +123,75 @@ export default function Exercise() {
 
   const ex = list[i] as ExerciseT
 
+  // Load weight history and recent sessions for current exercise
+  useEffect(() => {
+    if (!ex?.name) return
+
+    const loadHistoryData = async () => {
+      setLoadingHistory(true)
+      try {
+        const [history, sessions] = await Promise.all([
+          getCachedWeightHistory(ex.name),
+          fetchRecentSessions(8)
+        ])
+        setWeightHistory(history)
+        setRecentSessions(sessions)
+      } catch (error) {
+        console.error('Failed to load weight history:', error)
+      } finally {
+        setLoadingHistory(false)
+      }
+    }
+
+    loadHistoryData()
+  }, [ex?.name]) // Reload when exercise changes
+
   const totalExercises = list.length
   const progressPct = useMemo(() => {
     const perExercise = 1 / totalExercises
     const withinExercise = ((setNo - 1) / Math.max(1, ex.sets)) * perExercise
     return Math.min(100, Math.round(((i * perExercise) + withinExercise) * 100))
   }, [i, setNo, ex.sets, totalExercises])
+
+  // Calculate completed and skipped sets for current exercise
+  const completedSets = useMemo(() => {
+    const exerciseWeights = workoutWeights[i] || {}
+    return Object.entries(exerciseWeights)
+      .filter(([_, weight]) => weight !== null)
+      .map(([setNum]) => parseInt(setNum))
+  }, [workoutWeights, i])
+
+  const skippedSets = useMemo(() => {
+    const exerciseWeights = workoutWeights[i] || {}
+    return Object.entries(exerciseWeights)
+      .filter(([_, weight]) => weight === null)
+      .map(([setNum]) => parseInt(setNum))
+  }, [workoutWeights, i])
+
+  // Get workout start time for stats
+  const workoutStartTime = useMemo(() => {
+    const startTimeStr = sessionStorage.getItem('nf_workout_start_time')
+    return startTimeStr ? parseInt(startTimeStr) : Date.now()
+  }, [])
+
+  // Calculate total completed sets across all exercises
+  const totalCompletedSets = useMemo(() => {
+    return Object.values(workoutWeights).reduce((total, exerciseWeights) => {
+      return total + Object.values(exerciseWeights || {}).filter(weight => weight !== null).length
+    }, 0)
+  }, [workoutWeights])
+
+  const totalSets = useMemo(() => {
+    return list.reduce((total, exercise) => total + exercise.sets, 0)
+  }, [list])
+
+  const completedExercises = useMemo(() => {
+    return Object.keys(workoutWeights).filter(exerciseIndex => {
+      const exerciseWeights = workoutWeights[parseInt(exerciseIndex)] || {}
+      const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
+      return completedCount > 0
+    }).length
+  }, [workoutWeights])
 
   const goRest = (nextIndex: number, nextSet: number, seconds?: number) => {
     sessionStorage.setItem('nf_rest', String(seconds ?? ex.restSeconds ?? 60))
@@ -109,20 +202,32 @@ export default function Exercise() {
   const completeSet = () => {
     // RULE 1: If a set is complete regardless of whether or not a weight is entered,
     // the set should be marked as complete
-    setWorkoutWeights(prev => {
-      const currentWeight = prev[i]?.[setNo]
-      const updated = {
+    const currentWeight = workoutWeights[i]?.[setNo]
+    const finalWeight = currentWeight !== undefined ? currentWeight : 0
+
+    const action = {
+      optimisticUpdate: (prev: Record<number, Record<number, number | null>>) => ({
         ...prev,
         [i]: {
           ...prev[i],
-          // If weight was already entered, keep it; otherwise use 0 to indicate completed set without weight
-          [setNo]: currentWeight !== undefined ? currentWeight : 0
+          [setNo]: finalWeight
         }
+      }),
+      serverUpdate: async () => {
+        const updated = {
+          ...workoutWeights,
+          [i]: {
+            ...workoutWeights[i],
+            [setNo]: finalWeight
+          }
+        }
+        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+        console.log(`[COMPLETE] Set ${setNo} of ${ex.name} marked as COMPLETE:`, finalWeight)
+        return updated
       }
-      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      console.log(`[COMPLETE] Set ${setNo} of ${ex.name} marked as COMPLETE:`, updated[i][setNo])
-      return updated
-    })
+    }
+
+    weightState.executeOptimisticUpdate(action)
 
     // more sets remaining in current exercise
     if (setNo < ex.sets) return goRest(i, setNo + 1)
@@ -134,18 +239,29 @@ export default function Exercise() {
 
   const skipSet = () => {
     // RULE 2: If a set is skipped, it should be marked as incomplete
-    setWorkoutWeights(prev => {
-      const updated = {
+    const action = {
+      optimisticUpdate: (prev: Record<number, Record<number, number | null>>) => ({
         ...prev,
         [i]: {
           ...prev[i],
           [setNo]: null // null indicates skipped set (incomplete)
         }
+      }),
+      serverUpdate: async () => {
+        const updated = {
+          ...workoutWeights,
+          [i]: {
+            ...workoutWeights[i],
+            [setNo]: null
+          }
+        }
+        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+        console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
+        return updated
       }
-      sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-      console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
-      return updated
-    })
+    }
+
+    weightState.executeOptimisticUpdate(action)
 
     // more sets remaining in current exercise
     if (setNo < ex.sets) return goRest(i, setNo + 1)
@@ -180,21 +296,45 @@ export default function Exercise() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
       </div>
 
-      <AppHeader />
-
-      {/* Progress bar */}
-      <div className="relative mx-auto max-w-4xl px-5 pt-4">
-        <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
-          <span>Exercise {i + 1} of {totalExercises}</span>
-          <span>{progressPct}%</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
-          <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all" style={{ width: `${progressPct}%` }} />
-        </div>
-      </div>
+      {/* Enhanced Progress Header */}
+      <WorkoutProgressHeader
+        currentExercise={i + 1}
+        totalExercises={totalExercises}
+        currentSet={setNo}
+        totalSets={ex.sets}
+        overallProgress={progressPct}
+        exerciseName={ex.name}
+      />
 
       {/* Exercise card */}
       <main className="relative mx-auto max-w-4xl px-5 pb-28">
+        {/* Set Progress Indicator */}
+        <SetProgressIndicator
+          currentSet={setNo}
+          totalSets={ex.sets}
+          completedSets={completedSets}
+          skippedSets={skippedSets}
+        />
+
+        {/* Motivational Message */}
+        <MotivationalMessage
+          progress={progressPct}
+          completedSets={completedSets.length}
+          totalSets={ex.sets}
+          exerciseName={ex.name}
+        />
+
+        {/* Workout Stats */}
+        <div className="mb-6">
+          <WorkoutStats
+            startTime={workoutStartTime}
+            completedSets={totalCompletedSets}
+            totalSets={totalSets}
+            completedExercises={completedExercises}
+            totalExercises={totalExercises}
+          />
+        </div>
+
         <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/70 backdrop-blur-sm p-6 shadow-lg">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 blur-3xl" />
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">{ex.name}</h1>
@@ -206,14 +346,36 @@ export default function Exercise() {
             <Chip>Rest: {ex.restSeconds ?? 60}s</Chip>
           </div>
 
-          {/* Weight input for exercises that use weights */}
+          {/* Enhanced weight input for exercises that use weights */}
           {ex.usesWeight && (
-            <div className="mt-4">
-              <WeightInput
+            <div className="mt-4 space-y-4">
+              <SmartWeightInput
+                exerciseName={ex.name}
+                setNumber={setNo}
                 currentWeight={workoutWeights[i]?.[setNo] || null}
                 onWeightChange={updateWeight}
-                setNumber={setNo}
+                isOptimistic={weightState.isOptimistic}
+                previousWeights={weightHistory}
+                targetReps={ex.reps}
               />
+
+              {/* Plate Calculator for barbell exercises */}
+              {isBarbellExercise(ex.name) && workoutWeights[i]?.[setNo] && (
+                <PlateCalculator
+                  targetWeight={workoutWeights[i][setNo]!}
+                  onWeightChange={updateWeight}
+                />
+              )}
+
+              {/* Progressive Overload Tracker */}
+              {!loadingHistory && recentSessions.length > 0 && (
+                <ProgressiveOverloadTracker
+                  exerciseName={ex.name}
+                  recentSessions={recentSessions}
+                  currentWeight={workoutWeights[i]?.[setNo] || null}
+                  targetReps={ex.reps}
+                />
+              )}
             </div>
           )}
 
@@ -289,18 +451,29 @@ function Chip({ children }: { children: React.ReactNode }) {
 function WeightInput({
   currentWeight,
   onWeightChange,
-  setNumber
+  setNumber,
+  isOptimistic = false
 }: {
   currentWeight: number | null
   onWeightChange: (weight: number | null) => void
   setNumber: number
+  isOptimistic?: boolean
 }) {
   const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const weight = inputValue.trim() === '' ? null : parseFloat(inputValue)
     if (weight !== null && (isNaN(weight) || weight < 0)) return // Invalid input
-    onWeightChange(weight)
+
+    setIsSubmitting(true)
+    try {
+      onWeightChange(weight)
+      // Add small delay to show feedback
+      await new Promise(resolve => setTimeout(resolve, 200))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -311,11 +484,22 @@ function WeightInput({
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4">
+    <div className={`rounded-2xl border backdrop-blur-sm p-4 transition-all duration-200 ${
+      isOptimistic
+        ? 'border-blue-300 bg-blue-50/70 shadow-md'
+        : 'border-gray-200 bg-white/70'
+    }`}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="font-medium text-gray-900">Weight for Set {setNumber}</div>
-          <div className="text-sm text-gray-600">Enter weight in lbs (optional)</div>
+          <div className="font-medium text-gray-900 flex items-center gap-2">
+            Weight for Set {setNumber}
+            {isOptimistic && (
+              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+            )}
+          </div>
+          <div className="text-sm text-gray-600">
+            {isOptimistic ? 'Saving...' : 'Enter weight in lbs (optional)'}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <input
