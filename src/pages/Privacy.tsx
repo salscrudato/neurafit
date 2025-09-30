@@ -8,7 +8,7 @@ export default function Privacy() {
         <header className="mb-8">
           <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">← Back</Link>
           <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight">Privacy Policy</h1>
-          <p className="mt-2 text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="mt-2 text-gray-600">Last updated: January 1, 2025</p>
         </header>
 
         {/* Table of contents */}
@@ -264,10 +264,12 @@ export default function Privacy() {
             <h2 id="contact" className="text-lg font-semibold text-gray-900">13) Contact Information</h2>
             <p className="mt-2">If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
-              <li><strong>Email:</strong> support@neurafit.app</li>
-              <li><strong>Subject Line:</strong> Privacy Policy Inquiry</li>
+              <li><strong>General Privacy Inquiries:</strong> support@neurafit.app</li>
+              <li><strong>Data Protection Officer:</strong> privacy@neurafit.app</li>
+              <li><strong>California Privacy Requests:</strong> Use subject line "California Privacy Request"</li>
+              <li><strong>GDPR Requests:</strong> Use subject line "GDPR Data Request"</li>
             </ul>
-            <p className="mt-2">We will respond to your inquiry within 30 days.</p>
+            <p className="mt-2">We will respond to your inquiry within 30 days (or sooner as required by applicable law). For formal legal notices regarding privacy matters, please contact us at legal@neurafit.app.</p>
           </section>
 
           <footer className="pt-8 border-t border-gray-200 text-center">

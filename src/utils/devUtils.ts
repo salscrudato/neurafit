@@ -13,29 +13,44 @@ export const suppressDevWarnings = () => {
   // Filter out known development warnings
   console.warn = (...args) => {
     const message = args.join(' ')
-    
+
     // Suppress React DevTools message
     if (message.includes('Download the React DevTools')) {
       return
     }
-    
+
     // Suppress service worker registration messages in development
     if (message.includes('SW registered') || message.includes('SW registration')) {
       return
     }
-    
+
+    // Suppress Stripe HTTPS warning in development
+    if (message.includes('You may test your Stripe.js integration over HTTP')) {
+      return
+    }
+
     // Call original warn for other messages
     originalWarn.apply(console, args)
   }
 
   console.log = (...args) => {
     const message = args.join(' ')
-    
+
     // Suppress service worker messages in development
     if (message.includes('SW registered') || message.includes('SW registration')) {
       return
     }
-    
+
+    // Suppress cache clearing messages
+    if (message.includes('Clearing cache:')) {
+      return
+    }
+
+    // Suppress auth state messages (keep only errors)
+    if (message.includes('🔐 Auth state:') || message.includes('[HOME] HomeGate:')) {
+      return
+    }
+
     // Call original log for other messages
     originalLog.apply(console, args)
   }

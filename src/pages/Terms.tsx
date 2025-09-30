@@ -8,7 +8,7 @@ export default function Terms() {
         <header className="mb-8">
           <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">← Back</Link>
           <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight">Terms of Service</h1>
-          <p className="mt-2 text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="mt-2 text-gray-600">Last updated: January 1, 2025</p>
         </header>
 
         {/* Table of contents */}
@@ -29,8 +29,9 @@ export default function Terms() {
             <li><a href="#modifications" className="hover:underline">12) Modifications</a></li>
             <li><a href="#governing-law" className="hover:underline">13) Governing Law</a></li>
             <li><a href="#subscriptions-billing" className="hover:underline">14) Subscriptions & Billing</a></li>
-            <li><a href="#arbitration" className="hover:underline">15) Dispute Resolution</a></li>
-            <li><a href="#contact" className="hover:underline">16) Contact Information</a></li>
+            <li><a href="#termination" className="hover:underline">15) Account Termination</a></li>
+            <li><a href="#arbitration" className="hover:underline">16) Dispute Resolution</a></li>
+            <li><a href="#contact" className="hover:underline">17) Contact Information</a></li>
           </ul>
         </nav>
 
@@ -170,14 +171,32 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 id="arbitration" className="text-lg font-semibold text-gray-900">15) Dispute Resolution and Arbitration</h2>
+            <h2 id="termination" className="text-lg font-semibold text-gray-900">15) Account Termination</h2>
+            <p className="mt-2">You may terminate your account at any time by contacting us or using the account deletion feature in the app. Upon termination:</p>
+            <ul className="mt-2 list-disc pl-5 space-y-1">
+              <li>Your access to the Services will be immediately suspended</li>
+              <li>Your personal data will be deleted within 30 days (except as required for legal compliance)</li>
+              <li>Any active subscriptions will be canceled according to the platform's refund policy</li>
+              <li>These Terms will remain in effect for any claims or disputes that arose before termination</li>
+            </ul>
+            <p className="mt-2">We may suspend or terminate your account if you violate these Terms, engage in harmful behavior, or for other legitimate business reasons. We will provide reasonable notice when possible.</p>
+          </section>
+
+          <section>
+            <h2 id="arbitration" className="text-lg font-semibold text-gray-900">16) Dispute Resolution and Arbitration</h2>
             <p className="mt-2">Most disputes can be resolved informally by contacting us at support@neurafit.app. For disputes that cannot be resolved informally, you and NeuraFit agree to resolve them through binding arbitration rather than in court, except for small claims court matters and injunctive relief.</p>
             <p className="mt-2"><strong>Class Action Waiver:</strong> You and NeuraFit agree that any dispute resolution proceedings will be conducted only on an individual basis and not in a class, consolidated, or representative action.</p>
           </section>
 
           <section>
-            <h2 id="contact" className="text-lg font-semibold text-gray-900">16) Contact Information</h2>
-            <p className="mt-2">If you have questions about these Terms or need to contact us for any reason, please email us at support@neurafit.app.</p>
+            <h2 id="contact" className="text-lg font-semibold text-gray-900">17) Contact Information</h2>
+            <p className="mt-2">If you have questions about these Terms or need to contact us for any reason, please reach out to us:</p>
+            <ul className="mt-2 list-disc pl-5 space-y-1">
+              <li><strong>Email:</strong> support@neurafit.app</li>
+              <li><strong>Legal Inquiries:</strong> legal@neurafit.app</li>
+              <li><strong>Response Time:</strong> We typically respond within 48 hours</li>
+            </ul>
+            <p className="mt-2">For formal legal notices, please send correspondence to our registered address, which can be obtained by contacting us at the email addresses above.</p>
           </section>
 
           <footer className="pt-8 border-t border-gray-200 text-center">

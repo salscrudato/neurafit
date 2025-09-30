@@ -5,15 +5,16 @@ import tailwind from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwind()],
   server: {
-    // Simplified WebSocket configuration
-    hmr: {
-      port: 5174
-    },
+    port: 5173,
     // Handle port conflicts gracefully
     strictPort: false,
     // Enable CORS for development
     cors: true,
-    port: 5173
+    // Fix WebSocket connection issues
+    hmr: {
+      port: 5173,
+      clientPort: 5173
+    }
   },
   build: {
     // Generate unique filenames for cache-busting
