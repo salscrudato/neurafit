@@ -278,9 +278,10 @@ export default function Generate() {
 
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
 
-
-
-        nav('/workout/preview')
+        // Wait for loading animation to complete before navigating
+        setTimeout(() => {
+          nav('/workout/preview')
+        }, 1500) // Give time for loading animation to feel complete
       } finally {
         clearTimeout(t)
       }
@@ -311,6 +312,7 @@ export default function Generate() {
       setLoading(false)
       setShowProgressiveLoading(false)
     }
+  }
   }
 
   return (
@@ -503,7 +505,12 @@ export default function Generate() {
                 : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95'
             ].join(' ')}
           >
-            {loading || showProgressiveLoading ? 'Generating…' : 'Generate workout'}
+            {loading || showProgressiveLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Generating…
+              </div>
+            ) : 'Generate workout'}
           </button>
         </div>
       </main>
@@ -512,10 +519,10 @@ export default function Generate() {
       <ProgressiveLoadingBar
         isVisible={showProgressiveLoading}
         onComplete={() => {
-          // Loading bar completes, but we wait for actual API response
+          // Loading bar animation completed
           console.log('Loading animation complete')
         }}
-        duration={6000} // 6 seconds for a smooth experience
+        duration={4000} // 4 seconds for a smooth experience
       />
     </div>
   )

@@ -1,5 +1,5 @@
 // src/components/ProgressiveLoadingBar.tsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Zap, Brain, Dumbbell, Target } from 'lucide-react'
 
 interface ProgressiveLoadingBarProps {
@@ -16,35 +16,35 @@ interface LoadingStage {
   color: string
 }
 
-export function ProgressiveLoadingBar({ 
-  isVisible, 
-  onComplete, 
-  duration = 8000 
+export function ProgressiveLoadingBar({
+  isVisible,
+  onComplete,
+  duration = 4000
 }: ProgressiveLoadingBarProps) {
   const [currentStage, setCurrentStage] = useState(0)
   const [progress, setProgress] = useState(0)
   const [stageProgress, setStageProgress] = useState(0)
 
-  const stages: LoadingStage[] = [
+  const stages: LoadingStage[] = useMemo(() => [
     {
       id: 'analyzing',
       label: 'Analyzing your profile...',
       icon: <Brain className="h-5 w-5" />,
-      duration: 25, // 25% of total time
+      duration: 20, // 20% of total time
       color: 'from-blue-500 to-indigo-600'
     },
     {
       id: 'generating',
       label: 'Generating personalized workout...',
       icon: <Zap className="h-5 w-5" />,
-      duration: 40, // 40% of total time
+      duration: 50, // 50% of total time
       color: 'from-indigo-500 to-purple-600'
     },
     {
       id: 'optimizing',
       label: 'Optimizing exercise selection...',
       icon: <Dumbbell className="h-5 w-5" />,
-      duration: 25, // 25% of total time
+      duration: 20, // 20% of total time
       color: 'from-purple-500 to-pink-600'
     },
     {
@@ -54,7 +54,7 @@ export function ProgressiveLoadingBar({
       duration: 10, // 10% of total time
       color: 'from-pink-500 to-red-600'
     }
-  ]
+  ], [])
 
   useEffect(() => {
     if (!isVisible) {
@@ -95,6 +95,11 @@ export function ProgressiveLoadingBar({
       setCurrentStage(newStage)
       setProgress(totalProgress)
       setStageProgress(stageProgressValue)
+
+      // Debug logging every 1 second
+      if (Math.floor(elapsed / 1000) !== Math.floor((elapsed - 16) / 1000)) {
+        console.log(`Progress: ${Math.round(totalProgress)}%, Stage: ${newStage + 1}/${stages.length}, Elapsed: ${Math.round(elapsed)}ms`)
+      }
 
       if (totalProgress < 100) {
         animationFrame = requestAnimationFrame(animate)
