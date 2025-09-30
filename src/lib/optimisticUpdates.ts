@@ -9,10 +9,10 @@ export type OptimisticState<T> = {
 }
 
 export type OptimisticAction<T> = {
-  optimisticUpdate: (current: T) => T
+  optimisticUpdate: (_current: T) => T
   serverUpdate: () => Promise<T>
-  onSuccess?: (result: T) => void
-  onError?: (error: Error) => void
+  onSuccess?: (_result: T) => void
+  onError?: (_error: Error) => void
 }
 
 /**
@@ -101,7 +101,7 @@ export function createWeightUpdateAction(
   exerciseIndex: number,
   setNumber: number,
   weight: number | null,
-  onServerUpdate: (exerciseIndex: number, setNumber: number, weight: number | null) => Promise<void>
+  onServerUpdate: (_exerciseIndex: number, _setNumber: number, _weight: number | null) => Promise<void>
 ): OptimisticAction<Record<number, Record<number, number | null>>> {
   return {
     optimisticUpdate: (currentWeights) => ({
@@ -158,7 +158,7 @@ export function createSetCompletionAction(
 /**
  * Debounced function utility for reducing API calls
  */
-export function useDebounce<T extends (...args: unknown[]) => unknown>(
+export function useDebounce<T extends (..._args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): T {
@@ -250,7 +250,7 @@ export function createErrorHandler(fallback: () => void) {
     
     // Log to analytics if available
     if (typeof window !== 'undefined' && 'gtag' in window) {
-      (window as { gtag: (event: string, action: string, params: Record<string, unknown>) => void }).gtag('event', 'exception', {
+      (window as { gtag: (_event: string, _action: string, _params: Record<string, unknown>) => void }).gtag('event', 'exception', {
         description: error.message,
         fatal: false
       })

@@ -4,7 +4,7 @@ import { SUBSCRIPTION_PLANS, formatPrice } from '../lib/stripe-config'
 import { useSubscription } from '../hooks/useSubscription'
 
 interface SubscriptionPlansProps {
-  onSelectPlan: (priceId: string) => void
+  onSelectPlan: (_priceId: string) => void
   loading?: boolean
   selectedPriceId?: string
 }

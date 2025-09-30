@@ -1,5 +1,5 @@
 // src/pages/workout/Preview.tsx
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Crown } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
@@ -25,14 +25,17 @@ export default function Preview() {
   const nav = useNavigate()
   const { hasUnlimitedWorkouts, remainingFreeWorkouts } = useSubscription()
 
-  // Parse saved data and calculate exercises before early return
-  const saved = sessionStorage.getItem('nf_workout_plan')
-  const parsedData = saved ? JSON.parse(saved) as {
-    plan: Plan & { metadata?: { targetIntensity?: number; progressionNote?: string } };
-    type: string;
-    duration: number
-  } : null
-  const exercises = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
+  // Parse saved data and calculate exercises before early return - memoized to prevent unnecessary re-renders
+  const { saved, parsedData, exercises } = useMemo(() => {
+    const saved = sessionStorage.getItem('nf_workout_plan')
+    const parsedData = saved ? JSON.parse(saved) as {
+      plan: Plan & { metadata?: { targetIntensity?: number; progressionNote?: string } };
+      type: string;
+      duration: number
+    } : null
+    const exercises = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
+    return { saved, parsedData, exercises }
+  }, [])
 
   // All hooks must be called before early returns
   const totalSets = useMemo(() => {

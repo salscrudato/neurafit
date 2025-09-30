@@ -1,5 +1,5 @@
 // src/pages/Auth.tsx
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import {
@@ -58,8 +58,8 @@ export default function Auth() {
       // If popup fails due to COOP or being blocked, fall back to redirect
       if (firebaseError.code === 'auth/popup-blocked' ||
           firebaseError.code === 'auth/popup-closed-by-user' ||
-          (error as any)?.message?.includes('Cross-Origin-Opener-Policy') ||
-          (error as any)?.message?.includes('window.closed')) {
+          (error as Error)?.message?.includes('Cross-Origin-Opener-Policy') ||
+          (error as Error)?.message?.includes('window.closed')) {
         try {
           await signInWithRedirect(auth, provider)
           // Redirect will happen, don't set loading to false

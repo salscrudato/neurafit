@@ -1,5 +1,5 @@
 // src/pages/Profile.tsx
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
 import { auth, db } from '../lib/firebase'
@@ -56,7 +56,7 @@ function Pill({ active, children, onClick }: {active?:boolean; children:React.Re
 }
 function GridSelect({
   items, selected, onToggle, twoCol=false
-}: {items:string[]; selected:string[]; onToggle:(v:string)=>void; twoCol?:boolean}) {
+}: {items:string[]; selected:string[]; onToggle:(_v:string)=>void; twoCol?:boolean}) {
   return (
     <div className={twoCol ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'}>
       {items.map(v => (

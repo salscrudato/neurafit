@@ -3,7 +3,7 @@
 export const lockOrientation = () => {
   // Try to lock to portrait orientation using the Screen Orientation API
   if ('screen' in window && 'orientation' in window.screen) {
-    const screenOrientation = window.screen.orientation as { lock?: (orientation: string) => Promise<void> }
+    const screenOrientation = window.screen.orientation as { lock?: (_orientation: string) => Promise<void> }
 
     if ('lock' in screenOrientation && screenOrientation.lock) {
       screenOrientation.lock('portrait').catch((error: { message?: string; name?: string }) => {
@@ -46,7 +46,7 @@ export const lockOrientation = () => {
 
 export const unlockOrientation = () => {
   if ('screen' in window && 'orientation' in window.screen) {
-    const screenOrientation = window.screen.orientation as any
+    const screenOrientation = window.screen.orientation as unknown as { unlock?: () => Promise<void> }
 
     if ('unlock' in screenOrientation && screenOrientation.unlock) {
       Promise.resolve(screenOrientation.unlock()).catch((error: { name?: string }) => {

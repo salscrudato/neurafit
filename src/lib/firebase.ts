@@ -20,7 +20,7 @@ export const db = getFirestore(app)
 export const fns = getFunctions(app)
 
 // Initialize Analytics (only in browser environment)
-let analytics: any = null
+let analytics: ReturnType<typeof getAnalytics> | null = null
 if (typeof window !== 'undefined') {
   isSupported().then((supported) => {
     if (supported) {

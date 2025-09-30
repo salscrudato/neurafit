@@ -140,7 +140,7 @@ class SmartCache {
     let expiredItems = 0
     let totalAccessCount = 0
 
-    for (const [_key, item] of this.cache.entries()) { // eslint-disable-line @typescript-eslint/no-unused-vars
+    for (const [_key, item] of this.cache.entries()) {
       if (now - item.timestamp > item.ttl) {
         expiredItems++
       } else {

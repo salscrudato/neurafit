@@ -4,6 +4,18 @@ import type { Request, Response } from "express"
 import Stripe from 'stripe'
 import { stripe, getUserByCustomerId, updateUserSubscription, UserSubscriptionData } from './lib/stripe'
 
+// Extended Stripe types to include properties that exist but aren't in the official types
+interface ExtendedStripeSubscription extends Omit<Stripe.Subscription, 'canceled_at'> {
+  current_period_start: number
+  current_period_end: number
+  cancel_at_period_end: boolean
+  canceled_at?: number | null
+}
+
+interface ExtendedStripeInvoice extends Stripe.Invoice {
+  subscription?: string
+}
+
 // Define Stripe webhook secret
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET")
 
@@ -92,25 +104,26 @@ export const stripeWebhook = onRequest(
  */
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   console.log('Processing subscription created:', subscription.id)
-  
+
   const uid = await getUserByCustomerId(subscription.customer as string)
   if (!uid) {
     console.error('User not found for customer:', subscription.customer)
     return
   }
 
+  const extendedSubscription = subscription as ExtendedStripeSubscription
   const subscriptionData: Partial<UserSubscriptionData> = {
     subscriptionId: subscription.id,
     priceId: subscription.items.data[0]?.price.id,
     status: subscription.status as UserSubscriptionData['status'],
-    currentPeriodStart: (subscription as any).current_period_start * 1000,
-    currentPeriodEnd: (subscription as any).current_period_end * 1000,
-    cancelAtPeriodEnd: (subscription as any).cancel_at_period_end
+    currentPeriodStart: extendedSubscription.current_period_start * 1000,
+    currentPeriodEnd: extendedSubscription.current_period_end * 1000,
+    cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end
   }
 
   // Only add canceledAt if it exists
-  if ((subscription as any).canceled_at) {
-    subscriptionData.canceledAt = (subscription as any).canceled_at * 1000
+  if (extendedSubscription.canceled_at) {
+    subscriptionData.canceledAt = extendedSubscription.canceled_at * 1000
   }
 
   await updateUserSubscription(uid, subscriptionData)
@@ -122,25 +135,26 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Processing subscription updated:', subscription.id)
-  
+
   const uid = await getUserByCustomerId(subscription.customer as string)
   if (!uid) {
     console.error('User not found for customer:', subscription.customer)
     return
   }
 
+  const extendedSubscription = subscription as ExtendedStripeSubscription
   const subscriptionData: Partial<UserSubscriptionData> = {
     subscriptionId: subscription.id,
     priceId: subscription.items.data[0]?.price.id,
     status: subscription.status as UserSubscriptionData['status'],
-    currentPeriodStart: (subscription as any).current_period_start * 1000,
-    currentPeriodEnd: (subscription as any).current_period_end * 1000,
-    cancelAtPeriodEnd: (subscription as any).cancel_at_period_end
+    currentPeriodStart: extendedSubscription.current_period_start * 1000,
+    currentPeriodEnd: extendedSubscription.current_period_end * 1000,
+    cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end
   }
 
   // Only add canceledAt if it exists
-  if ((subscription as any).canceled_at) {
-    subscriptionData.canceledAt = (subscription as any).canceled_at * 1000
+  if (extendedSubscription.canceled_at) {
+    subscriptionData.canceledAt = extendedSubscription.canceled_at * 1000
   }
 
   await updateUserSubscription(uid, subscriptionData)
@@ -173,8 +187,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
  */
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Processing payment succeeded:', invoice.id)
-  
-  if (!(invoice as any).subscription) return
+
+  const extendedInvoice = invoice as ExtendedStripeInvoice
+  if (!extendedInvoice.subscription) return
 
   const uid = await getUserByCustomerId(invoice.customer as string)
   if (!uid) {
@@ -196,8 +211,9 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
  */
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Processing payment failed:', invoice.id)
-  
-  if (!(invoice as any).subscription) return
+
+  const extendedInvoice = invoice as ExtendedStripeInvoice
+  if (!extendedInvoice.subscription) return
 
   const uid = await getUserByCustomerId(invoice.customer as string)
   if (!uid) {

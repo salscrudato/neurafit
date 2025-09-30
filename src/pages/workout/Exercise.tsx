@@ -62,10 +62,13 @@ export default function Exercise() {
   })()
   const weightState = useOptimisticUpdate<Record<number, Record<number, number | null>>>(initialWeights)
 
-  // Get saved workout plan
-  const saved = sessionStorage.getItem('nf_workout_plan')
-  const parsedData = saved ? JSON.parse(saved) as { plan: PlanT } : null
-  const list = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
+  // Get saved workout plan - memoized to prevent unnecessary re-renders
+  const { saved, list } = useMemo(() => {
+    const saved = sessionStorage.getItem('nf_workout_plan')
+    const parsedData = saved ? JSON.parse(saved) as { plan: PlanT } : null
+    const list = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
+    return { saved, list }
+  }, [])
 
   // All useEffect hooks must be called before early returns
   // return-from-rest state
@@ -147,14 +150,14 @@ export default function Exercise() {
   const completedSets = useMemo(() => {
     const exerciseWeights = weightState.data[i] || {}
     return Object.entries(exerciseWeights)
-      .filter(([_, weight]) => weight !== null) // eslint-disable-line @typescript-eslint/no-unused-vars
+      .filter(([_, weight]) => weight !== null)
       .map(([setNum]) => parseInt(setNum))
   }, [weightState.data, i])
 
   const skippedSets = useMemo(() => {
     const exerciseWeights = weightState.data[i] || {}
     return Object.entries(exerciseWeights)
-      .filter(([_, weight]) => weight === null) // eslint-disable-line @typescript-eslint/no-unused-vars
+      .filter(([_, weight]) => weight === null)
       .map(([setNum]) => parseInt(setNum))
   }, [weightState.data, i])
 

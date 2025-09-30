@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import React, { forwardRef } from 'react'
 import { cn } from '../../lib/utils'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, type CardProps } from './Card'
 

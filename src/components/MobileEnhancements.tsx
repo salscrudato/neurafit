@@ -264,7 +264,7 @@ export function SwipeGesture({
 // Enhanced Number Input with Touch Controls
 interface TouchNumberInputProps {
   value: number
-  onChange: (value: number) => void
+  onChange: (_value: number) => void
   min?: number
   max?: number
   step?: number

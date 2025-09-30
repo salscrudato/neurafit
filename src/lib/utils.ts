@@ -29,10 +29,10 @@ export function formatDuration(ms: number): string {
 /**
  * Debounce function to limit the rate of function calls
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
+export function debounce<T extends (..._args: unknown[]) => unknown>(
   func: T,
   wait: number
-): (...args: Parameters<T>) => void {
+): (..._args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null
   
   return (...args: Parameters<T>) => {
@@ -49,10 +49,10 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 /**
  * Throttle function to limit the rate of function calls
  */
-export function throttle<T extends (...args: unknown[]) => unknown>(
+export function throttle<T extends (..._args: unknown[]) => unknown>(
   func: T,
   limit: number
-): (...args: Parameters<T>) => void {
+): (..._args: Parameters<T>) => void {
   let inThrottle: boolean = false
   
   return (...args: Parameters<T>) => {
@@ -140,7 +140,7 @@ export function prefersReducedMotion(): boolean {
 /**
  * Get contrast ratio between two colors (simplified)
  */
-export function getContrastRatio(_color1: string, _color2: string): number { // eslint-disable-line @typescript-eslint/no-unused-vars
+export function getContrastRatio(_color1: string, _color2: string): number {
   // This is a simplified version - in production you'd want a more robust implementation
   return 4.5 // Placeholder
 }

@@ -338,7 +338,7 @@ export class AnalyticsEngine {
     return firstWeight > 0 ? ((lastWeight - firstWeight) / firstWeight) * 100 : 0
   }
 
-  private calculateVolumeTrend(weights: number[], _dates: Date[]): 'increasing' | 'decreasing' | 'stable' { // eslint-disable-line @typescript-eslint/no-unused-vars
+  private calculateVolumeTrend(weights: number[], _dates: Date[]): 'increasing' | 'decreasing' | 'stable' {
     if (weights.length < 3) return 'stable'
     
     const recentWeights = weights.slice(-5) // Last 5 workouts

@@ -11,7 +11,7 @@ interface LoadingStage {
 
 interface ProgressiveLoaderProps {
   stages: LoadingStage[]
-  onStageComplete?: (stageId: string) => void
+  onStageComplete?: (_stageId: string) => void
   onAllComplete?: () => void
   fallbackComponent?: ReactNode
   showProgress?: boolean

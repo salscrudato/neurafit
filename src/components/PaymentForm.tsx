@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   useStripe, 
   useElements, 
@@ -13,13 +13,13 @@ import { trackSubscriptionStarted, trackSubscriptionCompleted } from '../lib/fir
 interface PaymentFormProps {
   priceId: string
   onSuccess: () => void
-  onError: (error: string) => void
+  onError: (_error: string) => void
   onCancel: () => void
 }
 
 interface PaymentFormInnerProps {
   onSuccess: () => void
-  onError: (error: string) => void
+  onError: (_error: string) => void
   onCancel: () => void
   paymentResult: {subscriptionId: string, customerId: string} | null
 }
@@ -193,7 +193,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
     }
 
     initializePayment()
-  }, [priceId]) // Removed onError from dependencies to prevent loops
+  }, [priceId, clientSecret, error, onError])
 
   if (loading) {
     return (

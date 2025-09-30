@@ -310,7 +310,7 @@ export default function Generate() {
         setError(
           error?.name === 'AbortError'
             ? 'The server took too long to respond. Please try again.'
-            : ((e2 as any)?.message || 'Failed to generate. Please try again.')
+            : ((e2 as Error)?.message || 'Failed to generate. Please try again.')
         )
       }
     } finally {

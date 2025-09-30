@@ -32,60 +32,116 @@ export class VersionManager {
     }
   }
 
-  // Check for updates by fetching a version endpoint
+  // Aggressive update checking with multiple strategies
   async checkForUpdates(): Promise<boolean> {
     try {
-      // Try to fetch the current index.html to see if it has changed
-      const response = await fetch('/index.html', {
+      // Strategy 1: Check HTML with cache busting
+      const cacheBuster = Date.now()
+      const htmlResponse = await fetch(`/?v=${cacheBuster}`, {
         cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       })
-      
-      if (response.ok) {
-        const html = await response.text()
-        
+
+      if (htmlResponse.ok) {
+        const html = await htmlResponse.text()
+
         // Look for build time or version in the HTML
         const buildTimeMatch = html.match(/data-build-time="([^"]+)"/)
         const versionMatch = html.match(/data-version="([^"]+)"/)
-        
+
         if (buildTimeMatch && buildTimeMatch[1] !== this.buildTime) {
-          console.log('New version detected:', {
+          console.log('🚀 New version detected via HTML:', {
             current: this.buildTime,
             new: buildTimeMatch[1]
           })
           return true
         }
-        
+
         if (versionMatch && versionMatch[1] !== this.currentVersion) {
-          console.log('New version detected:', {
+          console.log('🚀 New version detected via HTML:', {
             current: this.currentVersion,
             new: versionMatch[1]
           })
           return true
         }
       }
+
+      // Strategy 2: Check manifest.json for version changes
+      try {
+        const manifestResponse = await fetch(`/manifest.json?v=${cacheBuster}`, {
+          cache: 'no-cache'
+        })
+
+        if (manifestResponse.ok) {
+          const manifest = await manifestResponse.json()
+          const storedManifestVersion = localStorage.getItem('manifest-version')
+
+          if (manifest.version && manifest.version !== storedManifestVersion) {
+            console.log('🚀 New version detected via manifest:', manifest.version)
+            localStorage.setItem('manifest-version', manifest.version)
+            return true
+          }
+        }
+      } catch (manifestError) {
+        // Manifest check is optional
+        console.debug('Manifest check skipped:', manifestError)
+      }
+
+      // Strategy 3: Check service worker updates
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration()
+        if (registration) {
+          await registration.update()
+
+          if (registration.waiting) {
+            console.log('🚀 New service worker detected!')
+            return true
+          }
+        }
+      }
+
     } catch (error) {
       console.warn('Version check failed:', error)
     }
-    
+
     return false
   }
 
-  // Start periodic version checking
-  startVersionChecking(intervalMs: number = 60000): void {
+  // Start aggressive version checking (default 30 seconds)
+  startVersionChecking(intervalMs: number = 30000): void {
     if (this.checkInterval) {
       clearInterval(this.checkInterval)
     }
 
+    // Check immediately on start
+    setTimeout(async () => {
+      const hasUpdate = await this.checkForUpdates()
+      if (hasUpdate) {
+        this.notifyUpdateAvailable()
+      }
+    }, 2000)
+
+    // Then check periodically
     this.checkInterval = window.setInterval(async () => {
       const hasUpdate = await this.checkForUpdates()
       if (hasUpdate) {
         this.notifyUpdateAvailable()
       }
     }, intervalMs)
+
+    // Also check when page becomes visible again
+    document.addEventListener('visibilitychange', async () => {
+      if (!document.hidden) {
+        const hasUpdate = await this.checkForUpdates()
+        if (hasUpdate) {
+          this.notifyUpdateAvailable()
+        }
+      }
+    })
   }
 
   // Stop version checking
@@ -109,20 +165,71 @@ export class VersionManager {
     }
   }
 
-  // Force reload with cache bypass
-  forceReload(): void {
-    // Clear all caches first
-    if ('caches' in window) {
-      caches.keys().then(names => {
-        names.forEach(name => caches.delete(name))
-      })
+  // Aggressive cache clearing and reload
+  async forceReload(): Promise<void> {
+    console.log('🧹 Starting aggressive cache clear and reload...')
+
+    try {
+      // Clear all cache storage
+      if ('caches' in window) {
+        const cacheNames = await caches.keys()
+        await Promise.all(cacheNames.map(name => caches.delete(name)))
+        console.log('🧹 Cleared all cache storage')
+      }
+
+      // Clear localStorage (keep only essential user data)
+      const essentialKeys = ['neurafit_user_preferences', 'neurafit_workout_drafts']
+      const keysToRemove: string[] = []
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && !essentialKeys.includes(key)) {
+          keysToRemove.push(key)
+        }
+      }
+
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      console.log('🧹 Cleared localStorage')
+
+      // Clear sessionStorage
+      sessionStorage.clear()
+      console.log('🧹 Cleared sessionStorage')
+
+      // Clear IndexedDB if present
+      if ('indexedDB' in window) {
+        try {
+          const databases = await indexedDB.databases()
+          await Promise.all(
+            databases.map(db => {
+              if (db.name?.includes('firebase') || db.name?.includes('neurafit')) {
+                return new Promise<void>((resolve, reject) => {
+                  const deleteReq = indexedDB.deleteDatabase(db.name!)
+                  deleteReq.onsuccess = () => resolve()
+                  deleteReq.onerror = () => reject(deleteReq.error)
+                })
+              }
+            }).filter(Boolean)
+          )
+          console.log('🧹 Cleared IndexedDB')
+        } catch (idbError) {
+          console.warn('IndexedDB clear failed:', idbError)
+        }
+      }
+
+      // Update service worker if present
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration()
+        if (registration?.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+        }
+      }
+
+    } catch (error) {
+      console.warn('Cache clearing failed:', error)
     }
 
-    // Clear localStorage version info
-    localStorage.removeItem('app-version')
-    localStorage.removeItem('app-build-time')
-
-    // Force reload with cache bypass
+    // Force hard reload
+    console.log('🔄 Performing hard reload...')
     window.location.reload()
   }
 

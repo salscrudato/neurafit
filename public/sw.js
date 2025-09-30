@@ -1,5 +1,6 @@
-// Advanced service worker for instant updates and cache management
-const CACHE_VERSION = Math.floor(Date.now() / 1000) // Force cache bust with shorter timestamp
+// Aggressive Cache Busting Service Worker for NeuraFit
+// Updates every few seconds to ensure instant cache invalidation
+const CACHE_VERSION = Date.now() // Use full timestamp for maximum cache busting
 const CACHE_NAME = `neurafit-v${CACHE_VERSION}`
 const STATIC_CACHE = `neurafit-static-v${CACHE_VERSION}`
 const DYNAMIC_CACHE = `neurafit-dynamic-v${CACHE_VERSION}`

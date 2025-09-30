@@ -4,7 +4,7 @@ import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react'
 interface Props {
   children: ReactNode
   fallback?: ReactNode
-  onError?: (error: Error, errorInfo: ErrorInfo) => void
+  onError?: (_error: Error, _errorInfo: ErrorInfo) => void
   level?: 'page' | 'component' | 'critical'
 }
 

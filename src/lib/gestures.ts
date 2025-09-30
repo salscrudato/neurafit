@@ -39,7 +39,7 @@ export class GestureRecognizer {
   private tapTimer: number | null = null
   private lastTap: number = 0
   private initialDistance: number = 0
-  private listeners: Map<string, ((event: GestureEvent) => void)[]> = new Map()
+  private listeners: Map<string, ((_event: GestureEvent) => void)[]> = new Map()
 
   constructor(element: HTMLElement, config: Partial<GestureConfig> = {}) {
     this.element = element
@@ -178,7 +178,7 @@ export class GestureRecognizer {
     this.startTouch = fakeTouch
   }
 
-  private handleMouseMove(_event: MouseEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
+  private handleMouseMove(_event: MouseEvent) {
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null
@@ -238,14 +238,14 @@ export class GestureRecognizer {
     allListeners.forEach(listener => listener(gesture))
   }
 
-  public on(eventType: string, callback: (event: GestureEvent) => void) {
+  public on(eventType: string, callback: (_event: GestureEvent) => void) {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, [])
     }
     this.listeners.get(eventType)!.push(callback)
   }
 
-  public off(eventType: string, callback: (event: GestureEvent) => void) {
+  public off(eventType: string, callback: (_event: GestureEvent) => void) {
     const listeners = this.listeners.get(eventType)
     if (listeners) {
       const index = listeners.indexOf(callback)
@@ -290,11 +290,11 @@ export function useGestures(
     }
   }, [ref, config])
 
-  const on = React.useCallback((eventType: string, callback: (event: GestureEvent) => void) => {
+  const on = React.useCallback((eventType: string, callback: (_event: GestureEvent) => void) => {
     recognizerRef.current?.on(eventType, callback)
   }, [])
 
-  const off = React.useCallback((eventType: string, callback: (event: GestureEvent) => void) => {
+  const off = React.useCallback((eventType: string, callback: (_event: GestureEvent) => void) => {
     recognizerRef.current?.off(eventType, callback)
   }, [])
 

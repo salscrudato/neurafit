@@ -38,7 +38,7 @@ export default function History() {
       date: safeConvertToDate(item.timestamp).toISOString(),
       exercises: (item.exercises || []).map(exercise => ({
         name: exercise.name,
-        sets: Object.entries(exercise.weights || {}).map(([_setNum, weight]) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+        sets: Object.entries(exercise.weights || {}).map(([_setNum, weight]) => ({
           weight: weight,
           reps: typeof exercise.reps === 'number' ? exercise.reps : parseInt(exercise.reps as string) || 1,
           completed: weight !== null

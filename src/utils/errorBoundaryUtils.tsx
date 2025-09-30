@@ -4,7 +4,7 @@ import ErrorBoundary from '../components/ErrorBoundary'
 interface Props {
   children: React.ReactNode
   fallback?: React.ReactNode
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
+  onError?: (_error: Error, _errorInfo: React.ErrorInfo) => void
   level?: 'page' | 'component' | 'critical'
 }
 

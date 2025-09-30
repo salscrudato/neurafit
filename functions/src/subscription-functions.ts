@@ -1,5 +1,6 @@
 import { onCall } from "firebase-functions/v2/https"
 import { defineSecret } from "firebase-functions/params"
+import Stripe from 'stripe'
 import {
   createOrGetCustomer,
   createSubscription,
@@ -7,6 +8,18 @@ import {
   reactivateSubscription,
   getStripeClient
 } from './lib/stripe'
+
+// Extended Stripe types to include properties that exist but aren't in the official types
+interface ExtendedStripeSubscription extends Omit<Stripe.Subscription, 'canceled_at'> {
+  current_period_start: number
+  current_period_end: number
+  cancel_at_period_end: boolean
+  canceled_at?: number | null
+}
+
+interface ExtendedStripeInvoice extends Stripe.Invoice {
+  payment_intent?: Stripe.PaymentIntent | string
+}
 
 // Define Stripe secret key
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY")
@@ -42,23 +55,26 @@ export const createPaymentIntent = onCall(
 
       // Create subscription
       const subscription = await createSubscription(customerId, priceId, auth.uid, stripeSecretKey.value())
-      
-      const invoice = subscription.latest_invoice as any
+
+      const invoice = subscription.latest_invoice as ExtendedStripeInvoice
       const paymentIntent = invoice?.payment_intent
 
       console.log('Final subscription:', subscription.id)
       console.log('Final invoice:', invoice?.id, 'status:', invoice?.status)
-      console.log('Final payment intent:', paymentIntent?.id || 'none')
-      console.log('Final client secret:', paymentIntent?.client_secret ? 'present' : 'missing')
+      console.log('Final payment intent:',
+        typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id || 'none')
 
-      if (!paymentIntent?.client_secret) {
+      const clientSecret = typeof paymentIntent === 'string' ? null : paymentIntent?.client_secret
+      console.log('Final client secret:', clientSecret ? 'present' : 'missing')
+
+      if (!clientSecret) {
         console.error('No client secret available for subscription:', subscription.id)
         throw new Error('Payment initialization failed: No client secret available')
       }
 
       return {
         subscriptionId: subscription.id,
-        clientSecret: paymentIntent.client_secret,
+        clientSecret: clientSecret,
         customerId
       }
     } catch (error) {
@@ -90,11 +106,12 @@ export const cancelUserSubscription = onCall(
 
     try {
       const subscription = await cancelSubscription(subscriptionId, stripeSecretKey.value())
-      
+      const extendedSubscription = subscription as unknown as ExtendedStripeSubscription
+
       return {
         success: true,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        currentPeriodEnd: (subscription as any).current_period_end * 1000
+        currentPeriodEnd: extendedSubscription.current_period_end * 1000
       }
     } catch (error) {
       console.error('Error canceling subscription:', error)
@@ -201,13 +218,14 @@ export const getSubscriptionDetails = onCall(
         expand: ['default_payment_method', 'latest_invoice']
       })
       
+      const extendedSubscription = subscription as unknown as ExtendedStripeSubscription
       return {
         id: subscription.id,
         status: subscription.status,
-        currentPeriodStart: (subscription as any).current_period_start * 1000,
-        currentPeriodEnd: (subscription as any).current_period_end * 1000,
+        currentPeriodStart: extendedSubscription.current_period_start * 1000,
+        currentPeriodEnd: extendedSubscription.current_period_end * 1000,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        canceledAt: subscription.canceled_at ? subscription.canceled_at * 1000 : null,
+        canceledAt: extendedSubscription.canceled_at ? extendedSubscription.canceled_at * 1000 : null,
         priceId: subscription.items.data[0]?.price.id,
         amount: subscription.items.data[0]?.price.unit_amount,
         currency: subscription.items.data[0]?.price.currency,

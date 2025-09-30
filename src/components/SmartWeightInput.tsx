@@ -14,7 +14,7 @@ interface SmartWeightInputProps {
   exerciseName: string
   setNumber: number
   currentWeight: number | null
-  onWeightChange: (weight: number | null) => void
+  onWeightChange: (_weight: number | null) => void
   isOptimistic?: boolean
   previousWeights?: WeightHistory[]
   targetReps?: number | string
@@ -27,7 +27,7 @@ export function SmartWeightInput({
   onWeightChange,
   isOptimistic = false,
   previousWeights = [],
-  targetReps: _targetReps // eslint-disable-line @typescript-eslint/no-unused-vars
+  targetReps: _targetReps
 }: SmartWeightInputProps) {
   const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
   const [showSuggestions, setShowSuggestions] = useState(false)

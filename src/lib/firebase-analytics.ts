@@ -205,7 +205,7 @@ export const setUserAnalyticsProperties = (userId: string, properties: {
 /**
  * Custom Events
  */
-export const trackCustomEvent = (eventName: string, parameters: Record<string, any>) => {
+export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>) => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, eventName, parameters)
   })
@@ -229,7 +229,7 @@ export const trackSessionStart = () => {
   })
 }
 
-export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, any> = {}) => {
+export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, unknown> = {}) => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, eventName, {
       ...additionalParams,
@@ -243,18 +243,18 @@ export const trackLocationBasedEvent = (eventName: string, additionalParams: Rec
 /**
  * Enhanced User Properties with Location Context
  */
-export const setEnhancedUserProperties = (userId: string, userProfile: any) => {
+export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>) => {
   safeAnalyticsCall(() => {
     setUserId(analytics!, userId)
     setUserProperties(analytics!, {
       experience_level: userProfile.experience,
-      subscription_status: userProfile.subscription?.status || 'free',
-      total_workouts: userProfile.subscription?.workoutCount || 0,
+      subscription_status: (userProfile.subscription as { status?: string })?.status || 'free',
+      total_workouts: (userProfile.subscription as { workoutCount?: number })?.workoutCount || 0,
       signup_date: new Date().toISOString().split('T')[0],
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: navigator.language,
-      primary_goals: userProfile.goals?.slice(0, 3).join(',') || 'none',
-      equipment_access: userProfile.equipment?.length || 0
+      primary_goals: (userProfile.goals as string[])?.slice(0, 3).join(',') || 'none',
+      equipment_access: (userProfile.equipment as unknown[])?.length || 0
     })
   })
 }

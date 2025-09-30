@@ -12,7 +12,7 @@ interface EnhancedRestTimerProps {
     reps: string | number
     restSeconds?: number
   }
-  onTimeChange?: (seconds: number) => void
+  onTimeChange?: (_seconds: number) => void
 }
 
 export function EnhancedRestTimer({

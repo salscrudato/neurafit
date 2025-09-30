@@ -1,36 +1,36 @@
 import { Navigate } from 'react-router-dom'
-import { useSession } from '../hooks/useSession'
+import { useApp } from '../providers/AppProvider'
 import type { ReactNode } from 'react'
 
 // Landing gate at "/"
 export function HomeGate({ authPage }: { authPage: ReactNode }) {
-  const { status, user } = useSession()
+  const { authStatus, user } = useApp()
 
   // Only log in development for debugging
   if (process.env.NODE_ENV === 'development') {
-    console.log('[HOME] HomeGate:', status, user?.email || 'no user')
+    console.log('[HOME] HomeGate:', authStatus, user?.email || 'no user')
   }
 
-  if (status === 'loading') return <ScreenLoader />
-  if (status === 'signedOut') return <>{authPage}</>
-  if (status === 'needsOnboarding') return <Navigate to="/onboarding" replace />
+  if (authStatus === 'loading') return <ScreenLoader />
+  if (authStatus === 'signedOut') return <>{authPage}</>
+  if (authStatus === 'needsOnboarding') return <Navigate to="/onboarding" replace />
   return <Navigate to="/dashboard" replace />
 }
 
 // Require any signed-in user
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { status } = useSession()
-  if (status === 'loading') return <ScreenLoader />
-  if (status === 'signedOut') return <Navigate to="/" replace />
+  const { authStatus } = useApp()
+  if (authStatus === 'loading') return <ScreenLoader />
+  if (authStatus === 'signedOut') return <Navigate to="/" replace />
   return <>{children}</>
 }
 
 // Require completed profile
 export function RequireProfile({ children }: { children: ReactNode }) {
-  const { status } = useSession()
-  if (status === 'loading') return <ScreenLoader />
-  if (status === 'signedOut') return <Navigate to="/" replace />
-  if (status === 'needsOnboarding') return <Navigate to="/onboarding" replace />
+  const { authStatus } = useApp()
+  if (authStatus === 'loading') return <ScreenLoader />
+  if (authStatus === 'signedOut') return <Navigate to="/" replace />
+  if (authStatus === 'needsOnboarding') return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 

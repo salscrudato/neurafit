@@ -2,31 +2,77 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
-import { SessionProvider } from './session/SessionProvider'
 import { suppressDevWarnings } from './utils/devUtils'
+import { cacheBustingManager } from './utils/cacheBusting'
 
 // Suppress common development warnings
 suppressDevWarnings()
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <SessionProvider>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </SessionProvider>
+// Initialize aggressive cache busting
+console.log('🚀 Initializing aggressive cache busting system...')
+const deploymentInfo = cacheBustingManager.getDeploymentInfo()
+console.log('📦 Deployment ID:', deploymentInfo.id)
+
+// Performance monitoring will be initialized by AppProvider
+
+// Online/offline detection will be handled by AppProvider
+
+// Initialize app
+const root = ReactDOM.createRoot(document.getElementById('root')!)
+
+// Render app with error boundary
+root.render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
 )
 
-// Clear all caches on startup to ensure fresh content
+// App initialization complete
+
+// Clear all caches and storage on startup to ensure fresh content
 if ('caches' in window) {
   caches.keys().then(cacheNames => {
     cacheNames.forEach(cacheName => {
-      if (cacheName.includes('neurafit')) {
-        console.log('Clearing cache:', cacheName)
-        caches.delete(cacheName)
-      }
+      console.log('Clearing cache:', cacheName)
+      caches.delete(cacheName)
     })
   })
 }
+
+// Clear localStorage and sessionStorage for development
+if (process.env.NODE_ENV === 'development') {
+  // Clear any old auth tokens or cached data
+  const keysToRemove = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key && (key.includes('firebase') || key.includes('auth') || key.includes('neurafit'))) {
+      keysToRemove.push(key)
+    }
+  }
+  keysToRemove.forEach(key => {
+    console.log('Clearing localStorage key:', key)
+    localStorage.removeItem(key)
+  })
+
+  // Clear sessionStorage
+  sessionStorage.clear()
+  console.log('Cleared sessionStorage')
+}
+
+// Setup service worker for PWA functionality
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('SW registered: ', registration)
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError)
+      })
+  })
+}
+
+// Performance monitoring will be handled by performanceMonitor
 
 // Register service worker for PWA functionality and instant updates
 if ('serviceWorker' in navigator) {

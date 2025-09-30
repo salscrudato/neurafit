@@ -1,30 +1,47 @@
-import { useEffect } from 'react'
+import { useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Auth from './pages/Auth'
-import Onboarding from './pages/Onboarding'
-import Dashboard from './pages/Dashboard'
-import Generate from './pages/Generate'
-import Preview from './pages/workout/Preview'
-import Exercise from './pages/workout/Exercise'
-import Rest from './pages/workout/Rest'
-import Complete from './pages/workout/Complete'
-import History from './pages/History'
-import WorkoutDetail from './pages/WorkoutDetail'
-import Profile from './pages/Profile'
-import TestWorkout from './pages/TestWorkout'
-import TestSubscription from './pages/TestSubscription'
-import Terms from './pages/Terms'
-import Privacy from './pages/Privacy'
-import Subscription from './pages/Subscription'
 import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary'
+import LoadingSpinner from './components/LoadingSpinner'
+import UpdateNotification from './components/UpdateNotification'
 
+// Eager load critical pages
+import Auth from './pages/Auth'
+import Dashboard from './pages/Dashboard'
+
+// Lazy load non-critical pages for better performance
+const Onboarding = lazy(() => import('./pages/Onboarding'))
+const Generate = lazy(() => import('./pages/Generate'))
+const Preview = lazy(() => import('./pages/workout/Preview'))
+const Exercise = lazy(() => import('./pages/workout/Exercise'))
+const Rest = lazy(() => import('./pages/workout/Rest'))
+const Complete = lazy(() => import('./pages/workout/Complete'))
+const History = lazy(() => import('./pages/History'))
+const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Subscription = lazy(() => import('./pages/Subscription'))
+const Terms = lazy(() => import('./pages/Terms'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+
+// Development/testing pages - only load in development
+const TestWorkout = lazy(() =>
+  process.env.NODE_ENV === 'development'
+    ? import('./pages/TestWorkout')
+    : Promise.resolve({ default: () => <Navigate to="/dashboard" replace /> })
+)
+const TestSubscription = lazy(() =>
+  process.env.NODE_ENV === 'development'
+    ? import('./pages/TestSubscription')
+    : Promise.resolve({ default: () => <Navigate to="/dashboard" replace /> })
+)
+
+import { AppProvider } from './providers/AppProvider'
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
 import { versionManager } from './utils/version'
 import { usePageTracking } from './hooks/useAnalytics'
 import { trackSessionStart } from './lib/firebase-analytics'
 
-export default function App() {
+function AppContent() {
   // Track page views automatically
   usePageTracking()
 
@@ -42,8 +59,8 @@ export default function App() {
       versionManager.storeVersionInfo()
     }
 
-    // Start version checking (check every minute)
-    versionManager.startVersionChecking(60000)
+    // Start aggressive version checking (every 15 seconds)
+    versionManager.startVersionChecking(15000)
 
     // Listen for version updates
     const handleVersionUpdate = () => {
@@ -62,6 +79,9 @@ export default function App() {
   return (
     <CriticalErrorBoundary>
       <div className="min-h-screen">
+        {/* Update notification for instant cache busting */}
+        <UpdateNotification autoUpdate={process.env.NODE_ENV === 'production'} />
+
         <Routes>
 
         {/* Public legal pages */}
@@ -77,7 +97,9 @@ export default function App() {
           element={
             <RequireAuth>
               <PageErrorBoundary>
-                <Onboarding />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Onboarding />
+                </Suspense>
               </PageErrorBoundary>
             </RequireAuth>
           }
@@ -99,7 +121,9 @@ export default function App() {
           element={
             <RequireProfile>
               <PageErrorBoundary>
-                <Generate />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Generate />
+                </Suspense>
               </PageErrorBoundary>
             </RequireProfile>
           }
@@ -108,7 +132,9 @@ export default function App() {
           path="/workout/preview"
           element={
             <RequireProfile>
-              <Preview />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Preview />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -116,7 +142,9 @@ export default function App() {
           path="/workout/run"
           element={
             <RequireProfile>
-              <Exercise />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Exercise />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -124,7 +152,9 @@ export default function App() {
           path="/workout/rest"
           element={
             <RequireProfile>
-              <Rest />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Rest />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -132,7 +162,9 @@ export default function App() {
           path="/workout/complete"
           element={
             <RequireProfile>
-              <Complete />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Complete />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -140,7 +172,9 @@ export default function App() {
           path="/history"
           element={
             <RequireProfile>
-              <History />
+              <Suspense fallback={<LoadingSpinner />}>
+                <History />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -148,7 +182,9 @@ export default function App() {
           path="/workout/:workoutId"
           element={
             <RequireProfile>
-              <WorkoutDetail />
+              <Suspense fallback={<LoadingSpinner />}>
+                <WorkoutDetail />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -156,7 +192,9 @@ export default function App() {
           path="/profile"
           element={
             <RequireProfile>
-              <Profile />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Profile />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -165,7 +203,9 @@ export default function App() {
           element={
             <RequireProfile>
               <PageErrorBoundary>
-                <Subscription />
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Subscription />
+                </Suspense>
               </PageErrorBoundary>
             </RequireProfile>
           }
@@ -174,7 +214,9 @@ export default function App() {
           path="/test-workout"
           element={
             <RequireProfile>
-              <TestWorkout />
+              <Suspense fallback={<LoadingSpinner />}>
+                <TestWorkout />
+              </Suspense>
             </RequireProfile>
           }
         />
@@ -182,7 +224,9 @@ export default function App() {
           path="/test-subscription"
           element={
             <RequireAuth>
-              <TestSubscription />
+              <Suspense fallback={<LoadingSpinner />}>
+                <TestSubscription />
+              </Suspense>
             </RequireAuth>
           }
         />
@@ -191,5 +235,13 @@ export default function App() {
         </Routes>
       </div>
     </CriticalErrorBoundary>
+  )
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   )
 }

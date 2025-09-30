@@ -73,8 +73,8 @@ export default function Complete() {
         const docRef = await addDoc(collection(db, 'users', uid, 'workouts'), workoutDoc)
 
         // Track workout completion
-        const completedExercises = exercisesWithWeights.filter((ex: any) =>
-          ex.weights && Object.values(ex.weights).some((weight: any) => weight !== null)
+        const completedExercises = exercisesWithWeights.filter((ex: { weights?: Record<string, unknown> }) =>
+          ex.weights && Object.values(ex.weights).some((weight: unknown) => weight !== null)
         ).length
         trackWorkoutCompleted(docRef.id, actualDuration, completedExercises)
 

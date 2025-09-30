@@ -1,5 +1,5 @@
 // src/pages/Onboarding.tsx
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
@@ -141,7 +141,7 @@ function SelectCard({
 
 function MultiGrid({
   items, selected, onToggle, cols = 2, allowNone
-}: { items: string[]; selected: string[]; onToggle: (v: string) => void; cols?: 1 | 2; allowNone?: boolean }) {
+}: { items: string[]; selected: string[]; onToggle: (_v: string) => void; cols?: 1 | 2; allowNone?: boolean }) {
   return (
     <div className={`grid gap-3 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
       {items.map((v) => (

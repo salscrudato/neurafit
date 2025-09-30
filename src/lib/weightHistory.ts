@@ -53,7 +53,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
                 setNumber: parseInt(setNumber),
                 weight: weight,
                 timestamp,
-                reps: (exercise as any).reps || 10,
+                reps: (exercise as { reps?: number }).reps || 10,
                 date
               })
             }

@@ -12,14 +12,14 @@ export default function TestSubscription() {
     hasUnlimitedWorkouts 
   } = useSubscription()
   
-  const [testResult, setTestResult] = useState<any>(null)
+  const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null)
   const [testLoading, setTestLoading] = useState(false)
 
   const runTest = async () => {
     setTestLoading(true)
     try {
       const result = await testSubscriptionStatus()
-      setTestResult(result)
+      setTestResult(result as Record<string, unknown>)
     } catch (error) {
       console.error('Test failed:', error)
       setTestResult({ error: error instanceof Error ? error.message : 'Unknown error' })

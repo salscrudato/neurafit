@@ -2,6 +2,12 @@ import Stripe from 'stripe'
 import { getFirestore } from 'firebase-admin/firestore'
 import { initializeApp, getApps } from 'firebase-admin/app'
 
+// Extended Stripe types to include properties that exist but aren't in the official types
+interface ExtendedStripeInvoice extends Stripe.Invoice {
+  subscription?: string
+  payment_intent?: Stripe.PaymentIntent | string
+}
+
 // Initialize Firebase Admin if not already initialized
 if (getApps().length === 0) {
   initializeApp()
@@ -171,10 +177,11 @@ export async function createSubscription(
     console.log('Subscription created:', subscription.id, 'status:', subscription.status)
 
     // Log invoice details for debugging
-    const invoice = subscription.latest_invoice as any
+    const invoice = subscription.latest_invoice as ExtendedStripeInvoice
     if (invoice) {
       console.log('Invoice:', invoice.id, 'status:', invoice.status)
-      console.log('Payment intent on invoice:', invoice.payment_intent ? invoice.payment_intent.id : 'none')
+      console.log('Payment intent on invoice:', invoice.payment_intent ?
+        (typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent.id) : 'none')
     }
 
     // If no payment intent exists on the invoice, this might be a zero-amount invoice
@@ -201,7 +208,7 @@ export async function createSubscription(
           customer: customerId,
           payment_method_types: ['card'],
           metadata: {
-            invoice_id: invoice.id,
+            invoice_id: invoice.id || '',
             subscription_id: subscription.id,
             firebaseUID: uid
           }

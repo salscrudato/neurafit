@@ -6,7 +6,7 @@ interface PlateCalculatorProps {
   targetWeight: number
   barbellWeight?: number
   availablePlates?: number[]
-  onWeightChange?: (weight: number) => void
+  onWeightChange?: (_weight: number) => void
 }
 
 interface PlateConfiguration {
