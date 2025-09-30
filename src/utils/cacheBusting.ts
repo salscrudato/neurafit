@@ -16,15 +16,19 @@ class CacheBustingManager {
 
   private constructor(options: Partial<CacheBustingOptions> = {}) {
     this.options = {
-      enableQueryParams: true,
-      enableHeaders: true,
-      enableServiceWorkerUpdates: true,
-      updateInterval: 10000, // 10 seconds - very aggressive
+      enableQueryParams: process.env.NODE_ENV === 'production',
+      enableHeaders: process.env.NODE_ENV === 'production',
+      enableServiceWorkerUpdates: process.env.NODE_ENV === 'production',
+      updateInterval: 300000, // 5 minutes - much less aggressive
       ...options
     }
-    
+
     this.deploymentId = this.generateDeploymentId()
-    this.startPeriodicUpdates()
+
+    // Only start periodic updates in production
+    if (process.env.NODE_ENV === 'production') {
+      this.startPeriodicUpdates()
+    }
   }
 
   static getInstance(options?: Partial<CacheBustingOptions>): CacheBustingManager {
@@ -122,8 +126,12 @@ class CacheBustingManager {
     }
   }
 
-  // Start periodic update checking
+  // Start periodic update checking (production only)
   private startPeriodicUpdates(): void {
+    if (process.env.NODE_ENV !== 'production') {
+      return // Skip in development
+    }
+
     if (this.updateTimer) {
       clearInterval(this.updateTimer)
     }
@@ -132,16 +140,22 @@ class CacheBustingManager {
       this.checkForUpdates()
     }, this.options.updateInterval)
 
-    // Also check when page becomes visible
+    // Also check when page becomes visible (throttled)
+    let lastVisibilityCheck = 0
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
+      if (!document.hidden && Date.now() - lastVisibilityCheck > 60000) { // Max once per minute
+        lastVisibilityCheck = Date.now()
         this.checkForUpdates()
       }
     })
 
-    // Check when online status changes
+    // Check when online status changes (throttled)
+    let lastOnlineCheck = 0
     window.addEventListener('online', () => {
-      this.checkForUpdates()
+      if (Date.now() - lastOnlineCheck > 30000) { // Max once per 30 seconds
+        lastOnlineCheck = Date.now()
+        this.checkForUpdates()
+      }
     })
   }
 
@@ -190,11 +204,17 @@ class CacheBustingManager {
       }
     }))
     
-    // Auto-reload after short delay
-    setTimeout(() => {
-      console.log('🔄 Auto-reloading due to cache update...')
-      window.location.reload()
-    }, 2000)
+    // Only auto-reload in production, and with user confirmation
+    if (process.env.NODE_ENV === 'production') {
+      setTimeout(() => {
+        if (confirm('A new version is available. Reload to update?')) {
+          console.log('🔄 User confirmed reload due to cache update...')
+          window.location.reload()
+        }
+      }, 2000)
+    } else {
+      console.log('🔄 Cache update detected (development mode - no auto-reload)')
+    }
   }
 
   // Clear all browser caches

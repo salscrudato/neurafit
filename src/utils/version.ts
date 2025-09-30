@@ -111,37 +111,43 @@ export class VersionManager {
     return false
   }
 
-  // Start aggressive version checking (default 30 seconds)
-  startVersionChecking(intervalMs: number = 30000): void {
+  // Start version checking (default 5 minutes)
+  startVersionChecking(intervalMs: number = 300000): void {
     if (this.checkInterval) {
       clearInterval(this.checkInterval)
     }
 
-    // Check immediately on start
-    setTimeout(async () => {
-      const hasUpdate = await this.checkForUpdates()
-      if (hasUpdate) {
-        this.notifyUpdateAvailable()
-      }
-    }, 2000)
-
-    // Then check periodically
-    this.checkInterval = window.setInterval(async () => {
-      const hasUpdate = await this.checkForUpdates()
-      if (hasUpdate) {
-        this.notifyUpdateAvailable()
-      }
-    }, intervalMs)
-
-    // Also check when page becomes visible again
-    document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden) {
+    // Skip immediate check in development to prevent refresh loops
+    if (process.env.NODE_ENV === 'production') {
+      setTimeout(async () => {
         const hasUpdate = await this.checkForUpdates()
         if (hasUpdate) {
           this.notifyUpdateAvailable()
         }
-      }
-    })
+      }, 10000) // Wait 10 seconds before first check
+    }
+
+    // Then check periodically (only in production)
+    if (process.env.NODE_ENV === 'production') {
+      this.checkInterval = window.setInterval(async () => {
+        const hasUpdate = await this.checkForUpdates()
+        if (hasUpdate) {
+          this.notifyUpdateAvailable()
+        }
+      }, intervalMs)
+
+      // Also check when page becomes visible again (but throttled)
+      let lastVisibilityCheck = 0
+      document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden && Date.now() - lastVisibilityCheck > 60000) { // Max once per minute
+          lastVisibilityCheck = Date.now()
+          const hasUpdate = await this.checkForUpdates()
+          if (hasUpdate) {
+            this.notifyUpdateAvailable()
+          }
+        }
+      })
+    }
   }
 
   // Stop version checking

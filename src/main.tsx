@@ -8,10 +8,12 @@ import { cacheBustingManager } from './utils/cacheBusting'
 // Suppress common development warnings
 suppressDevWarnings()
 
-// Initialize aggressive cache busting
-console.log('🚀 Initializing aggressive cache busting system...')
-const deploymentInfo = cacheBustingManager.getDeploymentInfo()
-console.log('📦 Deployment ID:', deploymentInfo.id)
+// Initialize cache busting only in production
+if (process.env.NODE_ENV === 'production') {
+  console.log('🚀 Initializing cache busting system...')
+  const deploymentInfo = cacheBustingManager.getDeploymentInfo()
+  console.log('📦 Deployment ID:', deploymentInfo.id)
+}
 
 // Performance monitoring will be initialized by AppProvider
 
@@ -39,24 +41,16 @@ if ('caches' in window) {
   })
 }
 
-// Clear localStorage and sessionStorage for development
+// Only clear specific caches in development, not all storage
 if (process.env.NODE_ENV === 'development') {
-  // Clear any old auth tokens or cached data
-  const keysToRemove = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key && (key.includes('firebase') || key.includes('auth') || key.includes('neurafit'))) {
-      keysToRemove.push(key)
+  // Only clear version-related keys that might cause refresh loops
+  const versionKeys = ['current-deployment-version', 'page-etag', 'page-last-modified', 'manifest-version']
+  versionKeys.forEach(key => {
+    if (localStorage.getItem(key)) {
+      console.log('Clearing localStorage key:', key)
+      localStorage.removeItem(key)
     }
-  }
-  keysToRemove.forEach(key => {
-    console.log('Clearing localStorage key:', key)
-    localStorage.removeItem(key)
   })
-
-  // Clear sessionStorage
-  sessionStorage.clear()
-  console.log('Cleared sessionStorage')
 }
 
 // Setup service worker for PWA functionality
@@ -83,10 +77,12 @@ if ('serviceWorker' in navigator) {
           console.log('SW registered: ', registration)
         }
 
-        // Check for updates every 30 seconds
-        setInterval(() => {
-          registration.update()
-        }, 30000)
+        // Check for updates every 10 minutes in production only
+        if (process.env.NODE_ENV === 'production') {
+          setInterval(() => {
+            registration.update()
+          }, 600000) // 10 minutes
+        }
 
         // Listen for updates
         registration.addEventListener('updatefound', () => {

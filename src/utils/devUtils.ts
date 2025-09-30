@@ -29,6 +29,18 @@ export const suppressDevWarnings = () => {
       return
     }
 
+    // Suppress performance monitoring warnings in development
+    if (message.includes('LCP exceeded budget') ||
+        message.includes('FCP exceeded budget') ||
+        message.includes('CLS exceeded budget') ||
+        message.includes('Slow navigation detected') ||
+        message.includes('Slow resource detected') ||
+        message.includes('High memory usage detected') ||
+        message.includes('Failed to observe') ||
+        message.includes('does not exist or isn\'t supported')) {
+      return
+    }
+
     // Call original warn for other messages
     originalWarn.apply(console, args)
   }
@@ -48,6 +60,20 @@ export const suppressDevWarnings = () => {
 
     // Suppress auth state messages (keep only errors)
     if (message.includes('🔐 Auth state:') || message.includes('[HOME] HomeGate:')) {
+      return
+    }
+
+    // Suppress performance monitoring messages in development
+    if (message.includes('LCP exceeded budget') ||
+        message.includes('FCP exceeded budget') ||
+        message.includes('CLS exceeded budget') ||
+        message.includes('Slow navigation detected') ||
+        message.includes('Slow resource detected') ||
+        message.includes('🚀 Page headers changed') ||
+        message.includes('🔄 Cache update detected') ||
+        message.includes('🧹 Cleared all cache storage') ||
+        message.includes('🧹 Cleared browser storage') ||
+        message.includes('Progress:')) {
       return
     }
 

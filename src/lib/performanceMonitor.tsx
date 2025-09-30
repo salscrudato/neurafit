@@ -28,20 +28,26 @@ class PerformanceMonitor {
   private init(): void {
     if (typeof window === 'undefined') return
 
-    // Initialize performance observer
-    this.setupPerformanceObserver()
-    
-    // Monitor memory usage
-    this.setupMemoryMonitoring()
-    
-    // Monitor Core Web Vitals
-    this.setupWebVitalsMonitoring()
-    
-    // Monitor bundle loading
-    this.setupBundleMonitoring()
-    
-    // Setup cleanup on page unload
-    window.addEventListener('beforeunload', this.cleanup.bind(this))
+    // Only enable full monitoring in production
+    if (process.env.NODE_ENV === 'production') {
+      // Initialize performance observer
+      this.setupPerformanceObserver()
+
+      // Monitor memory usage
+      this.setupMemoryMonitoring()
+
+      // Monitor Core Web Vitals
+      this.setupWebVitalsMonitoring()
+
+      // Monitor bundle loading
+      this.setupBundleMonitoring()
+
+      // Setup cleanup on page unload
+      window.addEventListener('beforeunload', this.cleanup.bind(this))
+    } else {
+      // In development, only do basic monitoring to avoid console noise
+      this.setupBundleMonitoring()
+    }
   }
 
   private setupPerformanceObserver(): void {
@@ -93,42 +99,49 @@ class PerformanceMonitor {
   private setupWebVitalsMonitoring(): void {
     // Monitor First Contentful Paint - check if supported first
     try {
-      this.observeWebVital('first-contentful-paint', (entry) => {
-        const fcp = entry.startTime
-        this.updatePerformanceMetric('firstContentfulPaint', fcp)
+      // Check if the entry type is supported before observing
+      if (PerformanceObserver.supportedEntryTypes?.includes('paint')) {
+        this.observeWebVital('first-contentful-paint', (entry) => {
+          const fcp = entry.startTime
+          this.updatePerformanceMetric('firstContentfulPaint', fcp)
 
-        if (fcp > this.PERFORMANCE_BUDGET.FCP) {
-          console.warn(`FCP exceeded budget: ${fcp}ms > ${this.PERFORMANCE_BUDGET.FCP}ms`)
-        }
-      })
+          if (fcp > this.PERFORMANCE_BUDGET.FCP) {
+            console.warn(`FCP exceeded budget: ${fcp}ms > ${this.PERFORMANCE_BUDGET.FCP}ms`)
+          }
+        })
+      }
     } catch (error) {
-      // FCP not supported in this browser, skip
+      // FCP not supported in this browser, skip silently
       if (process.env.NODE_ENV === 'development') {
-        console.log('First Contentful Paint monitoring not supported in this browser')
+        console.debug('First Contentful Paint monitoring not supported in this browser')
       }
     }
 
     // Monitor Largest Contentful Paint
-    this.observeWebVital('largest-contentful-paint', (entry) => {
-      const lcp = entry.startTime
-      this.updatePerformanceMetric('largestContentfulPaint', lcp)
-      
-      if (lcp > this.PERFORMANCE_BUDGET.LCP) {
-        console.warn(`LCP exceeded budget: ${lcp}ms > ${this.PERFORMANCE_BUDGET.LCP}ms`)
-      }
-    })
+    if (PerformanceObserver.supportedEntryTypes?.includes('largest-contentful-paint')) {
+      this.observeWebVital('largest-contentful-paint', (entry) => {
+        const lcp = entry.startTime
+        this.updatePerformanceMetric('largestContentfulPaint', lcp)
+
+        if (lcp > this.PERFORMANCE_BUDGET.LCP) {
+          console.warn(`LCP exceeded budget: ${lcp}ms > ${this.PERFORMANCE_BUDGET.LCP}ms`)
+        }
+      })
+    }
 
     // Monitor Cumulative Layout Shift
-    this.observeWebVital('layout-shift', (entry) => {
-      if (!(entry as PerformanceEntry & { hadRecentInput?: boolean }).hadRecentInput) {
-        const cls = (entry as PerformanceEntry & { value?: number }).value || 0
-        this.updatePerformanceMetric('cumulativeLayoutShift', cls)
-        
-        if (cls > this.PERFORMANCE_BUDGET.CLS) {
-          console.warn(`CLS exceeded budget: ${cls} > ${this.PERFORMANCE_BUDGET.CLS}`)
+    if (PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) {
+      this.observeWebVital('layout-shift', (entry) => {
+        if (!(entry as PerformanceEntry & { hadRecentInput?: boolean }).hadRecentInput) {
+          const cls = (entry as PerformanceEntry & { value?: number }).value || 0
+          this.updatePerformanceMetric('cumulativeLayoutShift', cls)
+
+          if (cls > this.PERFORMANCE_BUDGET.CLS) {
+            console.warn(`CLS exceeded budget: ${cls} > ${this.PERFORMANCE_BUDGET.CLS}`)
+          }
         }
-      }
-    })
+      })
+    }
   }
 
   private setupBundleMonitoring(): void {
@@ -146,6 +159,14 @@ class PerformanceMonitor {
     if (!('PerformanceObserver' in window)) return
 
     try {
+      // Check if the entry type is supported before creating observer
+      if (!PerformanceObserver.supportedEntryTypes?.includes(type)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.debug(`Performance entry type '${type}' is not supported in this browser`)
+        }
+        return
+      }
+
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries()
         entries.forEach(callback)
@@ -153,7 +174,9 @@ class PerformanceMonitor {
 
       observer.observe({ type, buffered: true })
     } catch (error) {
-      console.warn(`Failed to observe ${type}:`, error)
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`Failed to observe ${type}:`, error)
+      }
     }
   }
 

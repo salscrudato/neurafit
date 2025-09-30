@@ -2,7 +2,6 @@ import { useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary'
 import LoadingSpinner from './components/LoadingSpinner'
-import UpdateNotification from './components/UpdateNotification'
 
 // Eager load critical pages
 import Auth from './pages/Auth'
@@ -59,8 +58,10 @@ function AppContent() {
       versionManager.storeVersionInfo()
     }
 
-    // Start aggressive version checking (every 15 seconds)
-    versionManager.startVersionChecking(15000)
+    // Start version checking (every 5 minutes in production, disabled in development)
+    if (process.env.NODE_ENV === 'production') {
+      versionManager.startVersionChecking(300000) // 5 minutes
+    }
 
     // Listen for version updates
     const handleVersionUpdate = () => {
@@ -79,9 +80,6 @@ function AppContent() {
   return (
     <CriticalErrorBoundary>
       <div className="min-h-screen">
-        {/* Update notification for instant cache busting */}
-        <UpdateNotification autoUpdate={process.env.NODE_ENV === 'production'} />
-
         <Routes>
 
         {/* Public legal pages */}
