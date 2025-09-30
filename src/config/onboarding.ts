@@ -19,19 +19,20 @@ export const GOALS = [
   'Injury Prevention',
 ]
 
+// Equipment organized by popularity and accessibility (most to least common)
 export const EQUIPMENT = [
-  'Bodyweight',
-  'Dumbbells',
-  'Barbells',
-  'Resistance Bands',
-  'Kettlebells',
-  'Medicine Balls',
-  'Weight Machines',
-  'Treadmill',
-  'Stationary Bike',
-  'Rowing Machine',
-  'Pull-Up Bar',
-  'Cable Machine',
+  'Bodyweight',        // Most accessible - no equipment needed
+  'Dumbbells',         // Most popular home equipment
+  'Resistance Bands',  // Portable and versatile
+  'Pull-Up Bar',       // Common home gym staple
+  'Kettlebells',       // Functional training favorite
+  'Barbells',          // Serious strength training
+  'Weight Machines',   // Gym standard equipment
+  'Medicine Balls',    // Functional and core training
+  'Cable Machine',     // Gym versatility
+  'Treadmill',         // Cardio equipment
+  'Stationary Bike',   // Low-impact cardio
+  'Rowing Machine',    // Full-body cardio
 ]
 
 export const SEX_OPTIONS = ['Male', 'Female', 'Other']
@@ -45,7 +46,7 @@ export const INJURY_OPTIONS = ['None', 'Knee', 'Lower Back', 'Shoulder', 'Ankle'
 // Type exports for better TypeScript support
 export type ExperienceLevel = 'Beginner' | 'Intermediate' | 'Expert'
 export type Goal = 'Weight Loss' | 'Build Muscle' | 'Strength' | 'Stamina' | 'Tone' | 'General Health' | 'Increase Flexibility' | 'Sports Performance' | 'Mental Health' | 'Injury Prevention'
-export type Equipment = 'Bodyweight' | 'Dumbbells' | 'Barbells' | 'Resistance Bands' | 'Kettlebells' | 'Medicine Balls' | 'Weight Machines' | 'Treadmill' | 'Stationary Bike' | 'Rowing Machine' | 'Pull-Up Bar' | 'Cable Machine'
+export type Equipment = 'Bodyweight' | 'Dumbbells' | 'Resistance Bands' | 'Pull-Up Bar' | 'Kettlebells' | 'Barbells' | 'Weight Machines' | 'Medicine Balls' | 'Cable Machine' | 'Treadmill' | 'Stationary Bike' | 'Rowing Machine'
 export type SexOption = 'Male' | 'Female' | 'Other'
 export type HeightRange = "<5'0" | "5'0–5'5" | "5'6–5'9" | "5'10–6'1" | "6'2–6'5" | ">6'5"
 export type WeightRange = '<120lb' | '120–149' | '150–179' | '180–209' | '210–239' | '240+lb'

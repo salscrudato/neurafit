@@ -29,47 +29,28 @@ export const STRIPE_CONFIG = {
 }
 
 // Subscription plans with actual Stripe price IDs
-// Note: These need to be created in Stripe Dashboard and updated here
+// Simple $10/month plan
 export const STRIPE_PRICE_IDS = {
-  monthly: 'price_1QdGHdQjUU16Imh7NtysYpU3', // Replace with actual monthly price ID
-  yearly: 'price_1QdGHeQjUU16Imh7NtysYpU4'   // Replace with actual yearly price ID
+  simple: 'price_1SCyZkQjUU16Imh7W8Wofkk5' // Simple Pro - $10.00/month
 }
 
-// Update subscription plans with actual Stripe price IDs
+// Simple subscription plan - single $10/month option
 export const SUBSCRIPTION_PLANS = [
   {
-    id: 'monthly',
-    name: 'Monthly Pro',
+    id: 'simple',
+    name: 'NeuraFit Pro',
     description: 'Unlimited AI-powered workouts',
-    price: 999, // $9.99
+    price: 1000, // $10.00
     currency: 'usd',
     interval: 'month' as const,
-    stripePriceId: STRIPE_PRICE_IDS.monthly,
-    popular: false,
-    features: [
-      'Unlimited workout generation',
-      'Advanced personalization',
-      'Progress tracking',
-      'Weight history',
-      'Priority support'
-    ]
-  },
-  {
-    id: 'yearly',
-    name: 'Yearly Pro',
-    description: 'Unlimited AI-powered workouts (2 months free)',
-    price: 9999, // $99.99 (equivalent to ~$8.33/month)
-    currency: 'usd',
-    interval: 'year' as const,
-    stripePriceId: STRIPE_PRICE_IDS.yearly,
+    stripePriceId: STRIPE_PRICE_IDS.simple,
     popular: true,
     features: [
       'Unlimited workout generation',
       'Advanced personalization',
       'Progress tracking',
       'Weight history',
-      'Priority support',
-      '2 months free'
+      'Priority support'
     ]
   }
 ] as const

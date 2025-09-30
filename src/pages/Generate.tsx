@@ -10,14 +10,35 @@ import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } fro
 import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
 import { useSubscription } from '../session/SubscriptionProvider'
-import { UpgradePrompt } from '../components/UpgradePrompt'
+import { SimpleSubscription } from '../components/SimpleSubscription'
 
 
+// Top 20 workout types organized by popularity (most to least common)
 const TYPES = [
-  'Full Body','Upper Body','Lower Body','Cardio','HIIT','Core Focus',
-  'Yoga/Pilates','Circuit','Chest/Triceps','Back/Biceps','Shoulders','Legs/Glutes'
+  'Full Body',        // Most popular - comprehensive workout
+  'Upper Body',       // Very popular - convenient split
+  'Lower Body',       // Very popular - leg day
+  'Cardio',          // High demand - heart health
+  'HIIT',            // Trending - time efficient
+  'Core Focus',      // Popular - aesthetic goals
+  'Strength',        // Classic - powerlifting focus
+  'Circuit',         // Popular - variety and intensity
+  'Push',            // Popular split - chest/shoulders/triceps
+  'Pull',            // Popular split - back/biceps
+  'Legs/Glutes',     // Specific lower body focus
+  'Chest/Triceps',   // Classic push split
+  'Back/Biceps',     // Classic pull split
+  'Shoulders',       // Targeted muscle group
+  'Arms',            // Popular aesthetic focus
+  'Yoga/Pilates',    // Mind-body connection
+  'Functional',      // Movement-based training
+  'Mobility',        // Recovery and flexibility
+  'Plyometric',      // Athletic performance
+  'Rehabilitation'   // Injury recovery/prevention
 ] as const
-const DUR = [15, 30, 45, 60, 75, 90] as const
+
+// Top 8 most common workout durations (optimized for user preferences)
+const DUR = [15, 20, 30, 45, 60, 75, 90, 120] as const
 
 type Profile = {
   experience?: string
@@ -325,7 +346,7 @@ export default function Generate() {
                       {remainingFreeWorkouts} free workout{remainingFreeWorkouts === 1 ? '' : 's'} remaining
                     </div>
                     <div className="text-sm text-gray-600">
-                      Upgrade for unlimited access
+                      Upgrade to Pro for $10/month
                     </div>
                   </div>
                 </div>
@@ -333,19 +354,21 @@ export default function Generate() {
                   onClick={() => setShowUpgradePrompt(true)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors text-sm"
                 >
-                  Upgrade
+                  $10/month
                 </button>
               </div>
             </div>
           </section>
         )}
 
-        {/* Upgrade Prompt Modal */}
+        {/* Simple Subscription Modal */}
         {showUpgradePrompt && (
-          <UpgradePrompt
-            variant="modal"
-            onUpgrade={() => nav('/subscription')}
-            onDismiss={() => setShowUpgradePrompt(false)}
+          <SimpleSubscription
+            onClose={() => setShowUpgradePrompt(false)}
+            onSuccess={() => {
+              // Subscription successful, user can now generate workouts
+              setShowUpgradePrompt(false)
+            }}
           />
         )}
 
@@ -382,13 +405,13 @@ export default function Generate() {
               <h3 className="font-semibold text-gray-900">Workout Type</h3>
               {type && <span className="text-xs text-gray-500">Selected: {type}</span>}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {TYPES.map((t) => (
                 <button
                   key={t}
                   onClick={() => setType(t)}
                   className={[
-                    'rounded-xl border px-4 py-3 text-left transition-all duration-200',
+                    'rounded-xl border px-3 py-2.5 text-left transition-all duration-200 text-sm font-medium',
                     type === t
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
                       : 'bg-white/70 border-gray-200 hover:border-blue-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
@@ -408,13 +431,13 @@ export default function Generate() {
               <h3 className="font-semibold text-gray-900">Duration</h3>
               {duration && <span className="text-xs text-gray-500">{duration} min</span>}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {DUR.map((m) => (
                 <button
                   key={m}
                   onClick={() => setDuration(m)}
                   className={[
-                    'rounded-full border px-4 py-2 text-sm transition-all duration-200',
+                    'rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200',
                     duration === m
                       ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-500 shadow-md scale-[1.02]'
                       : 'bg-white/70 border-gray-200 hover:border-emerald-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
@@ -433,7 +456,7 @@ export default function Generate() {
                 <h3 className="font-semibold text-gray-900">Available Equipment</h3>
                 {equipment.length > 0 && <span className="text-xs text-gray-500">{equipment.length} selected</span>}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {EQUIPMENT.map((eq) => (
                   <button
                     key={eq}
@@ -445,7 +468,7 @@ export default function Generate() {
                       )
                     }}
                     className={[
-                      'rounded-full border px-4 py-2 text-sm transition-all duration-200',
+                      'rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200 text-left',
                       equipment.includes(eq)
                         ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white border-orange-500 shadow-md scale-[1.02]'
                         : 'bg-white/70 border-gray-200 hover:border-orange-300 hover:bg-white text-gray-700 hover:scale-[1.01]'

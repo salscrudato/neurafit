@@ -77,11 +77,7 @@ export function SubscriptionPlans({ onSelectPlan, loading, selectedPriceId }: Su
                   <span className="text-gray-600">/{plan.interval}</span>
                 </div>
                 
-                {plan.interval === 'year' && (
-                  <p className="text-sm text-green-600 font-medium mt-1">
-                    Save ${((999 * 12) - plan.price) / 100}/year
-                  </p>
-                )}
+
               </div>
 
               {/* Features */}
