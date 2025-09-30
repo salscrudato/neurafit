@@ -21,7 +21,7 @@ import {
   type WorkoutSession
 } from '../../lib/weightHistory'
 
-import { useHaptics } from '../../lib/haptics'
+
 import { useBounce, useShake } from '../../components/MicroInteractions'
 import { PersonalizationEngine, getCurrentContext } from '../../lib/personalization'
 
@@ -55,9 +55,9 @@ export default function Exercise() {
 
   // Enhanced UX hooks
   const containerRef = useRef<HTMLDivElement>(null)
-  const haptics = useHaptics()
-  const { bounce, bounceClass } = useBounce()
-  const { shake, shakeClass } = useShake()
+
+  const { bounceClass } = useBounce()
+  const { shakeClass } = useShake()
 
   // Smart rest period calculation
   const [personalizationEngine, setPersonalizationEngine] = useState<PersonalizationEngine | null>(null)
@@ -235,51 +235,6 @@ export default function Exercise() {
     sessionStorage.setItem('nf_next', JSON.stringify({ i: nextIndex, setNo: nextSet }))
     nav('/workout/rest')
   }, [nav, ex.restSeconds, ex.name, setNo, personalizationEngine])
-
-  // Enhanced set completion with haptic feedback
-  const completeCurrentSet = useCallback(() => {
-    const currentWeight = workoutWeights[i]?.[setNo]
-
-    if (currentWeight !== undefined) {
-      // Set already has a weight, mark as complete
-      haptics.setComplete()
-      bounce()
-
-      if (setNo < ex.sets) {
-        setSetNo(setNo + 1)
-      } else {
-        // Exercise complete
-        haptics.exerciseComplete()
-        if (i < list.length - 1) {
-          goRest(i + 1, 1)
-        } else {
-          // Workout complete
-          haptics.workoutComplete()
-          nav('/workout/complete')
-        }
-      }
-    } else {
-      // No weight entered, shake to indicate error
-      haptics.error()
-      shake()
-    }
-  }, [workoutWeights, i, setNo, ex.sets, haptics, bounce, shake, goRest, nav, list.length])
-
-  const skipCurrentSet = useCallback(() => {
-    updateWeight(null) // Mark as skipped
-    haptics.tap()
-
-    if (setNo < ex.sets) {
-      setSetNo(setNo + 1)
-    } else {
-      // Exercise complete
-      if (i < list.length - 1) {
-        goRest(i + 1, 1)
-      } else {
-        nav('/workout/complete')
-      }
-    }
-  }, [updateWeight, setNo, ex.sets, haptics, i, list.length, goRest, nav])
 
 
 
@@ -567,7 +522,17 @@ export default function Exercise() {
           >
             Skip Exercise
           </button>
-
+          {/* Gesture Hints */}
+          <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+            <p className="text-xs text-blue-600 text-center mb-2 font-medium">Quick Actions</p>
+            <div className="flex justify-between text-xs text-blue-500">
+              <span>← Swipe left to skip</span>
+              <span>Swipe right to complete →</span>
+            </div>
+            <div className="text-center mt-1 text-xs text-blue-400">
+              ↑↓ Navigate sets • Long press to skip exercise
+            </div>
+          </div>
 
           <div className="flex gap-2 mt-4">
             <button
