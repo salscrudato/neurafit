@@ -1,11 +1,11 @@
 import { onCall } from "firebase-functions/v2/https"
 import { defineSecret } from "firebase-functions/params"
-import { 
-  createOrGetCustomer, 
-  createSubscription, 
-  cancelSubscription, 
+import {
+  createOrGetCustomer,
+  createSubscription,
+  cancelSubscription,
   reactivateSubscription,
-  stripe 
+  getStripeClient
 } from './lib/stripe'
 
 // Define Stripe secret key
@@ -36,18 +36,29 @@ export const createPaymentIntent = onCall(
       const customerId = await createOrGetCustomer(
         auth.uid,
         auth.token.email || '',
-        auth.token.name
+        auth.token.name,
+        stripeSecretKey.value()
       )
 
       // Create subscription
-      const subscription = await createSubscription(customerId, priceId, auth.uid)
+      const subscription = await createSubscription(customerId, priceId, auth.uid, stripeSecretKey.value())
       
       const invoice = subscription.latest_invoice as any
       const paymentIntent = invoice?.payment_intent
 
+      console.log('Final subscription:', subscription.id)
+      console.log('Final invoice:', invoice?.id, 'status:', invoice?.status)
+      console.log('Final payment intent:', paymentIntent?.id || 'none')
+      console.log('Final client secret:', paymentIntent?.client_secret ? 'present' : 'missing')
+
+      if (!paymentIntent?.client_secret) {
+        console.error('No client secret available for subscription:', subscription.id)
+        throw new Error('Payment initialization failed: No client secret available')
+      }
+
       return {
         subscriptionId: subscription.id,
-        clientSecret: paymentIntent?.client_secret,
+        clientSecret: paymentIntent.client_secret,
         customerId
       }
     } catch (error) {
@@ -78,7 +89,7 @@ export const cancelUserSubscription = onCall(
     }
 
     try {
-      const subscription = await cancelSubscription(subscriptionId)
+      const subscription = await cancelSubscription(subscriptionId, stripeSecretKey.value())
       
       return {
         success: true,
@@ -113,7 +124,7 @@ export const reactivateUserSubscription = onCall(
     }
 
     try {
-      const subscription = await reactivateSubscription(subscriptionId)
+      const subscription = await reactivateSubscription(subscriptionId, stripeSecretKey.value())
       
       return {
         success: true,
@@ -148,7 +159,8 @@ export const getCustomerPortalUrl = onCall(
     }
 
     try {
-      const session = await stripe.billingPortal.sessions.create({
+      const stripeInstance = getStripeClient(stripeSecretKey.value())
+      const session = await stripeInstance.billingPortal.sessions.create({
         customer: customerId,
         return_url: returnUrl || 'https://neurafit-ai-2025.web.app/profile'
       })
@@ -184,7 +196,8 @@ export const getSubscriptionDetails = onCall(
     }
 
     try {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+      const stripeInstance = getStripeClient(stripeSecretKey.value())
+      const subscription = await stripeInstance.subscriptions.retrieve(subscriptionId, {
         expand: ['default_payment_method', 'latest_invoice']
       })
       
@@ -228,7 +241,8 @@ export const getBillingHistory = onCall(
     }
 
     try {
-      const invoices = await stripe.invoices.list({
+      const stripeInstance = getStripeClient(stripeSecretKey.value())
+      const invoices = await stripeInstance.invoices.list({
         customer: customerId,
         limit,
         expand: ['data.payment_intent']

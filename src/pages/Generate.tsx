@@ -313,7 +313,6 @@ export default function Generate() {
       setShowProgressiveLoading(false)
     }
   }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative safe-area-inset-bottom">

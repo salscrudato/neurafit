@@ -165,12 +165,37 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
           <span className="font-medium">Payment initialization failed</span>
         </div>
         <p className="text-gray-600 mb-6">{error}</p>
-        <button
-          onClick={onCancel}
-          className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Go Back
-        </button>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => {
+              setError('')
+              setLoading(true)
+              // Retry initialization
+              const initializePayment = async () => {
+                try {
+                  const result = await createPaymentIntent(priceId)
+                  setClientSecret(result.clientSecret)
+                } catch (err) {
+                  const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
+                  setError(errorMessage)
+                  onError(errorMessage)
+                } finally {
+                  setLoading(false)
+                }
+              }
+              initializePayment()
+            }}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     )
   }

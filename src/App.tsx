@@ -12,6 +12,7 @@ import History from './pages/History'
 import WorkoutDetail from './pages/WorkoutDetail'
 import Profile from './pages/Profile'
 import TestWorkout from './pages/TestWorkout'
+import TestSubscription from './pages/TestSubscription'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import Subscription from './pages/Subscription'
@@ -167,6 +168,14 @@ export default function App() {
             <RequireProfile>
               <TestWorkout />
             </RequireProfile>
+          }
+        />
+        <Route
+          path="/test-subscription"
+          element={
+            <RequireAuth>
+              <TestSubscription />
+            </RequireAuth>
           }
         />
 
