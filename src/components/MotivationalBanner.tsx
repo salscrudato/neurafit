@@ -1,7 +1,5 @@
 // src/components/MotivationalBanner.tsx
-import React from 'react'
-import { Sparkles, Trophy, Target, Zap, TrendingUp, Award } from 'lucide-react'
-import { Floating } from './MicroInteractions'
+import { Trophy, Target, Zap, TrendingUp, Award } from 'lucide-react'
 
 interface MotivationalBannerProps {
   totalWorkouts: number
@@ -138,7 +136,7 @@ interface NextWorkoutSuggestionProps {
   daysSinceLastWorkout?: number
 }
 
-export function NextWorkoutSuggestion({ lastWorkoutType, daysSinceLastWorkout = 0 }: NextWorkoutSuggestionProps) {
+export function NextWorkoutSuggestion({ daysSinceLastWorkout = 0 }: NextWorkoutSuggestionProps) {
   const getSuggestion = () => {
     if (daysSinceLastWorkout === 0) {
       return {
@@ -181,7 +179,7 @@ export function NextWorkoutSuggestion({ lastWorkoutType, daysSinceLastWorkout = 
   return (
     <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${urgencyColors[suggestion.urgency]} flex items-center justify-center`}>
+        <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${urgencyColors[suggestion.urgency as keyof typeof urgencyColors]} flex items-center justify-center`}>
           <Zap className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">

@@ -1,6 +1,6 @@
 // src/components/DashboardStats.tsx
 import React from 'react'
-import { Floating } from './MicroInteractions'
+
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>
@@ -53,9 +53,7 @@ export function StatCard({
   label,
   value,
   color,
-  trend,
-  intensity = 3,
-  duration = 4000
+  trend
 }: StatCardProps) {
   const colors = colorClasses[color]
 
