@@ -60,7 +60,7 @@ export async function createOrGetCustomer(
       try {
         await stripe.customers.retrieve(userData.subscription.customerId)
         return userData.subscription.customerId
-      } catch (error) {
+      } catch {
         console.log('Customer not found in Stripe, creating new one')
       }
     }

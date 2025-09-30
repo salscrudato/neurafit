@@ -183,7 +183,7 @@ function validateExercise(
   // Rest period validation with exercise-specific requirements
   const exerciseName = exercise.name.toLowerCase()
   let minRestSeconds = 30 // Default minimum
-  let maxRestSeconds = 300
+  const maxRestSeconds = 300
 
   // Determine minimum rest based on exercise type
   if (exerciseName.includes('squat') || exerciseName.includes('deadlift') ||

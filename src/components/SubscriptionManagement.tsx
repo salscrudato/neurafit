@@ -8,7 +8,7 @@ import {
   Loader2,
   RefreshCw
 } from 'lucide-react'
-import { useSubscription, useSubscriptionStatus } from '../session/SubscriptionProvider'
+import { useSubscription, useSubscriptionStatus } from '../hooks/useSubscription'
 import {
   cancelSubscription,
   reactivateSubscription,
@@ -28,7 +28,7 @@ export function SubscriptionManagement({ onUpgrade }: SubscriptionManagementProp
     daysRemaining,
     refreshSubscription 
   } = useSubscription()
-  const { status, statusColor, message } = useSubscriptionStatus()
+  const { status, statusColor, description } = useSubscriptionStatus()
   
   const [loading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -154,7 +154,7 @@ export function SubscriptionManagement({ onUpgrade }: SubscriptionManagementProp
             `} />
             <div>
               <p className="font-medium text-gray-900">{status}</p>
-              <p className="text-sm text-gray-600">{message}</p>
+              <p className="text-sm text-gray-600">{description}</p>
             </div>
           </div>
 

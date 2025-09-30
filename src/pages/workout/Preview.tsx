@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Crown } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
-import { useSubscription } from '../../session/SubscriptionProvider'
+import { useSubscription } from '../../hooks/useSubscription'
 
 type Exercise = {
   name: string
@@ -23,19 +23,25 @@ type Plan = { exercises: Exercise[] }
 export default function Preview() {
   const nav = useNavigate()
   const { hasUnlimitedWorkouts, remainingFreeWorkouts } = useSubscription()
-  const saved = sessionStorage.getItem('nf_workout_plan')
-  if (!saved) return <EmptyState />
 
-  const { plan, type, duration } = JSON.parse(saved) as {
+  // Parse saved data and calculate exercises before early return
+  const saved = sessionStorage.getItem('nf_workout_plan')
+  const parsedData = saved ? JSON.parse(saved) as {
     plan: Plan & { metadata?: { targetIntensity?: number; progressionNote?: string } };
     type: string;
     duration: number
-  }
-  const exercises = Array.isArray(plan?.exercises) ? plan.exercises : []
+  } : null
+  const exercises = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
 
+  // All hooks must be called before early returns
   const totalSets = useMemo(() => {
     return exercises.reduce((s, e) => s + (Number(e.sets) || 0), 0)
   }, [exercises])
+
+  // Early return after all hooks
+  if (!saved || !parsedData) return <EmptyState />
+
+  const { type, duration } = parsedData
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">

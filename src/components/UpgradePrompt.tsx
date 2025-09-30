@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { X, Zap, Crown, ArrowRight } from 'lucide-react'
-import { useSubscription, useUpgradePrompt } from '../session/SubscriptionProvider'
+import { useSubscription, useUpgradePrompt } from '../hooks/useSubscription'
 import { formatPrice, SUBSCRIPTION_PLANS } from '../lib/stripe-config'
 
 interface UpgradePromptProps {

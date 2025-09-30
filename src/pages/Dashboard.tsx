@@ -3,6 +3,7 @@ import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, orderBy, query, limit } from 'firebase/firestore'
+import { convertToDate } from '../utils/timestamp'
 import {
   Zap,
   History,
@@ -10,7 +11,7 @@ import {
   Activity
 } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
-import { DashboardCard } from '../design-system/components/Card'
+import { DashboardCard } from '../design-system/components/SpecializedCards'
 import { Button } from '../design-system/components/Button'
 import { Stagger } from '../components/MicroInteractions'
 // import { AnalyticsEngine } from '../lib/analytics' // TODO: Fix type mismatch
@@ -20,7 +21,7 @@ interface WorkoutItem {
   id: string
   workoutType: string
   duration: number
-  timestamp: any
+  timestamp: Date | { toDate(): Date } | string
   exercises?: Array<{
     name: string
     sets: number
@@ -85,18 +86,18 @@ export default function Dashboard() {
           const weekAgo = new Date()
           weekAgo.setDate(weekAgo.getDate() - 7)
           const weeklyWorkouts = workouts.filter(w =>
-            w.timestamp?.toDate?.() > weekAgo
+            convertToDate(w.timestamp) > weekAgo
           ).length
 
           // Calculate recent streak
           const sortedWorkouts = workouts.sort((a, b) =>
-            b.timestamp?.toDate?.()?.getTime() - a.timestamp?.toDate?.()?.getTime()
+            convertToDate(b.timestamp).getTime() - convertToDate(a.timestamp).getTime()
           )
           let streak = 0
           let currentDate = new Date()
           for (const workout of sortedWorkouts) {
-            const workoutDate = workout.timestamp?.toDate?.()
-            if (!workoutDate) break
+            const workoutDate = convertToDate(workout.timestamp)
+            if (!workout.timestamp) break
 
             const daysDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24))
             if (daysDiff <= 1 || (streak === 0 && daysDiff <= 7)) {
@@ -124,9 +125,10 @@ export default function Dashboard() {
             recentStreak: 0
           })
         }
-      } catch (err: any) {
-        console.error('Error fetching dashboard data:', err)
-        setError(err.message || 'Failed to load dashboard data')
+      } catch (err) {
+        const error = err as { message?: string }
+        console.error('Error fetching dashboard data:', error)
+        setError(error.message || 'Failed to load dashboard data')
       } finally {
         setLoading(false)
       }

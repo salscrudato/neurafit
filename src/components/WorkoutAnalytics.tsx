@@ -1,6 +1,7 @@
 // src/components/WorkoutAnalytics.tsx
 import React, { useMemo } from 'react'
 import { TrendingUp, Calendar, Clock, Zap, Target, Award, Activity } from 'lucide-react'
+import { convertToDate, formatTimestampISO } from '../utils/timestamp'
 
 interface WorkoutData {
   id: string
@@ -14,7 +15,7 @@ interface WorkoutData {
     weights?: Record<number, number | null>
     usesWeight?: boolean
   }[]
-  timestamp?: any
+  timestamp?: Date | { toDate(): Date } | string
 }
 
 interface WorkoutAnalyticsProps {
@@ -59,7 +60,7 @@ export function WorkoutAnalytics({ workouts, timeRange = 'month' }: WorkoutAnaly
     const filteredWorkouts = workouts.filter(workout => {
       if (!workout.timestamp) return true
       
-      const workoutDate = workout.timestamp.toDate ? workout.timestamp.toDate() : new Date(workout.timestamp)
+      const workoutDate = convertToDate(workout.timestamp)
       const daysDiff = Math.floor((now.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24))
       
       switch (timeRange) {
@@ -90,7 +91,7 @@ export function WorkoutAnalytics({ workouts, timeRange = 'month' }: WorkoutAnaly
 
     filteredWorkouts.forEach(workout => {
       let workoutVolume = 0
-      const workoutDate = workout.timestamp?.toDate?.()?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0]
+      const workoutDate = formatTimestampISO(workout.timestamp || new Date())
       
       workout.exercises?.forEach(exercise => {
         exerciseCounts[exercise.name] = (exerciseCounts[exercise.name] || 0) + 1
@@ -142,7 +143,7 @@ export function WorkoutAnalytics({ workouts, timeRange = 'month' }: WorkoutAnaly
       
       const weekWorkouts = workouts.filter(w => {
         if (!w.timestamp) return false
-        const workoutDate = w.timestamp.toDate ? w.timestamp.toDate() : new Date(w.timestamp)
+        const workoutDate = convertToDate(w.timestamp)
         return workoutDate >= weekStart && workoutDate <= weekEnd
       }).length
       
@@ -157,7 +158,7 @@ export function WorkoutAnalytics({ workouts, timeRange = 'month' }: WorkoutAnaly
       
       const monthWorkouts = workouts.filter(w => {
         if (!w.timestamp) return false
-        const workoutDate = w.timestamp.toDate ? w.timestamp.toDate() : new Date(w.timestamp)
+        const workoutDate = convertToDate(w.timestamp)
         return workoutDate >= monthStart && workoutDate <= monthEnd
       }).length
       

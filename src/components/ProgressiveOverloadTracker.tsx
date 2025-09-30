@@ -31,7 +31,7 @@ export function ProgressiveOverloadTracker({
   exerciseName,
   recentSessions,
   currentWeight,
-  targetReps: _targetReps
+  targetReps: _targetReps // eslint-disable-line @typescript-eslint/no-unused-vars
 }: ProgressiveOverloadTrackerProps) {
   const metrics = useMemo((): ProgressMetrics => {
     const exerciseData = recentSessions

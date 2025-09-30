@@ -57,19 +57,19 @@ export const suppressDevWarnings = () => {
 }
 
 // Development-only logging
-export const devLog = (...args: any[]) => {
+export const devLog = (...args: unknown[]) => {
   if (isDevelopment) {
     console.log(...args)
   }
 }
 
-export const devWarn = (...args: any[]) => {
+export const devWarn = (...args: unknown[]) => {
   if (isDevelopment) {
     console.warn(...args)
   }
 }
 
-export const devError = (...args: any[]) => {
+export const devError = (...args: unknown[]) => {
   if (isDevelopment) {
     console.error(...args)
   }

@@ -272,7 +272,7 @@ export function getExerciseRecommendations(
  */
 export function getProgrammingRecommendations(
   goals: string[],
-  experience: string
+  _experience: string // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Partial<ProgrammingGuidelines[keyof ProgrammingGuidelines]> {
   const primaryGoal = goals[0]?.toLowerCase() || 'general health'
 

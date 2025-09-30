@@ -3,10 +3,10 @@
 export const lockOrientation = () => {
   // Try to lock to portrait orientation using the Screen Orientation API
   if ('screen' in window && 'orientation' in window.screen) {
-    const screenOrientation = window.screen.orientation as any
+    const screenOrientation = window.screen.orientation as { lock?: (orientation: string) => Promise<void> }
 
-    if ('lock' in screenOrientation) {
-      screenOrientation.lock('portrait').catch((error: any) => {
+    if ('lock' in screenOrientation && screenOrientation.lock) {
+      screenOrientation.lock('portrait').catch((error: { message?: string; name?: string }) => {
         // Only log in development and for unexpected errors
         if (process.env.NODE_ENV === 'development' &&
             !error.message?.includes('not supported') &&
@@ -48,8 +48,8 @@ export const unlockOrientation = () => {
   if ('screen' in window && 'orientation' in window.screen) {
     const screenOrientation = window.screen.orientation as any
 
-    if ('unlock' in screenOrientation) {
-      screenOrientation.unlock().catch((error: any) => {
+    if ('unlock' in screenOrientation && screenOrientation.unlock) {
+      Promise.resolve(screenOrientation.unlock()).catch((error: { name?: string }) => {
         // Silently handle unlock failures as they're not critical
         if (process.env.NODE_ENV === 'development' &&
             error.name !== 'NotSupportedError') {

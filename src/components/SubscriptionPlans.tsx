@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Zap, Crown, Loader2 } from 'lucide-react'
 import { SUBSCRIPTION_PLANS, formatPrice } from '../lib/stripe-config'
-import { useSubscription } from '../session/SubscriptionProvider'
+import { useSubscription } from '../hooks/useSubscription'
 
 interface SubscriptionPlansProps {
   onSelectPlan: (priceId: string) => void

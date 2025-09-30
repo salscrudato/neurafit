@@ -26,7 +26,7 @@ export interface PersonalizedRecommendation {
   priority: 'high' | 'medium' | 'low'
   action?: {
     type: 'adjust_weight' | 'change_exercise' | 'modify_rest' | 'extend_warmup'
-    value: any
+    value: string | number
   }
 }
 
@@ -41,9 +41,9 @@ export interface AdaptiveDifficulty {
 export class PersonalizationEngine {
   private sessions: WorkoutSession[]
   private analytics: AnalyticsEngine
-  private userProfile: any
+  private userProfile: Record<string, unknown>
 
-  constructor(sessions: WorkoutSession[], userProfile: any = {}) {
+  constructor(sessions: WorkoutSession[], userProfile: Record<string, unknown> = {}) {
     this.sessions = sessions
     this.analytics = new AnalyticsEngine(sessions)
     this.userProfile = userProfile
@@ -223,7 +223,7 @@ export class PersonalizationEngine {
         priority: 'high',
         action: {
           type: 'change_exercise',
-          value: context.injuryHistory
+          value: context.injuryHistory.join(', ')
         }
       })
     }
@@ -376,7 +376,7 @@ export class PersonalizationEngine {
       }
 
       // Add user profile specific motivation if available
-      if (this.userProfile?.goals?.length > 0) {
+      if (this.userProfile?.goals && Array.isArray(this.userProfile.goals) && this.userProfile.goals.length > 0) {
         baseMotivations.push(`Remember your goal: ${this.userProfile.goals[0]}`)
       }
 

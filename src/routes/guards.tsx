@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useSession } from '../session/SessionProvider'
+import { useSession } from '../hooks/useSession'
 import type { ReactNode } from 'react'
 
 // Landing gate at "/"

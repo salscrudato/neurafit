@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
 import { auth, db } from '../lib/firebase'
@@ -113,67 +113,4 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   )
 }
 
-export function useSubscription() {
-  const context = useContext(SubscriptionContext)
-  if (!context) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider')
-  }
-  return context
-}
-
-// Hook for checking if user needs to upgrade
-export function useUpgradePrompt() {
-  const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts } = useSubscription()
-  
-  const shouldShowUpgrade = !canGenerateWorkout && !hasUnlimitedWorkouts
-  const isNearLimit = remainingFreeWorkouts <= 1 && !hasUnlimitedWorkouts
-  
-  return {
-    shouldShowUpgrade,
-    isNearLimit,
-    remainingFreeWorkouts
-  }
-}
-
-// Hook for subscription status display
-export function useSubscriptionStatus() {
-  const { subscription, hasUnlimitedWorkouts, isInGracePeriod } = useSubscription()
-  
-  if (!subscription) {
-    return {
-      status: 'No subscription',
-      statusColor: 'gray',
-      message: 'Get started with 5 free workouts'
-    }
-  }
-  
-  if (hasUnlimitedWorkouts && !isInGracePeriod) {
-    return {
-      status: 'Active',
-      statusColor: 'green',
-      message: 'Unlimited workouts'
-    }
-  }
-  
-  if (isInGracePeriod) {
-    return {
-      status: 'Canceled',
-      statusColor: 'yellow',
-      message: `Access until ${new Date(subscription.currentPeriodEnd!).toLocaleDateString()}`
-    }
-  }
-  
-  if (subscription.status === 'past_due') {
-    return {
-      status: 'Past Due',
-      statusColor: 'red',
-      message: 'Please update your payment method'
-    }
-  }
-  
-  return {
-    status: 'Free',
-    statusColor: 'blue',
-    message: `${subscription.freeWorkoutLimit - subscription.freeWorkoutsUsed} free workouts remaining`
-  }
-}
+export { SubscriptionContext }

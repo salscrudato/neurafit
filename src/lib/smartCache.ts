@@ -18,7 +18,7 @@ interface CacheConfig {
 }
 
 class SmartCache {
-  private cache = new Map<string, CacheItem<any>>()
+  private cache = new Map<string, CacheItem<unknown>>()
   private config: CacheConfig
   private memoryUsage = 0
   private readonly MAX_MEMORY_MB = 50 // 50MB limit
@@ -100,7 +100,7 @@ class SmartCache {
     let data = item.data
     if (item.compressed) {
       try {
-        data = this.decompress(item.data)
+        data = this.decompress(item.data as string)
       } catch (error) {
         console.warn('Decompression failed:', error)
         this.cache.delete(key)
@@ -108,7 +108,7 @@ class SmartCache {
       }
     }
 
-    return data
+    return data as T
   }
 
   has(key: string): boolean {
@@ -140,7 +140,7 @@ class SmartCache {
     let expiredItems = 0
     let totalAccessCount = 0
 
-    for (const [_key, item] of this.cache.entries()) {
+    for (const [_key, item] of this.cache.entries()) { // eslint-disable-line @typescript-eslint/no-unused-vars
       if (now - item.timestamp > item.ttl) {
         expiredItems++
       } else {
@@ -193,20 +193,20 @@ class SmartCache {
     }
   }
 
-  private estimateSize(data: any): number {
+  private estimateSize(data: unknown): number {
     // Rough estimation of object size in bytes
     const jsonString = JSON.stringify(data)
     return new Blob([jsonString]).size
   }
 
-  private compress(data: any): string {
+  private compress(data: unknown): string {
     // Simple compression using JSON + base64
     // In production, consider using a proper compression library
     const jsonString = JSON.stringify(data)
     return btoa(jsonString)
   }
 
-  private decompress(compressedData: string): any {
+  private decompress(compressedData: string): unknown {
     const jsonString = atob(compressedData)
     return JSON.parse(jsonString)
   }

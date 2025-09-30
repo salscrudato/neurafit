@@ -28,9 +28,10 @@ export const stripeWebhook = onRequest(
         sig,
         stripeWebhookSecret.value()
       )
-    } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message)
-      res.status(400).send(`Webhook Error: ${err.message}`)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      console.error('Webhook signature verification failed:', errorMessage)
+      res.status(400).send(`Webhook Error: ${errorMessage}`)
       return
     }
 
@@ -86,7 +87,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   const subscriptionData: Partial<UserSubscriptionData> = {
     subscriptionId: subscription.id,
     priceId: subscription.items.data[0]?.price.id,
-    status: subscription.status as any,
+    status: subscription.status as UserSubscriptionData['status'],
     currentPeriodStart: (subscription as any).current_period_start * 1000,
     currentPeriodEnd: (subscription as any).current_period_end * 1000,
     cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
@@ -112,7 +113,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const subscriptionData: Partial<UserSubscriptionData> = {
     subscriptionId: subscription.id,
     priceId: subscription.items.data[0]?.price.id,
-    status: subscription.status as any,
+    status: subscription.status as UserSubscriptionData['status'],
     currentPeriodStart: (subscription as any).current_period_start * 1000,
     currentPeriodEnd: (subscription as any).current_period_end * 1000,
     cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,

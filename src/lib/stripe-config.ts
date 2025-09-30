@@ -31,7 +31,7 @@ export const STRIPE_CONFIG = {
 // Subscription plans with actual Stripe price IDs
 // Simple $10/month plan
 export const STRIPE_PRICE_IDS = {
-  simple: 'price_1SCyZkQjUU16Imh7W8Wofkk5' // Simple Pro - $10.00/month
+  simple: 'price_1SCzf7QjUU16Imh7y9nLUIvP' // Simple Pro - $10.00/month (Updated)
 }
 
 // Simple subscription plan - single $10/month option

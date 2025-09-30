@@ -27,7 +27,7 @@ export function SmartWeightInput({
   onWeightChange,
   isOptimistic = false,
   previousWeights = [],
-  targetReps: _targetReps
+  targetReps: _targetReps // eslint-disable-line @typescript-eslint/no-unused-vars
 }: SmartWeightInputProps) {
   const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
   const [showSuggestions, setShowSuggestions] = useState(false)

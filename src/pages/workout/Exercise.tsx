@@ -22,7 +22,7 @@ import {
 } from '../../lib/weightHistory'
 
 
-import { useBounce, useShake } from '../../components/MicroInteractions'
+import { useBounce, useShake } from '../../hooks/useMicroInteractions.tsx'
 
 type ExerciseT = {
   name: string
@@ -41,13 +41,8 @@ type PlanT = { exercises: ExerciseT[] }
 
 export default function Exercise() {
   const nav = useNavigate()
-  const saved = sessionStorage.getItem('nf_workout_plan')
-  if (!saved) return <EmptyState />
 
-  const { plan } = JSON.parse(saved) as { plan: PlanT }
-  const list = Array.isArray(plan?.exercises) ? plan.exercises : []
-  if (list.length === 0) return <EmptyState />
-
+  // All hooks must be called at the top level
   const [i, setI] = useState(0)        // exercise index
   const [setNo, setSetNo] = useState(1) // current set (1-based)
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([])
@@ -60,43 +55,19 @@ export default function Exercise() {
   const { bounceClass } = useBounce()
   const { shakeClass } = useShake()
 
-  // Removed smart rest period calculation - using AI-generated rest periods directly
-
-
-
-  // Weight tracking state with optimistic updates
+  // Weight tracking state with optimistic updates - must be called before early returns
   const initialWeights = (() => {
     const savedWeights = sessionStorage.getItem('nf_workout_weights')
     return savedWeights ? JSON.parse(savedWeights) : {}
   })()
-
   const weightState = useOptimisticUpdate<Record<number, Record<number, number | null>>>(initialWeights)
-  const workoutWeights = weightState.data
 
-  // Update weight for current exercise and set with optimistic updates
-  // RULE 3: If a set is complete and a weight is entered, the set should be marked as complete and the weight should be stored and displayed
-  const updateWeight = (weight: number | null) => {
-    const action = createWeightUpdateAction(
-      i,
-      setNo,
-      weight,
-      async (exerciseIndex, setNumber, weightValue) => {
-        // Server update simulation - in real app this might sync to backend
-        const updated = {
-          ...workoutWeights,
-          [exerciseIndex]: {
-            ...workoutWeights[exerciseIndex],
-            [setNumber]: weightValue
-          }
-        }
-        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-        console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
-      }
-    )
+  // Get saved workout plan
+  const saved = sessionStorage.getItem('nf_workout_plan')
+  const parsedData = saved ? JSON.parse(saved) as { plan: PlanT } : null
+  const list = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
 
-    weightState.executeOptimisticUpdate(action)
-  }
-
+  // All useEffect hooks must be called before early returns
   // return-from-rest state
   useEffect(() => {
     const nxt = sessionStorage.getItem('nf_return')
@@ -107,10 +78,7 @@ export default function Exercise() {
     }
   }, [])
 
-  // Removed personalization engine initialization - using AI rest periods directly
-
   // Clear weight data ONLY when starting a completely fresh workout
-  // This should only happen when navigating directly to /workout/run from /workout/preview
   useEffect(() => {
     const isReturningFromRest = sessionStorage.getItem('nf_return')
     const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
@@ -142,11 +110,10 @@ export default function Exercise() {
         console.log('[TIME] Workout start time set')
       }
     }
-  }, []) // Only run once on mount
-
-  const ex = list[i] as ExerciseT
+  }, [i, setNo, initialWeights, weightState])
 
   // Load weight history and recent sessions for current exercise
+  const ex = list[i] as ExerciseT
   useEffect(() => {
     if (!ex?.name) return
 
@@ -160,15 +127,16 @@ export default function Exercise() {
         setWeightHistory(history)
         setRecentSessions(sessions)
       } catch (error) {
-        console.error('Failed to load weight history:', error)
+        console.error('Error loading history data:', error)
       } finally {
         setLoadingHistory(false)
       }
     }
 
     loadHistoryData()
-  }, [ex?.name]) // Reload when exercise changes
+  }, [ex?.name])
 
+  // All useMemo and useCallback hooks
   const totalExercises = list.length
   const progressPct = useMemo(() => {
     const perExercise = 1 / totalExercises
@@ -176,57 +144,83 @@ export default function Exercise() {
     return Math.min(100, Math.round(((i * perExercise) + withinExercise) * 100))
   }, [i, setNo, ex.sets, totalExercises])
 
-  // Calculate completed and skipped sets for current exercise
   const completedSets = useMemo(() => {
-    const exerciseWeights = workoutWeights[i] || {}
+    const exerciseWeights = weightState.data[i] || {}
     return Object.entries(exerciseWeights)
-      .filter(([_, weight]) => weight !== null)
+      .filter(([_, weight]) => weight !== null) // eslint-disable-line @typescript-eslint/no-unused-vars
       .map(([setNum]) => parseInt(setNum))
-  }, [workoutWeights, i])
+  }, [weightState.data, i])
 
   const skippedSets = useMemo(() => {
-    const exerciseWeights = workoutWeights[i] || {}
+    const exerciseWeights = weightState.data[i] || {}
     return Object.entries(exerciseWeights)
-      .filter(([_, weight]) => weight === null)
+      .filter(([_, weight]) => weight === null) // eslint-disable-line @typescript-eslint/no-unused-vars
       .map(([setNum]) => parseInt(setNum))
-  }, [workoutWeights, i])
+  }, [weightState.data, i])
 
-  // Get workout start time for stats
   const workoutStartTime = useMemo(() => {
     const startTimeStr = sessionStorage.getItem('nf_workout_start_time')
     return startTimeStr ? parseInt(startTimeStr) : Date.now()
   }, [])
 
-  // Navigation function using AI-generated rest periods directly
   const goRest = useCallback((nextIndex: number, nextSet: number, seconds?: number) => {
-    // Use the AI-generated rest period directly, or manual override if provided
     const restDuration = seconds ?? ex.restSeconds ?? 60
-
     sessionStorage.setItem('nf_rest', String(restDuration))
     sessionStorage.setItem('nf_next', JSON.stringify({ i: nextIndex, setNo: nextSet }))
     nav('/workout/rest')
   }, [nav, ex.restSeconds])
 
-
-
-  // Calculate total completed sets across all exercises
   const totalCompletedSets = useMemo(() => {
-    return Object.values(workoutWeights).reduce((total, exerciseWeights) => {
+    return Object.values(weightState.data).reduce((total, exerciseWeights) => {
       return total + Object.values(exerciseWeights || {}).filter(weight => weight !== null).length
     }, 0)
-  }, [workoutWeights])
+  }, [weightState.data])
 
   const totalSets = useMemo(() => {
     return list.reduce((total, exercise) => total + exercise.sets, 0)
   }, [list])
 
   const completedExercises = useMemo(() => {
-    return Object.keys(workoutWeights).filter(exerciseIndex => {
-      const exerciseWeights = workoutWeights[parseInt(exerciseIndex)] || {}
+    return Object.keys(weightState.data).filter(exerciseIndex => {
+      const exerciseWeights = weightState.data[parseInt(exerciseIndex)] || {}
       const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
       return completedCount > 0
     }).length
-  }, [workoutWeights])
+  }, [weightState.data])
+
+  // Early returns after all hooks are called
+  if (!saved) return <EmptyState />
+  if (list.length === 0) return <EmptyState />
+
+  // Removed smart rest period calculation - using AI-generated rest periods directly
+  const workoutWeights = weightState.data
+
+  // Update weight for current exercise and set with optimistic updates
+  // RULE 3: If a set is complete and a weight is entered, the set should be marked as complete and the weight should be stored and displayed
+  const updateWeight = (weight: number | null) => {
+    const action = createWeightUpdateAction(
+      i,
+      setNo,
+      weight,
+      async (exerciseIndex, setNumber, weightValue) => {
+        // Server update simulation - in real app this might sync to backend
+        const updated = {
+          ...workoutWeights,
+          [exerciseIndex]: {
+            ...workoutWeights[exerciseIndex],
+            [setNumber]: weightValue
+          }
+        }
+        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
+        console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
+      }
+    )
+
+    weightState.executeOptimisticUpdate(action)
+  }
+
+  // Removed personalization engine initialization - using AI rest periods directly
+
 
   // goRest function moved above to be available for callbacks
 

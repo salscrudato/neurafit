@@ -19,7 +19,7 @@ export default function Rest() {
       if (!nextRaw || !planRaw) return undefined
 
       const next = JSON.parse(nextRaw) as { i: number; setNo: number }
-      const plan = JSON.parse(planRaw) as any
+      const plan = JSON.parse(planRaw) as { plan?: { exercises?: { name: string; sets: number; reps: number | string; restSeconds?: number }[] } }
       const ex = plan?.plan?.exercises?.[next.i]
 
       if (!ex) return undefined

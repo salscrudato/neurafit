@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
+import { convertToDate, safeConvertToDate } from '../utils/timestamp'
 import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity, BarChart3, Trophy, TrendingUp, Target, Award } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { WorkoutHistorySkeleton } from '../components/SkeletonLoaders'
@@ -9,7 +10,7 @@ import { WorkoutAnalytics } from '../components/WorkoutAnalytics'
 import { AchievementSystem } from '../components/AchievementSystem'
 import { AnalyticsEngine, formatVolume, getProgressColor, getTrendIcon } from '../lib/analytics'
 import { LineChart, DonutChart } from '../components/Charts'
-import { DashboardCard, StatsCard } from '../design-system/components/Card'
+import { DashboardCard, StatsCard } from '../design-system/components/SpecializedCards'
 import { Stagger, Floating } from '../components/MicroInteractions'
 
 type WorkoutItem = {
@@ -18,7 +19,7 @@ type WorkoutItem = {
   duration: number
   plannedDuration?: number
   exercises?: { name: string; sets: number; reps: string | number; weights?: Record<number, number | null>; usesWeight?: boolean }[]
-  timestamp?: any
+  timestamp?: Date | { toDate(): Date } | string
 }
 
 export default function History() {
@@ -34,10 +35,10 @@ export default function History() {
 
     // Convert WorkoutItem to WorkoutSession format
     const sessions = items.map(item => ({
-      date: item.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+      date: safeConvertToDate(item.timestamp).toISOString(),
       exercises: (item.exercises || []).map(exercise => ({
         name: exercise.name,
-        sets: Object.entries(exercise.weights || {}).map(([_setNum, weight]) => ({
+        sets: Object.entries(exercise.weights || {}).map(([_setNum, weight]) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
           weight: weight,
           reps: typeof exercise.reps === 'number' ? exercise.reps : parseInt(exercise.reps as string) || 1,
           completed: weight !== null
@@ -73,17 +74,18 @@ export default function History() {
 
         console.log(`Loaded ${workouts.length} workouts`)
         setItems(workouts)
-      } catch (err: any) {
-        console.error('❌ Error fetching workout history:', err)
-        setError(err.message || 'Failed to load workout history')
+      } catch (err) {
+        const error = err as { message?: string }
+        console.error('❌ Error fetching workout history:', error)
+        setError(error.message || 'Failed to load workout history')
       } finally {
         setLoading(false)
       }
     })()
   }, [])
-  const formatDate = (timestamp: any) => {
+  const formatDate = (timestamp: Date | { toDate(): Date } | string) => {
     if (!timestamp) return 'Unknown date'
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const date = convertToDate(timestamp)
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -284,7 +286,7 @@ export default function History() {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          <span>{formatDate(workout.timestamp)}</span>
+                          <span>{formatDate(workout.timestamp || new Date())}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />

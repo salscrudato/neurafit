@@ -40,28 +40,29 @@ export default function Auth() {
       // Try popup first
       await signInWithPopup(auth, provider)
       // Success - SessionProvider will handle the rest
-    } catch (error: any) {
+    } catch (error) {
+      const firebaseError = error as { code?: string; message?: string }
       // Suppress COOP-related console errors as they're expected in development
-      if (!error.message?.includes('Cross-Origin-Opener-Policy')) {
-        console.log('Popup failed, trying redirect:', error.code)
+      if (!firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.log('Popup failed, trying redirect:', firebaseError.code)
       }
 
       // If popup fails due to COOP or being blocked, fall back to redirect
-      if (error.code === 'auth/popup-blocked' ||
-          error.code === 'auth/popup-closed-by-user' ||
-          error.message?.includes('Cross-Origin-Opener-Policy') ||
-          error.message?.includes('window.closed')) {
+      if (firebaseError.code === 'auth/popup-blocked' ||
+          firebaseError.code === 'auth/popup-closed-by-user' ||
+          (error as any)?.message?.includes('Cross-Origin-Opener-Policy') ||
+          (error as any)?.message?.includes('window.closed')) {
         try {
           await signInWithRedirect(auth, provider)
           // Redirect will happen, don't set loading to false
           return
-        } catch (redirectError: any) {
+        } catch (redirectError) {
           console.error('Redirect also failed:', redirectError)
           alert('Failed to sign in with Google. Please try again.')
         }
-      } else if (error.code !== 'auth/cancelled-popup-request') {
+      } else if (firebaseError.code !== 'auth/cancelled-popup-request') {
         // Only show error for non-cancellation errors
-        console.error('Google sign-in error:', error)
+        console.error('Google sign-in error:', firebaseError)
         alert('Failed to sign in with Google. Please try again.')
       }
       setLoading(false)
@@ -115,11 +116,12 @@ export default function Auth() {
         await signInWithEmailAndPassword(auth, email, password)
       }
       // Success - SessionProvider will handle the rest
-    } catch (error: any) {
-      console.error('Email auth error:', error)
+    } catch (error) {
+      const firebaseError = error as { code?: string; message?: string }
+      console.error('Email auth error:', firebaseError)
 
       // Handle specific Firebase auth errors
-      switch (error.code) {
+      switch (firebaseError.code) {
         case 'auth/email-already-in-use':
           setEmailError('An account with this email already exists')
           break

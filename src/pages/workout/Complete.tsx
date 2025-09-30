@@ -17,7 +17,7 @@ export default function Complete() {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackSignal | null>(null)
   const [rpeValue, setRpeValue] = useState<number | null>(null)
   const [submittingFeedback, setSubmittingFeedback] = useState(false)
-  const [workoutData, setWorkoutData] = useState<any>(null)
+  const [workoutData, setWorkoutData] = useState<Record<string, unknown> | null>(null)
 
   // Save workout on component mount
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function Complete() {
       try {
         const saved = sessionStorage.getItem('nf_workout_plan')
         if (!saved) return
-        const { plan, type, duration } = JSON.parse(saved) as any
+        const { plan, type, duration } = JSON.parse(saved) as { plan: { exercises: unknown[] }; type: string; duration: number }
         const uid = auth.currentUser?.uid
         if (!uid) return
 
@@ -42,14 +42,14 @@ export default function Complete() {
           : duration // Fallback to planned duration if start time not available
 
         // Enhance exercises with weight data
-        const exercisesWithWeights = plan.exercises.map((exercise: any, exerciseIndex: number) => ({
+        const exercisesWithWeights = (plan.exercises as Record<string, unknown>[]).map((exercise, exerciseIndex: number) => ({
           ...exercise,
           weights: workoutWeights[exerciseIndex] || null
         }))
 
         // Debug: Log the workout data being saved
         console.log('[SAVE] Saving workout with the following completion data:')
-        exercisesWithWeights.forEach((exercise: any, index: number) => {
+        exercisesWithWeights.forEach((exercise: Record<string, unknown>, index: number) => {
           console.log(`Exercise ${index}: ${exercise.name}`)
           if (exercise.weights) {
             Object.entries(exercise.weights).forEach(([setNum, weight]) => {
@@ -89,25 +89,26 @@ export default function Complete() {
   }, [])
 
   // Calculate workout completion rate
-  const calculateCompletionRate = (exercises: any[]): number => {
+  const calculateCompletionRate = (exercises: Record<string, unknown>[]): number => {
     let totalSets = 0
     let completedSets = 0
 
     exercises.forEach(exercise => {
       if (exercise.weights && typeof exercise.weights === 'object') {
-        const setCount = exercise.sets || Object.keys(exercise.weights).length
+        const setCount = (typeof exercise.sets === 'number' ? exercise.sets : 0) || Object.keys(exercise.weights).length
         totalSets += setCount
 
         // Count completed sets (non-null weights)
-        Object.values(exercise.weights).forEach((weight: any) => {
+        Object.values(exercise.weights).forEach((weight: unknown) => {
           if (weight !== null) {
             completedSets++
           }
         })
       } else {
         // Fallback: assume all sets completed if no weight data
-        totalSets += exercise.sets || 0
-        completedSets += exercise.sets || 0
+        const sets = typeof exercise.sets === 'number' ? exercise.sets : 0
+        totalSets += sets
+        completedSets += sets
       }
     })
 
@@ -124,7 +125,7 @@ export default function Complete() {
       if (!uid) return
 
       // Calculate completion rate
-      const completionRate = calculateCompletionRate(workoutData.exercises)
+      const completionRate = calculateCompletionRate(workoutData.exercises as Record<string, unknown>[])
 
       // Update workout document with feedback
       const workoutRef = doc(db, 'users', uid, 'workouts', workoutId)

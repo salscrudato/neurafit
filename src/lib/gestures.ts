@@ -178,7 +178,7 @@ export class GestureRecognizer {
     this.startTouch = fakeTouch
   }
 
-  private handleMouseMove(_event: MouseEvent) {
+  private handleMouseMove(_event: MouseEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
     if (this.longPressTimer) {
       clearTimeout(this.longPressTimer)
       this.longPressTimer = null

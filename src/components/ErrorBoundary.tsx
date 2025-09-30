@@ -1,4 +1,4 @@
-import React, { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react'
 
 interface Props {
@@ -210,37 +210,17 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Higher-order component for easy wrapping
-export function withErrorBoundary<P extends object>(
-  Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<Props, 'children'>
-) {
-  const WrappedComponent = (props: P) => (
-    <ErrorBoundary {...errorBoundaryProps}>
-      <Component {...props} />
-    </ErrorBoundary>
-  )
-  
-  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`
-  
-  return WrappedComponent
-}
 
-// Specialized error boundaries for different contexts
-export const PageErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => (
-  <ErrorBoundary level="page">
-    {children}
-  </ErrorBoundary>
-)
 
-export const ComponentErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => (
-  <ErrorBoundary level="component">
-    {children}
-  </ErrorBoundary>
-)
-
-export const CriticalErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }) => (
+// Specialized error boundary components
+export const CriticalErrorBoundary = ({ children }: { children: ReactNode }) => (
   <ErrorBoundary level="critical">
+    {children}
+  </ErrorBoundary>
+)
+
+export const PageErrorBoundary = ({ children }: { children: ReactNode }) => (
+  <ErrorBoundary level="page">
     {children}
   </ErrorBoundary>
 )

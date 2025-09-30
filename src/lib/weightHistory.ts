@@ -44,7 +44,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
       const timestamp = data.timestamp?.toMillis() || Date.now()
       const date = new Date(timestamp).toISOString().split('T')[0]
 
-      exercises.forEach((exercise: any) => {
+      exercises.forEach((exercise: { name: string; weights?: Record<string, number> }) => {
         if (exercise.name === exerciseName && exercise.weights) {
           Object.entries(exercise.weights).forEach(([setNumber, weight]) => {
             if (weight && typeof weight === 'number' && weight > 0) {
@@ -53,7 +53,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
                 setNumber: parseInt(setNumber),
                 weight: weight,
                 timestamp,
-                reps: exercise.reps,
+                reps: (exercise as any).reps || 10,
                 date
               })
             }
@@ -99,11 +99,11 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
       const timestamp = data.timestamp?.toMillis() || Date.now()
       const date = new Date(timestamp).toISOString().split('T')[0]
 
-      const sessionExercises = exercises.map((exercise: any) => {
+      const sessionExercises = exercises.map((exercise: { name: string; sets?: number; reps?: number | string; weights?: Record<string, number | null> }) => {
         const sets = []
         const totalSets = exercise.sets || 0
         const weights = exercise.weights || {}
-        const reps = typeof exercise.reps === 'number' ? exercise.reps : parseInt(exercise.reps) || 10
+        const reps = typeof exercise.reps === 'number' ? exercise.reps : (typeof exercise.reps === 'string' ? parseInt(exercise.reps) : 10)
 
         // Create set data for each set
         for (let setNum = 1; setNum <= totalSets; setNum++) {

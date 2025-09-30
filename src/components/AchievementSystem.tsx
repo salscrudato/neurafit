@@ -1,6 +1,7 @@
 // src/components/AchievementSystem.tsx
 import React, { useMemo } from 'react'
 import { Award, Calendar, Clock, Target, TrendingUp, Zap } from 'lucide-react'
+import { convertToDate, safeFormatTimestamp } from '../utils/timestamp'
 
 interface WorkoutData {
   id: string
@@ -14,7 +15,7 @@ interface WorkoutData {
     weights?: Record<number, number | null>
     usesWeight?: boolean
   }[]
-  timestamp?: any
+  timestamp?: Date | { toDate(): Date } | string
 }
 
 interface Achievement {
@@ -65,7 +66,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const recentWorkouts = workouts.filter(w => {
       if (!w.timestamp) return false
-      const workoutDate = w.timestamp.toDate ? w.timestamp.toDate() : new Date(w.timestamp)
+      const workoutDate = convertToDate(w.timestamp)
       return workoutDate >= thirtyDaysAgo
     }).length
 
@@ -82,7 +83,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
       
       const weekCount = workouts.filter(w => {
         if (!w.timestamp) return false
-        const workoutDate = w.timestamp.toDate ? w.timestamp.toDate() : new Date(w.timestamp)
+        const workoutDate = convertToDate(w.timestamp)
         return workoutDate >= weekStart && workoutDate <= weekEnd
       }).length
       
@@ -101,7 +102,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 1),
         maxProgress: 1,
         unlocked: totalWorkouts >= 1,
-        unlockedDate: totalWorkouts >= 1 ? workouts[workouts.length - 1]?.timestamp?.toDate?.()?.toLocaleDateString() : undefined,
+        unlockedDate: totalWorkouts >= 1 ? safeFormatTimestamp(workouts[workouts.length - 1]?.timestamp) : undefined,
         category: 'milestone'
       },
       {
@@ -112,7 +113,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 5),
         maxProgress: 5,
         unlocked: totalWorkouts >= 5,
-        unlockedDate: totalWorkouts >= 5 ? workouts[Math.max(0, workouts.length - 5)]?.timestamp?.toDate?.()?.toLocaleDateString() : undefined,
+        unlockedDate: totalWorkouts >= 5 ? safeFormatTimestamp(workouts[Math.max(0, workouts.length - 5)]?.timestamp) : undefined,
         category: 'milestone'
       },
       {
@@ -123,7 +124,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 25),
         maxProgress: 25,
         unlocked: totalWorkouts >= 25,
-        unlockedDate: totalWorkouts >= 25 ? workouts[Math.max(0, workouts.length - 25)]?.timestamp?.toDate?.()?.toLocaleDateString() : undefined,
+        unlockedDate: totalWorkouts >= 25 ? safeFormatTimestamp(workouts[Math.max(0, workouts.length - 25)]?.timestamp) : undefined,
         category: 'milestone'
       },
       {
@@ -134,7 +135,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 50),
         maxProgress: 50,
         unlocked: totalWorkouts >= 50,
-        unlockedDate: totalWorkouts >= 50 ? workouts[Math.max(0, workouts.length - 50)]?.timestamp?.toDate?.()?.toLocaleDateString() : undefined,
+        unlockedDate: totalWorkouts >= 50 ? safeFormatTimestamp(workouts[Math.max(0, workouts.length - 50)]?.timestamp) : undefined,
         category: 'milestone'
       },
 

@@ -29,7 +29,7 @@ export function formatDuration(ms: number): string {
 /**
  * Debounce function to limit the rate of function calls
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -49,7 +49,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function to limit the rate of function calls
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -74,7 +74,7 @@ export function generateId(length: number = 8): string {
 /**
  * Check if a value is empty (null, undefined, empty string, empty array, empty object)
  */
-export function isEmpty(value: any): boolean {
+export function isEmpty(value: unknown): boolean {
   if (value == null) return true
   if (typeof value === 'string') return value.trim().length === 0
   if (Array.isArray(value)) return value.length === 0
@@ -140,7 +140,7 @@ export function prefersReducedMotion(): boolean {
 /**
  * Get contrast ratio between two colors (simplified)
  */
-export function getContrastRatio(_color1: string, _color2: string): number {
+export function getContrastRatio(_color1: string, _color2: string): number { // eslint-disable-line @typescript-eslint/no-unused-vars
   // This is a simplified version - in production you'd want a more robust implementation
   return 4.5 // Placeholder
 }
@@ -170,7 +170,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
     return true
-  } catch (err) {
+  } catch {
     // Fallback for older browsers
     const textArea = document.createElement('textarea')
     textArea.value = text
@@ -182,7 +182,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
       document.execCommand('copy')
       document.body.removeChild(textArea)
       return true
-    } catch (err) {
+    } catch {
       document.body.removeChild(textArea)
       return false
     }

@@ -9,7 +9,7 @@ import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from 
 import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
 import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
-import { useSubscription } from '../session/SubscriptionProvider'
+import { useSubscription } from '../hooks/useSubscription'
 import { SimpleSubscription } from '../components/SimpleSubscription'
 
 
@@ -128,12 +128,12 @@ export default function Generate() {
 
         // Calculate completion rate from all recent workouts
         if (workout.exercises && Array.isArray(workout.exercises)) {
-          workout.exercises.forEach((exercise: any) => {
+          workout.exercises.forEach((exercise: { sets?: number; weights?: Record<string, number | null> }) => {
             if (exercise.weights && typeof exercise.weights === 'object') {
               const setCount = exercise.sets || Object.keys(exercise.weights).length
               totalSets += setCount
 
-              Object.values(exercise.weights).forEach((weight: any) => {
+              Object.values(exercise.weights).forEach((weight: number | null) => {
                 if (weight !== null) {
                   completedSets++
                 }
@@ -289,21 +289,22 @@ export default function Generate() {
     // small retry (2 attempts total) for transient failures
     try {
       await fetchOnce()
-    } catch (e1: any) {
+    } catch {
       try {
         await new Promise(r => setTimeout(r, 1200))
         await fetchOnce()
-      } catch (e2: any) {
+      } catch (e2) {
+        const error = e2 as { message?: string; status?: number; name?: string }
         // Check if it's a subscription error (402 Payment Required)
-        if (e2?.message?.includes('Subscription required') || e2?.status === 402) {
+        if (error?.message?.includes('Subscription required') || error?.status === 402) {
           setShowUpgradePrompt(true)
           return
         }
 
         setError(
-          e2?.name === 'AbortError'
+          error?.name === 'AbortError'
             ? 'The server took too long to respond. Please try again.'
-            : (e2?.message || 'Failed to generate. Please try again.')
+            : ((e2 as any)?.message || 'Failed to generate. Please try again.')
         )
       }
     } finally {

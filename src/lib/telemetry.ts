@@ -16,7 +16,7 @@ export interface TelemetryEventData {
   event: TelemetryEvent
   uid: string
   timestamp: number
-  data: Record<string, any>
+  data: Record<string, unknown>
 }
 
 /**
@@ -25,7 +25,7 @@ export interface TelemetryEventData {
 export function logTelemetryEvent(
   event: TelemetryEvent,
   uid: string,
-  data: Record<string, any> = {}
+  data: Record<string, unknown> = {}
 ): void {
   if (!isTelemetryEnabled()) {
     return
@@ -129,7 +129,7 @@ export function logAdaptivePersonalizationError(
   uid: string,
   error: string,
   context: string,
-  additionalData: Record<string, any> = {}
+  additionalData: Record<string, unknown> = {}
 ): void {
   logTelemetryEvent('adaptive_personalization_error', uid, {
     error: error.substring(0, 200), // Truncate error message

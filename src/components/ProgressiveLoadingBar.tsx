@@ -64,7 +64,7 @@ export function ProgressiveLoadingBar({
       return
     }
 
-    let startTime = Date.now()
+    const startTime = Date.now()
     let animationFrame: number
 
     const animate = () => {
@@ -113,7 +113,7 @@ export function ProgressiveLoadingBar({
         cancelAnimationFrame(animationFrame)
       }
     }
-  }, [isVisible, duration, onComplete])
+  }, [isVisible, duration, onComplete, stages])
 
   if (!isVisible) return null
 

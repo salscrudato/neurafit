@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
+import { convertToDate } from '../utils/timestamp'
 import { ArrowLeft, Clock, Calendar, CheckCircle, XCircle, Weight } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { WorkoutDetailSkeleton } from '../components/SkeletonLoaders'
@@ -25,7 +26,7 @@ type WorkoutData = {
   duration: number
   plannedDuration?: number
   exercises: Exercise[]
-  timestamp: any
+  timestamp: Date | { toDate(): Date } | string
 }
 
 export default function WorkoutDetail() {
@@ -51,9 +52,10 @@ export default function WorkoutDetail() {
         }
 
         setWorkout({ id: workoutDoc.id, ...workoutDoc.data() } as WorkoutData)
-      } catch (err: any) {
-        console.error('Error fetching workout:', err)
-        setError(err.message || 'Failed to load workout')
+      } catch (err) {
+        const error = err as { message?: string }
+        console.error('Error fetching workout:', error)
+        setError(error.message || 'Failed to load workout')
       } finally {
         setLoading(false)
       }
@@ -87,9 +89,9 @@ export default function WorkoutDetail() {
     )
   }
 
-  const formatDate = (timestamp: any) => {
+  const formatDate = (timestamp: Date | { toDate(): Date } | string) => {
     if (!timestamp) return 'Unknown date'
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const date = convertToDate(timestamp)
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -98,9 +100,9 @@ export default function WorkoutDetail() {
     })
   }
 
-  const formatTime = (timestamp: any) => {
+  const formatTime = (timestamp: Date | { toDate(): Date } | string) => {
     if (!timestamp) return 'Unknown time'
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const date = convertToDate(timestamp)
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
@@ -108,9 +110,9 @@ export default function WorkoutDetail() {
     })
   }
 
-  const formatEndTime = (timestamp: any, duration: number) => {
+  const formatEndTime = (timestamp: Date | { toDate(): Date } | string, duration: number) => {
     if (!timestamp) return 'Unknown time'
-    const startDate = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const startDate = convertToDate(timestamp)
     const endDate = new Date(startDate.getTime() + duration * 60 * 1000) // Add duration in milliseconds
     return endDate.toLocaleTimeString('en-US', {
       hour: 'numeric',

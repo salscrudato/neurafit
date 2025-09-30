@@ -5,7 +5,7 @@ import AppHeader from '../components/AppHeader'
 import { SubscriptionPlans } from '../components/SubscriptionPlans'
 import { PaymentForm } from '../components/PaymentForm'
 import { SubscriptionManagement } from '../components/SubscriptionManagement'
-import { useSubscription } from '../session/SubscriptionProvider'
+import { useSubscription } from '../hooks/useSubscription'
 import { getSubscriptionPlanByPriceId } from '../lib/stripe-config'
 
 type ViewState = 'plans' | 'payment' | 'success' | 'manage'
@@ -156,47 +156,6 @@ export default function Subscription() {
             <SubscriptionManagement onUpgrade={handleUpgrade} />
           )}
         </div>
-
-        {/* Features Highlight */}
-        {(currentView === 'plans' || currentView === 'payment') && (
-          <div className="mt-12 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">
-              What you get with NeuraFit Pro
-            </h3>
-            
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-blue-600 font-bold">∞</span>
-                </div>
-                <h4 className="font-medium text-gray-900 mb-2">Unlimited Workouts</h4>
-                <p className="text-sm text-gray-600">
-                  Generate as many AI-powered workouts as you want
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-green-600 font-bold">🧠</span>
-                </div>
-                <h4 className="font-medium text-gray-900 mb-2">Smart Personalization</h4>
-                <p className="text-sm text-gray-600">
-                  Workouts adapt based on your feedback and progress
-                </p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-purple-600 font-bold">📊</span>
-                </div>
-                <h4 className="font-medium text-gray-900 mb-2">Progress Tracking</h4>
-                <p className="text-sm text-gray-600">
-                  Track your weights, sets, and workout history
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   )

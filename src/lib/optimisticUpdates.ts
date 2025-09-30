@@ -158,7 +158,7 @@ export function createSetCompletionAction(
 /**
  * Debounced function utility for reducing API calls
  */
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): T {
@@ -206,8 +206,8 @@ export class OptimisticCache<T> {
 }
 
 // Global cache instances
-export const workoutCache = new OptimisticCache<any>()
-export const profileCache = new OptimisticCache<any>()
+export const workoutCache = new OptimisticCache<Record<string, unknown>>()
+export const profileCache = new OptimisticCache<Record<string, unknown>>()
 
 /**
  * Preloader utility for prefetching data
@@ -223,7 +223,7 @@ export class DataPreloader {
     return DataPreloader.instance
   }
 
-  async preload(key: string, fetcher: () => Promise<any>, cache: OptimisticCache<any>) {
+  async preload(key: string, fetcher: () => Promise<unknown>, cache: OptimisticCache<unknown>) {
     if (this.preloadQueue.has(key)) return
     
     this.preloadQueue.add(key)
@@ -250,7 +250,7 @@ export function createErrorHandler(fallback: () => void) {
     
     // Log to analytics if available
     if (typeof window !== 'undefined' && 'gtag' in window) {
-      (window as any).gtag('event', 'exception', {
+      (window as { gtag: (event: string, action: string, params: Record<string, unknown>) => void }).gtag('event', 'exception', {
         description: error.message,
         fatal: false
       })

@@ -209,7 +209,7 @@ export function canGenerateWorkout(subscription?: UserSubscription): boolean {
 /**
  * Get subscription plan by price ID
  */
-export function getSubscriptionPlanByPriceId(_priceId: string): SubscriptionPlan | undefined {
+export function getSubscriptionPlanByPriceId(_priceId: string): SubscriptionPlan | undefined { // eslint-disable-line @typescript-eslint/no-unused-vars
   // This would need to be imported from subscription types
   // For now, return undefined - will be implemented when SUBSCRIPTION_PLANS is available
   return undefined
