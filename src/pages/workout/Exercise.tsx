@@ -11,12 +11,12 @@ import {
   WorkoutStats
 } from '../../components/WorkoutProgress'
 import { SmartWeightInput } from '../../components/SmartWeightInput'
-import { PlateCalculator } from '../../components/PlateCalculator'
+
 import { ProgressiveOverloadTracker } from '../../components/ProgressiveOverloadTracker'
 import {
   getCachedWeightHistory,
   fetchRecentSessions,
-  isBarbellExercise,
+
   type WeightHistory,
   type WorkoutSession
 } from '../../lib/weightHistory'
@@ -443,7 +443,7 @@ export default function Exercise() {
 
               return (
                 <Chip className={isSmartRest ? 'bg-blue-100 text-blue-700 border-blue-200' : ''}>
-                  Rest: {restDuration}s {isSmartRest && '🧠'}
+                  Rest: {restDuration}s
                 </Chip>
               )
             })()}
@@ -462,13 +462,7 @@ export default function Exercise() {
                 targetReps={ex.reps}
               />
 
-              {/* Plate Calculator for barbell exercises */}
-              {isBarbellExercise(ex.name) && workoutWeights[i]?.[setNo] && (
-                <PlateCalculator
-                  targetWeight={workoutWeights[i][setNo]!}
-                  onWeightChange={updateWeight}
-                />
-              )}
+
 
               {/* Progressive Overload Tracker */}
               {!loadingHistory && recentSessions.length > 0 && (
@@ -522,17 +516,7 @@ export default function Exercise() {
           >
             Skip Exercise
           </button>
-          {/* Gesture Hints */}
-          <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-            <p className="text-xs text-blue-600 text-center mb-2 font-medium">Quick Actions</p>
-            <div className="flex justify-between text-xs text-blue-500">
-              <span>← Swipe left to skip</span>
-              <span>Swipe right to complete →</span>
-            </div>
-            <div className="text-center mt-1 text-xs text-blue-400">
-              ↑↓ Navigate sets • Long press to skip exercise
-            </div>
-          </div>
+
 
           <div className="flex gap-2 mt-4">
             <button
