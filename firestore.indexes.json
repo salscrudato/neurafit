@@ -1,21 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "subscriptionStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "currentPeriodEnd",
-          "order": "ASCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
       "collectionGroup": "workouts",
       "queryScope": "COLLECTION",
       "fields": [

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
-import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut } from 'lucide-react'
+import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut, Crown } from 'lucide-react'
 
 export default function AppHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -13,6 +13,7 @@ export default function AppHeader() {
     { label: 'Dashboard', path: '/dashboard', icon: Home },
     { label: 'Generate Workout', path: '/generate', icon: Dumbbell },
     { label: 'Workout History', path: '/history', icon: History },
+    { label: 'Subscription', path: '/subscription', icon: Crown },
     { label: 'Profile', path: '/profile', icon: User },
   ]
 

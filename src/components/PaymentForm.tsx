@@ -1,0 +1,209 @@
+import { useState, useEffect } from 'react'
+import { 
+  useStripe, 
+  useElements, 
+  PaymentElement,
+  Elements 
+} from '@stripe/react-stripe-js'
+import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { stripePromise, STRIPE_CONFIG } from '../lib/stripe-config'
+import { createPaymentIntent } from '../lib/subscription'
+
+interface PaymentFormProps {
+  priceId: string
+  onSuccess: () => void
+  onError: (error: string) => void
+  onCancel: () => void
+}
+
+function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormProps) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string>('')
+  const [messageType, setMessageType] = useState<'error' | 'success' | 'info'>('info')
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+
+    if (!stripe || !elements) {
+      return
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/profile?payment=success`,
+      },
+      redirect: 'if_required'
+    })
+
+    if (error) {
+      if (error.type === 'card_error' || error.type === 'validation_error') {
+        setMessage(error.message || 'Payment failed')
+        setMessageType('error')
+        onError(error.message || 'Payment failed')
+      } else {
+        setMessage('An unexpected error occurred.')
+        setMessageType('error')
+        onError('An unexpected error occurred.')
+      }
+    } else {
+      setMessage('Payment successful!')
+      setMessageType('success')
+      onSuccess()
+    }
+
+    setLoading(false)
+  }
+
+  return (
+    <div className="max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Payment Element */}
+        <div className="p-4 border border-gray-200 rounded-xl bg-white">
+          <PaymentElement 
+            options={{
+              layout: 'tabs'
+            }}
+          />
+        </div>
+
+        {/* Message */}
+        {message && (
+          <div className={`
+            flex items-center gap-2 p-3 rounded-lg text-sm
+            ${messageType === 'error' ? 'bg-red-50 text-red-700' : ''}
+            ${messageType === 'success' ? 'bg-green-50 text-green-700' : ''}
+            ${messageType === 'info' ? 'bg-blue-50 text-blue-700' : ''}
+          `}>
+            {messageType === 'error' && <AlertCircle className="w-4 h-4" />}
+            {messageType === 'success' && <CheckCircle className="w-4 h-4" />}
+            {message}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!stripe || loading}
+            className="flex-1 py-3 px-4 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing...
+              </div>
+            ) : (
+              'Subscribe'
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Security Notice */}
+      <div className="mt-6 text-center">
+        <p className="text-xs text-gray-500">
+          🔒 Your payment information is secure and encrypted
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFormProps) {
+  const [clientSecret, setClientSecret] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>('')
+
+  useEffect(() => {
+    const initializePayment = async () => {
+      try {
+        setLoading(true)
+        const result = await createPaymentIntent(priceId)
+        setClientSecret(result.clientSecret)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
+        setError(errorMessage)
+        onError(errorMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initializePayment()
+  }, [priceId, onError])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <span className="text-gray-600">Initializing payment...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="flex items-center justify-center gap-2 text-red-600 mb-4">
+          <AlertCircle className="w-6 h-6" />
+          <span className="font-medium">Payment initialization failed</span>
+        </div>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <button
+          onClick={onCancel}
+          className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    )
+  }
+
+  if (!clientSecret) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600">Unable to initialize payment. Please try again.</p>
+        <button
+          onClick={onCancel}
+          className="mt-4 px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    )
+  }
+
+  const options = {
+    clientSecret,
+    appearance: STRIPE_CONFIG.appearance,
+  }
+
+  return (
+    <Elements stripe={stripePromise} options={options}>
+      <PaymentFormInner 
+        priceId={priceId}
+        onSuccess={onSuccess}
+        onError={onError}
+        onCancel={onCancel}
+      />
+    </Elements>
+  )
+}
+
+export default PaymentForm

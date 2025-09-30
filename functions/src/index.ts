@@ -3,6 +3,18 @@ import { defineSecret } from "firebase-functions/params"
 import type { Request, Response } from "express"
 import OpenAI from "openai"
 import { getAdaptiveState, calculateRecentCompletionRate, generateProgressionNote } from "./lib/personalization"
+import { incrementWorkoutCount } from "./lib/stripe"
+
+// Export subscription functions
+export { stripeWebhook } from "./stripe-webhooks"
+export {
+  createPaymentIntent,
+  cancelUserSubscription,
+  reactivateUserSubscription,
+  getCustomerPortalUrl,
+  getSubscriptionDetails,
+  getBillingHistory
+} from "./subscription-functions"
 
 // Define the secret
 const openaiApiKey = defineSecret("OPENAI_API_KEY")
@@ -50,6 +62,38 @@ export const generateWorkout = onRequest(
         targetIntensity,
         progressionNote,
       } = req.body || {}
+
+      // Check subscription limits if uid is provided
+      if (uid) {
+        try {
+          const { getFirestore } = await import('firebase-admin/firestore')
+          const db = getFirestore()
+
+          const userDoc = await db.collection('users').doc(uid).get()
+          const userData = userDoc.data()
+          const subscription = userData?.subscription
+
+          if (subscription) {
+            const isActive = subscription.status === 'active' || subscription.status === 'trialing'
+            const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0
+            const freeWorkoutLimit = subscription.freeWorkoutLimit || 5
+
+            // Check if user can generate workout
+            if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {
+              res.status(402).json({
+                error: "Subscription required",
+                message: "You've used all your free workouts. Please subscribe to continue.",
+                freeWorkoutsUsed,
+                freeWorkoutLimit
+              })
+              return
+            }
+          }
+        } catch (error) {
+          console.error('Error checking subscription:', error)
+          // Continue with workout generation if subscription check fails
+        }
+      }
 
       // Handle adaptive personalization
       let finalTargetIntensity = targetIntensity || 1.0
@@ -147,6 +191,16 @@ REQUIREMENTS:
           metadata: {
             targetIntensity: finalTargetIntensity,
             progressionNote: finalProgressionNote || undefined
+          }
+        }
+
+        // Increment workout count after successful generation
+        if (uid) {
+          try {
+            await incrementWorkoutCount(uid)
+          } catch (error) {
+            console.error('Error incrementing workout count:', error)
+            // Don't fail the request if workout count increment fails
           }
         }
 

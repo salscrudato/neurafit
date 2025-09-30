@@ -5,6 +5,7 @@ import { auth, db } from '../lib/firebase'
 import { doc, onSnapshot, getDoc } from 'firebase/firestore'
 import type { UserProfile } from './types'
 import { isProfileComplete } from './types'
+import { SubscriptionProvider } from './SubscriptionProvider'
 
 type Status = 'loading' | 'signedOut' | 'needsOnboarding' | 'ready'
 
@@ -126,7 +127,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(() => ({ user, profile, status }), [user, profile, status])
-  return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>
+  return (
+    <SessionCtx.Provider value={value}>
+      <SubscriptionProvider>
+        {children}
+      </SubscriptionProvider>
+    </SessionCtx.Provider>
+  )
 }
 
 export function useSession() {

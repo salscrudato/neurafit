@@ -18,6 +18,23 @@ service cloud.firestore {
       return request.auth.uid == uid;
     }
 
+    function validateSubscriptionData(subscription) {
+      return subscription is map &&
+             ('customerId' in subscription ? subscription.customerId is string : true) &&
+             ('subscriptionId' in subscription ? subscription.subscriptionId is string : true) &&
+             ('priceId' in subscription ? subscription.priceId is string : true) &&
+             ('status' in subscription ? subscription.status is string : true) &&
+             ('currentPeriodStart' in subscription ? subscription.currentPeriodStart is number : true) &&
+             ('currentPeriodEnd' in subscription ? subscription.currentPeriodEnd is number : true) &&
+             ('cancelAtPeriodEnd' in subscription ? subscription.cancelAtPeriodEnd is bool : true) &&
+             ('canceledAt' in subscription ? subscription.canceledAt is number : true) &&
+             ('workoutCount' in subscription ? subscription.workoutCount is number : true) &&
+             ('freeWorkoutsUsed' in subscription ? subscription.freeWorkoutsUsed is number : true) &&
+             ('freeWorkoutLimit' in subscription ? subscription.freeWorkoutLimit is number : true) &&
+             ('createdAt' in subscription ? subscription.createdAt is number : true) &&
+             ('updatedAt' in subscription ? subscription.updatedAt is number : true);
+    }
+
     function isBasicUserData() {
       let data = request.resource.data;
       // Allow basic user documents with minimal fields
@@ -62,7 +79,9 @@ service cloud.firestore {
              (!('injury_details' in data) || data.injury_details is string) &&
              (!('health_consent' in data) || data.health_consent is bool) &&
              (!('created_at' in data) || data.created_at is timestamp) &&
-             (!('updated_at' in data) || data.updated_at is timestamp);
+             (!('updated_at' in data) || data.updated_at is timestamp) &&
+             // Subscription fields validation
+             (!('subscription' in data) || validateSubscriptionData(data.subscription));
     }
 
 

@@ -9,6 +9,8 @@ import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from 
 import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
 import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
+import { useSubscription } from '../session/SubscriptionProvider'
+import { UpgradePrompt } from '../components/UpgradePrompt'
 
 
 const TYPES = [
@@ -36,6 +38,10 @@ export default function Generate() {
   const [error, setError] = useState<string | null>(null)
   const [targetIntensity, setTargetIntensity] = useState<number>(1.0)
   const [progressionNote, setProgressionNote] = useState<string>('')
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+
+  // Subscription hooks
+  const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts } = useSubscription()
 
 
 
@@ -194,6 +200,13 @@ export default function Generate() {
 
   async function generate() {
     if (disabled || !profile) return
+
+    // Check subscription limits
+    if (!canGenerateWorkout) {
+      setShowUpgradePrompt(true)
+      return
+    }
+
     setError(null)
     setLoading(true)
     setShowProgressiveLoading(true)
@@ -260,6 +273,12 @@ export default function Generate() {
         await new Promise(r => setTimeout(r, 1200))
         await fetchOnce()
       } catch (e2: any) {
+        // Check if it's a subscription error (402 Payment Required)
+        if (e2?.message?.includes('Subscription required') || e2?.status === 402) {
+          setShowUpgradePrompt(true)
+          return
+        }
+
         setError(
           e2?.name === 'AbortError'
             ? 'The server took too long to respond. Please try again.'
@@ -291,6 +310,44 @@ export default function Generate() {
             Tailored to your goals, experience, equipment and injuries—powered by GPT-4o-mini.
           </p>
         </section>
+
+        {/* Subscription Status */}
+        {!hasUnlimitedWorkouts && (
+          <section className="mt-6">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 backdrop-blur-sm p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">{remainingFreeWorkouts}</span>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {remainingFreeWorkouts} free workout{remainingFreeWorkouts === 1 ? '' : 's'} remaining
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Upgrade for unlimited access
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowUpgradePrompt(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors text-sm"
+                >
+                  Upgrade
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Upgrade Prompt Modal */}
+        {showUpgradePrompt && (
+          <UpgradePrompt
+            variant="modal"
+            onUpgrade={() => nav('/subscription')}
+            onDismiss={() => setShowUpgradePrompt(false)}
+          />
+        )}
 
         {/* Intensity Calibration Indicator */}
         {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (

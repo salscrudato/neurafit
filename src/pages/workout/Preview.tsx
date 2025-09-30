@@ -1,9 +1,10 @@
 // src/pages/workout/Preview.tsx
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Brain } from 'lucide-react'
+import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Brain, Crown } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
 import { isIntensityCalibrationEnabled } from '../../config/features'
+import { useSubscription } from '../../session/SubscriptionProvider'
 
 type Exercise = {
   name: string
@@ -20,6 +21,7 @@ type Plan = { exercises: Exercise[] }
 
 export default function Preview() {
   const nav = useNavigate()
+  const { hasUnlimitedWorkouts, remainingFreeWorkouts } = useSubscription()
   const saved = sessionStorage.getItem('nf_workout_plan')
   if (!saved) return <EmptyState />
 
@@ -59,6 +61,16 @@ export default function Preview() {
               <Badge className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500">
                 <Brain className="h-3 w-3" />
                 {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
+              </Badge>
+            )}
+            {hasUnlimitedWorkouts ? (
+              <Badge className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-yellow-400">
+                <Crown className="h-3 w-3" />
+                Pro
+              </Badge>
+            ) : (
+              <Badge className="bg-blue-50 text-blue-700 border-blue-200">
+                {remainingFreeWorkouts - 1} free left
               </Badge>
             )}
           </div>

@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import TestWorkout from './pages/TestWorkout'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import Subscription from './pages/Subscription'
 import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary'
 
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
@@ -147,6 +148,16 @@ export default function App() {
           element={
             <RequireProfile>
               <Profile />
+            </RequireProfile>
+          }
+        />
+        <Route
+          path="/subscription"
+          element={
+            <RequireProfile>
+              <PageErrorBoundary>
+                <Subscription />
+              </PageErrorBoundary>
             </RequireProfile>
           }
         />
