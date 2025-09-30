@@ -37,7 +37,7 @@ import {
   WEIGHT_RANGES,
   INJURY_OPTIONS
 } from '../config/onboarding'
-import { trackProfileComplete } from '../lib/firebase-analytics'
+import { trackProfileComplete, setEnhancedUserProperties } from '../lib/firebase-analytics'
 
 /** ---------------- DATA ---------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -289,6 +289,17 @@ export default function Onboarding() {
         draft.goals,
         draft.equipment
       )
+
+      // Set enhanced user properties with location context
+      if (uid) {
+        setEnhancedUserProperties(uid, {
+          experience: draft.experience,
+          goals: draft.goals,
+          equipment: draft.equipment,
+          personal: draft.personal,
+          injuries: draft.injuries
+        })
+      }
 
       nav('/dashboard')
     } catch (error) {

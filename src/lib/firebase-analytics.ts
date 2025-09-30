@@ -188,10 +188,17 @@ export const setUserAnalyticsProperties = (userId: string, properties: {
   subscription_status?: string
   total_workouts?: number
   signup_date?: string
+  timezone?: string
+  language?: string
 }) => {
   safeAnalyticsCall(() => {
     setUserId(analytics!, userId)
-    setUserProperties(analytics!, properties)
+    setUserProperties(analytics!, {
+      ...properties,
+      // Add automatic timezone and language detection
+      timezone: properties.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: properties.language || navigator.language
+    })
   })
 }
 
@@ -205,12 +212,62 @@ export const trackCustomEvent = (eventName: string, parameters: Record<string, a
 }
 
 /**
+ * Session and Location Tracking
+ */
+export const trackSessionStart = () => {
+  safeAnalyticsCall(() => {
+    const sessionInfo = {
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      screen_resolution: `${screen.width}x${screen.height}`,
+      viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+      user_agent: navigator.userAgent.substring(0, 100), // Truncate for analytics
+      referrer: document.referrer || 'direct'
+    }
+
+    logEvent(analytics!, 'session_start', sessionInfo)
+  })
+}
+
+export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, any> = {}) => {
+  safeAnalyticsCall(() => {
+    logEvent(analytics!, eventName, {
+      ...additionalParams,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      timestamp: Date.now()
+    })
+  })
+}
+
+/**
+ * Enhanced User Properties with Location Context
+ */
+export const setEnhancedUserProperties = (userId: string, userProfile: any) => {
+  safeAnalyticsCall(() => {
+    setUserId(analytics!, userId)
+    setUserProperties(analytics!, {
+      experience_level: userProfile.experience,
+      subscription_status: userProfile.subscription?.status || 'free',
+      total_workouts: userProfile.subscription?.workoutCount || 0,
+      signup_date: new Date().toISOString().split('T')[0],
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      primary_goals: userProfile.goals?.slice(0, 3).join(',') || 'none',
+      equipment_access: userProfile.equipment?.length || 0
+    })
+  })
+}
+
+/**
  * Debug function to check analytics status
  */
 export const getAnalyticsStatus = () => {
   return {
     isAvailable: isAnalyticsAvailable(),
     analytics: analytics,
-    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server'
+    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
+    timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown',
+    language: typeof window !== 'undefined' ? navigator.language : 'unknown'
   }
 }

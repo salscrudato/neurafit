@@ -22,6 +22,7 @@ import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
 import { versionManager } from './utils/version'
 import { usePageTracking } from './hooks/useAnalytics'
+import { trackSessionStart } from './lib/firebase-analytics'
 
 export default function App() {
   // Track page views automatically
@@ -31,6 +32,9 @@ export default function App() {
   useEffect(() => {
     const cleanupOrientation = lockOrientation()
     const cleanupZoom = preventZoom()
+
+    // Track session start with location context
+    trackSessionStart()
 
     // Initialize version management
     if (versionManager.isFirstRun()) {
