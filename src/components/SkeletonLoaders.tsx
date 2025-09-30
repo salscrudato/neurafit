@@ -1,11 +1,39 @@
 // src/components/SkeletonLoaders.tsx
 import React from 'react'
 
-// Base skeleton component with shimmer animation
-export function SkeletonBase({ className = '', children }: { className?: string; children?: React.ReactNode }) {
+// Enhanced skeleton component with improved shimmer animation and accessibility
+export function SkeletonBase({
+  className = '',
+  children,
+  variant = 'default',
+  speed = 'normal'
+}: {
+  className?: string;
+  children?: React.ReactNode;
+  variant?: 'default' | 'text' | 'circular' | 'rectangular';
+  speed?: 'slow' | 'normal' | 'fast';
+}) {
+  const speedClasses = {
+    slow: 'animate-shimmer-slow',
+    normal: 'animate-shimmer',
+    fast: 'animate-shimmer-fast'
+  }
+
+  const variantClasses = {
+    default: 'rounded',
+    text: 'rounded-sm',
+    circular: 'rounded-full',
+    rectangular: 'rounded-lg'
+  }
+
   return (
-    <div className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded ${className}`}>
+    <div
+      className={`animate-pulse bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] ${speedClasses[speed]} ${variantClasses[variant]} ${className}`}
+      role="status"
+      aria-label="Loading content"
+    >
       {children}
+      <span className="sr-only">Loading...</span>
     </div>
   )
 }

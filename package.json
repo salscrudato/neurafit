@@ -9,8 +9,9 @@
     "build:deploy": "node scripts/update-version.js && vite build && node scripts/update-version.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && firebase deploy --only hosting",
-    "deploy:full": "npm run build && firebase deploy",
+    "clear-cache": "node scripts/clear-cache.js",
+    "deploy": "npm run clear-cache && npm run build && firebase deploy --only hosting",
+    "deploy:full": "npm run clear-cache && npm run build && firebase deploy",
     "version:patch": "npm version patch && npm run deploy",
     "version:minor": "npm version minor && npm run deploy",
     "version:major": "npm version major && npm run deploy"

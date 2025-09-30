@@ -1,6 +1,6 @@
 // src/components/WorkoutProgress.tsx
 import React from 'react'
-import { CheckCircle, Circle, Clock, Zap } from 'lucide-react'
+import { CheckCircle, Clock, Zap, Flame, Rocket, Sparkles, Target, PartyPopper } from 'lucide-react'
 
 interface CircularProgressProps {
   progress: number // 0-100
@@ -194,31 +194,36 @@ export function MotivationalMessage({
   exerciseName
 }: MotivationalMessageProps) {
   const getMotivationalMessage = () => {
-    if (progress >= 90) return "Almost there! Finish strong! 💪"
-    if (progress >= 75) return "You're crushing it! Keep going! 🔥"
-    if (progress >= 50) return "Halfway there! You've got this! ⚡"
-    if (progress >= 25) return "Great start! Building momentum! 🚀"
-    if (completedSets > 0) return "Nice work! One set at a time! ✨"
-    return "Let's do this! You're stronger than you think! 💯"
+    if (progress >= 90) return { text: "Almost there! Finish strong!", icon: <Zap className="h-4 w-4" /> }
+    if (progress >= 75) return { text: "You're crushing it! Keep going!", icon: <Flame className="h-4 w-4" /> }
+    if (progress >= 50) return { text: "Halfway there! You've got this!", icon: <Zap className="h-4 w-4" /> }
+    if (progress >= 25) return { text: "Great start! Building momentum!", icon: <Rocket className="h-4 w-4" /> }
+    if (completedSets > 0) return { text: "Nice work! One set at a time!", icon: <Sparkles className="h-4 w-4" /> }
+    return { text: "Let's do this! You're stronger than you think!", icon: <Target className="h-4 w-4" /> }
   }
 
   const getCompletionMessage = () => {
     const percentage = Math.round((completedSets / totalSets) * 100)
-    if (percentage === 100) return `${exerciseName} completed! 🎉`
-    if (percentage >= 75) return `${percentage}% complete - almost done!`
-    if (percentage >= 50) return `${percentage}% complete - keep it up!`
-    if (percentage > 0) return `${percentage}% complete - great progress!`
-    return "Ready to start? You've got this!"
+    if (percentage === 100) return { text: `${exerciseName} completed!`, icon: <PartyPopper className="h-4 w-4" /> }
+    if (percentage >= 75) return { text: `${percentage}% complete - almost done!`, icon: null }
+    if (percentage >= 50) return { text: `${percentage}% complete - keep it up!`, icon: null }
+    if (percentage > 0) return { text: `${percentage}% complete - great progress!`, icon: null }
+    return { text: "Ready to start? You've got this!", icon: null }
   }
+
+  const motivationalMessage = getMotivationalMessage()
+  const completionMessage = getCompletionMessage()
 
   return (
     <div className="text-center py-4 px-6">
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
-        <div className="text-lg font-semibold text-gray-900 mb-1">
-          {getMotivationalMessage()}
+        <div className="flex items-center justify-center gap-2 text-lg font-semibold text-gray-900 mb-1">
+          {motivationalMessage.icon}
+          <span>{motivationalMessage.text}</span>
         </div>
-        <div className="text-sm text-gray-600">
-          {getCompletionMessage()}
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+          {completionMessage.icon}
+          <span>{completionMessage.text}</span>
         </div>
       </div>
     </div>

@@ -27,16 +27,6 @@ export function EnhancedRestTimer({
   const [isComplete, setIsComplete] = useState(false)
   
   const intervalRef = useRef<number | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-
-  // Initialize audio context
-  useEffect(() => {
-    try {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-    } catch (error) {
-      console.warn('Audio context not supported:', error)
-    }
-  }, [])
 
   // Timer logic
   useEffect(() => {
@@ -66,18 +56,16 @@ export function EnhancedRestTimer({
   // Handle completion
   useEffect(() => {
     if (isComplete) {
-      playCompletionSound()
       vibrate(500)
       onComplete()
     }
   }, [isComplete, onComplete])
 
-  // Audio and haptic feedback
+  // Haptic feedback and document title
   useEffect(() => {
     if (isPaused || isComplete) return
 
     if (remainingSeconds === 3 || remainingSeconds === 2 || remainingSeconds === 1) {
-      playBeep(remainingSeconds === 1 ? 980 : 820)
       vibrate(100)
     }
 
@@ -94,57 +82,7 @@ export function EnhancedRestTimer({
     onTimeChange?.(remainingSeconds)
   }, [remainingSeconds, onTimeChange])
 
-  const playBeep = (frequency: number) => {
-    if (!audioContextRef.current) return
 
-    try {
-      const oscillator = audioContextRef.current.createOscillator()
-      const gainNode = audioContextRef.current.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContextRef.current.destination)
-
-      oscillator.frequency.value = frequency
-      oscillator.type = 'sine'
-
-      gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.1)
-
-      oscillator.start(audioContextRef.current.currentTime)
-      oscillator.stop(audioContextRef.current.currentTime + 0.1)
-    } catch (error) {
-      console.warn('Audio playback failed:', error)
-    }
-  }
-
-  const playCompletionSound = () => {
-    if (!audioContextRef.current) return
-
-    try {
-      // Play a pleasant completion chord
-      const frequencies = [523.25, 659.25, 783.99] // C5, E5, G5
-      frequencies.forEach((freq, index) => {
-        setTimeout(() => {
-          const oscillator = audioContextRef.current!.createOscillator()
-          const gainNode = audioContextRef.current!.createGain()
-
-          oscillator.connect(gainNode)
-          gainNode.connect(audioContextRef.current!.destination)
-
-          oscillator.frequency.value = freq
-          oscillator.type = 'sine'
-
-          gainNode.gain.setValueAtTime(0.1, audioContextRef.current!.currentTime)
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current!.currentTime + 0.3)
-
-          oscillator.start(audioContextRef.current!.currentTime)
-          oscillator.stop(audioContextRef.current!.currentTime + 0.3)
-        }, index * 100)
-      })
-    } catch (error) {
-      console.warn('Completion sound failed:', error)
-    }
-  }
 
   const vibrate = (duration: number) => {
     if ('vibrate' in navigator) {

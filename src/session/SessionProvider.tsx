@@ -26,7 +26,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     // Simple auth state listener - no complex redirect handling
     const unsubAuth = onAuthStateChanged(auth, async (u) => {
-      console.log('🔐 Auth state:', u?.email || 'signed out')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔐 Auth state:', u?.email || 'signed out')
+      }
 
       // Clean up any existing document listener first
       if (unsubDoc) {
@@ -52,10 +54,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           const p = snap.data() as UserProfile
           setProfile(p)
           const isComplete = isProfileComplete(p)
-          console.log('🔐 Profile complete:', isComplete)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔐 Profile complete:', isComplete)
+          }
           setStatus(isComplete ? 'ready' : 'needsOnboarding')
         } else {
-          console.log('🔐 No profile found, needs onboarding')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔐 No profile found, needs onboarding')
+          }
           setProfile(null)
           setStatus('needsOnboarding')
         }

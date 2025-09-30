@@ -1,7 +1,8 @@
 // Advanced service worker for instant updates and cache management
-const CACHE_NAME = 'neurafit-v2'
-const STATIC_CACHE = 'neurafit-static-v2'
-const DYNAMIC_CACHE = 'neurafit-dynamic-v2'
+const CACHE_VERSION = Math.floor(Date.now() / 1000) // Force cache bust with shorter timestamp
+const CACHE_NAME = `neurafit-v${CACHE_VERSION}`
+const STATIC_CACHE = `neurafit-static-v${CACHE_VERSION}`
+const DYNAMIC_CACHE = `neurafit-dynamic-v${CACHE_VERSION}`
 
 // Files to cache immediately
 const STATIC_FILES = [
@@ -30,11 +31,11 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches and claim clients
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activating new version')
+  console.log('SW: Activating new version - clearing ALL caches')
 
   event.waitUntil(
     Promise.all([
-      // Clean up old caches
+      // Clean up ALL old caches (force complete refresh)
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {

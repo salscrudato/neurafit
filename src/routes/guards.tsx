@@ -6,7 +6,10 @@ import type { ReactNode } from 'react'
 export function HomeGate({ authPage }: { authPage: ReactNode }) {
   const { status, user } = useSession()
 
-  console.log('[HOME] HomeGate:', status, user?.email || 'no user')
+  // Only log in development for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[HOME] HomeGate:', status, user?.email || 'no user')
+  }
 
   if (status === 'loading') return <ScreenLoader />
   if (status === 'signedOut') return <>{authPage}</>

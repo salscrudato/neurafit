@@ -166,7 +166,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
 
   return useCallback((...args: Parameters<T>) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => func(...args), delay)
+    timeoutRef.current = window.setTimeout(() => func(...args), delay)
   }, [func, delay]) as T
 }
 

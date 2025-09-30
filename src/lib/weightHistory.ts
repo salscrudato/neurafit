@@ -27,7 +27,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    console.log(`📊 Fetching weight history for ${exerciseName}`)
+    console.log(`Fetching weight history for ${exerciseName}`)
     
     const q = query(
       collection(db, 'users', uid, 'workouts'),
@@ -82,7 +82,7 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    console.log('📊 Fetching recent workout sessions')
+    console.log('Fetching recent workout sessions')
     
     const q = query(
       collection(db, 'users', uid, 'workouts'),

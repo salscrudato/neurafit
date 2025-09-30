@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import TestWorkout from './pages/TestWorkout'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary'
 
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
@@ -49,8 +50,9 @@ export default function App() {
     }
   }, [])
   return (
-    <div className="min-h-screen">
-      <Routes>
+    <CriticalErrorBoundary>
+      <div className="min-h-screen">
+        <Routes>
 
         {/* Public legal pages */}
         <Route path="/terms" element={<Terms />} />
@@ -64,7 +66,9 @@ export default function App() {
           path="/onboarding"
           element={
             <RequireAuth>
-              <Onboarding />
+              <PageErrorBoundary>
+                <Onboarding />
+              </PageErrorBoundary>
             </RequireAuth>
           }
         />
@@ -74,7 +78,9 @@ export default function App() {
           path="/dashboard"
           element={
             <RequireProfile>
-              <Dashboard />
+              <PageErrorBoundary>
+                <Dashboard />
+              </PageErrorBoundary>
             </RequireProfile>
           }
         />
@@ -82,7 +88,9 @@ export default function App() {
           path="/generate"
           element={
             <RequireProfile>
-              <Generate />
+              <PageErrorBoundary>
+                <Generate />
+              </PageErrorBoundary>
             </RequireProfile>
           }
         />
@@ -151,8 +159,9 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </CriticalErrorBoundary>
   )
 }

@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity, BarChart3, Trophy } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity, BarChart3, Trophy, TrendingUp, Target, Award } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { WorkoutHistorySkeleton } from '../components/SkeletonLoaders'
 import { WorkoutAnalytics } from '../components/WorkoutAnalytics'
 import { AchievementSystem } from '../components/AchievementSystem'
+import { AnalyticsEngine, formatVolume, getProgressColor, getTrendIcon } from '../lib/analytics'
+import { LineChart, DonutChart } from '../components/Charts'
+import { DashboardCard, StatsCard } from '../design-system/components/Card'
+import { Stagger, Floating } from '../components/MicroInteractions'
 
 type WorkoutItem = {
   id: string
@@ -23,6 +27,30 @@ export default function History() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'history' | 'analytics' | 'achievements'>('history')
+
+  // Enhanced analytics with the new engine
+  const analyticsEngine = useMemo(() => {
+    if (items.length === 0) return null
+
+    // Convert WorkoutItem to WorkoutSession format
+    const sessions = items.map(item => ({
+      date: item.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+      exercises: (item.exercises || []).map(exercise => ({
+        name: exercise.name,
+        sets: Object.entries(exercise.weights || {}).map(([_setNum, weight]) => ({
+          weight: weight,
+          reps: typeof exercise.reps === 'number' ? exercise.reps : parseInt(exercise.reps as string) || 1,
+          completed: weight !== null
+        }))
+      }))
+    }))
+
+    return new AnalyticsEngine(sessions)
+  }, [items])
+
+  const performanceMetrics = useMemo(() => {
+    return analyticsEngine?.getPerformanceMetrics() || null
+  }, [analyticsEngine])
 
   useEffect(() => {
     (async () => {
@@ -43,7 +71,7 @@ export default function History() {
           return { id: d.id, ...data } as WorkoutItem
         })
 
-        console.log(`📊 Loaded ${workouts.length} workouts`)
+        console.log(`Loaded ${workouts.length} workouts`)
         setItems(workouts)
       } catch (err: any) {
         console.error('❌ Error fetching workout history:', err)
@@ -231,7 +259,7 @@ export default function History() {
               const completionRate = setCompletionRate
 
               // Debug logging for workout stats
-              console.log(`📊 Workout "${workout.workoutType}" stats:`, {
+              console.log(`Workout "${workout.workoutType}" stats:`, {
                 totalExercises: stats.totalExercises,
                 completedExercises: stats.completedExercises,
                 fullyCompletedExercises: stats.fullyCompletedExercises,
@@ -334,7 +362,173 @@ export default function History() {
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
-          <WorkoutAnalytics workouts={items} timeRange="month" />
+          <div className="space-y-6">
+            {performanceMetrics ? (
+              <Stagger delay={100}>
+                {/* Performance Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                  <StatsCard
+                    label="Total Workouts"
+                    value={performanceMetrics.totalWorkouts}
+                    change={`${performanceMetrics.workoutFrequency.toFixed(1)}/week`}
+                    trend="up"
+                    icon={<Zap className="h-5 w-5" />}
+                  />
+                  <StatsCard
+                    label="Total Volume"
+                    value={formatVolume(performanceMetrics.totalVolume)}
+                    change={`${performanceMetrics.totalSets} sets`}
+                    trend="up"
+                    icon={<TrendingUp className="h-5 w-5" />}
+                  />
+                  <StatsCard
+                    label="Consistency"
+                    value={`${performanceMetrics.consistencyScore}%`}
+                    change={performanceMetrics.consistencyScore > 70 ? 'Excellent!' : 'Keep going!'}
+                    trend={performanceMetrics.consistencyScore > 70 ? 'up' : 'neutral'}
+                    icon={<Target className="h-5 w-5" />}
+                  />
+                  <StatsCard
+                    label="Progress Rate"
+                    value={`${performanceMetrics.progressionRate.toFixed(1)}%`}
+                    change="Overall improvement"
+                    trend={performanceMetrics.progressionRate > 0 ? 'up' : 'down'}
+                    icon={<Award className="h-5 w-5" />}
+                  />
+                </div>
+
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                  {/* Weekly Volume Chart */}
+                  <Floating intensity={4} duration={3000}>
+                    <DashboardCard
+                      title="Weekly Volume Trend"
+                      description="Your training volume over the past 12 weeks"
+                      icon={<BarChart3 className="h-5 w-5" />}
+                    >
+                      <div className="mt-4">
+                        <LineChart
+                          data={performanceMetrics.weeklyStats.map(week => ({
+                            label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            value: week.totalVolume,
+                            date: week.weekStart
+                          }))}
+                          height={200}
+                          color="#3B82F6"
+                          animated
+                        />
+                      </div>
+                    </DashboardCard>
+                  </Floating>
+
+                  {/* Exercise Distribution */}
+                  <Floating intensity={6} duration={3500}>
+                    <DashboardCard
+                      title="Exercise Distribution"
+                      description="Your most trained exercises by volume"
+                      icon={<Activity className="h-5 w-5" />}
+                    >
+                      <div className="mt-4">
+                        <DonutChart
+                          data={performanceMetrics.exerciseStats.slice(0, 5).map((exercise, index) => ({
+                            label: exercise.name,
+                            value: exercise.totalVolume,
+                            color: `hsl(${(index * 72)}, 70%, 50%)`
+                          }))}
+                          size={200}
+                          animated
+                        />
+                      </div>
+                    </DashboardCard>
+                  </Floating>
+                </div>
+
+                {/* Exercise Performance Table */}
+                <DashboardCard
+                  title="Exercise Performance Analysis"
+                  description="Detailed breakdown of your exercise progress"
+                  icon={<Trophy className="h-5 w-5" />}
+                >
+                  <div className="mt-6 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 font-medium text-gray-900">Exercise</th>
+                          <th className="text-right py-3 px-4 font-medium text-gray-900">Volume</th>
+                          <th className="text-right py-3 px-4 font-medium text-gray-900">Max Weight</th>
+                          <th className="text-right py-3 px-4 font-medium text-gray-900">Progress</th>
+                          <th className="text-center py-3 px-4 font-medium text-gray-900">Trend</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {performanceMetrics.exerciseStats.slice(0, 10).map((exercise) => (
+                          <tr key={exercise.name} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4 font-medium text-gray-900">{exercise.name}</td>
+                            <td className="py-3 px-4 text-right text-gray-600">
+                              {formatVolume(exercise.totalVolume)}
+                            </td>
+                            <td className="py-3 px-4 text-right text-gray-600">
+                              {exercise.maxWeight} lbs
+                            </td>
+                            <td className={`py-3 px-4 text-right font-medium ${getProgressColor(exercise.progressionRate)}`}>
+                              {exercise.progressionRate > 0 ? '+' : ''}{exercise.progressionRate.toFixed(1)}%
+                            </td>
+                            <td className="py-3 px-4 text-center text-lg">
+                              {getTrendIcon(exercise.volumeTrend)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </DashboardCard>
+
+                {/* Personal Records */}
+                {performanceMetrics.personalRecords.length > 0 && (
+                  <DashboardCard
+                    title="Recent Personal Records"
+                    description="Your latest achievements and milestones"
+                    icon={<Award className="h-5 w-5" />}
+                  >
+                    <div className="mt-6 space-y-4">
+                      {performanceMetrics.personalRecords.slice(0, 5).map((record, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{record.exerciseName}</h4>
+                            <p className="text-sm text-gray-600">
+                              {record.weight} lbs × {record.reps} reps
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(record.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-yellow-500">
+                              <Trophy className="h-6 w-6" />
+                            </div>
+                            {record.previousRecord && (
+                              <p className="text-xs text-green-600">
+                                +{(record.weight - record.previousRecord.weight).toFixed(1)} lbs
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </DashboardCard>
+                )}
+              </Stagger>
+            ) : (
+              <div className="text-center py-12">
+                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Available</h3>
+                <p className="text-gray-600">Complete some workouts to see your performance analytics.</p>
+              </div>
+            )}
+
+            {/* Fallback to original analytics component */}
+            <WorkoutAnalytics workouts={items} timeRange="month" />
+          </div>
         )}
 
         {/* Achievements Tab */}

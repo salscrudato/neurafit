@@ -4,6 +4,17 @@ import tailwind from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwind()],
+  server: {
+    // Simplified WebSocket configuration
+    hmr: {
+      port: 5174
+    },
+    // Handle port conflicts gracefully
+    strictPort: false,
+    // Enable CORS for development
+    cors: true,
+    port: 5173
+  },
   build: {
     // Generate unique filenames for cache-busting
     rollupOptions: {

@@ -10,6 +10,7 @@ import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } fro
 import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
 
+
 const TYPES = [
   'Full Body','Upper Body','Lower Body','Cardio','HIIT','Core Focus',
   'Yoga/Pilates','Circuit','Chest/Triceps','Back/Biceps','Shoulders','Legs/Glutes'
@@ -36,6 +37,8 @@ export default function Generate() {
   const [targetIntensity, setTargetIntensity] = useState<number>(1.0)
   const [progressionNote, setProgressionNote] = useState<string>('')
 
+
+
   // Fetch profile on mount
   useEffect(() => {
     (async () => {
@@ -58,6 +61,8 @@ export default function Generate() {
         if (isAdaptivePersonalizationEnabled()) {
           await fetchAdaptiveIntensity(uid)
         }
+
+
       } catch (error) {
         console.error('Error fetching profile:', error)
         // If there's a permission error, redirect to auth
@@ -183,6 +188,8 @@ export default function Generate() {
     }
   }
 
+
+
   const disabled = !type || !duration || loading || showProgressiveLoading
 
   async function generate() {
@@ -191,8 +198,8 @@ export default function Generate() {
     setLoading(true)
     setShowProgressiveLoading(true)
 
-    // Enhanced payload with adaptive personalization
     const uid = auth.currentUser?.uid
+
     const payload = {
       experience: profile.experience,
       goals: profile.goals,
@@ -203,7 +210,7 @@ export default function Generate() {
       duration,
       uid,
       targetIntensity,
-      progressionNote,
+      progressionNote
     }
 
     const url = import.meta.env.VITE_WORKOUT_FN_URL as string
@@ -236,6 +243,9 @@ export default function Generate() {
         }
 
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
+
+
+
         nav('/workout/preview')
       } finally {
         clearTimeout(t)
@@ -292,7 +302,7 @@ export default function Generate() {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-gray-900">
-                    Intensity Calibrated: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
+                    Intensity: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
                   </div>
                   {progressionNote && (
                     <div className="text-sm text-gray-600 mt-1 capitalize">
@@ -300,13 +310,12 @@ export default function Generate() {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-gray-500">
-                  Based on your feedback
-                </div>
               </div>
             </div>
           </section>
         )}
+
+
 
         {/* Options */}
         <section className="mt-8 space-y-6">

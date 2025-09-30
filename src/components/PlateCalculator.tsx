@@ -21,7 +21,7 @@ export function PlateCalculator({
   availablePlates = [45, 35, 25, 10, 5, 2.5],
   onWeightChange
 }: PlateCalculatorProps) {
-  const plateConfiguration = useMemo(() => {
+  const plateConfiguration: PlateConfiguration = useMemo(() => {
     const weightToLoad = Math.max(0, targetWeight - barbellWeight)
     const weightPerSide = weightToLoad / 2
 

@@ -31,7 +31,7 @@ export function ProgressiveOverloadTracker({
   exerciseName,
   recentSessions,
   currentWeight,
-  targetReps
+  targetReps: _targetReps
 }: ProgressiveOverloadTrackerProps) {
   const metrics = useMemo((): ProgressMetrics => {
     const exerciseData = recentSessions

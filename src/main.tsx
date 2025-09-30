@@ -3,6 +3,10 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 import { SessionProvider } from './session/SessionProvider'
+import { suppressDevWarnings } from './utils/devUtils'
+
+// Suppress common development warnings
+suppressDevWarnings()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <SessionProvider>
@@ -12,12 +16,26 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </SessionProvider>
 )
 
+// Clear all caches on startup to ensure fresh content
+if ('caches' in window) {
+  caches.keys().then(cacheNames => {
+    cacheNames.forEach(cacheName => {
+      if (cacheName.includes('neurafit')) {
+        console.log('Clearing cache:', cacheName)
+        caches.delete(cacheName)
+      }
+    })
+  })
+}
+
 // Register service worker for PWA functionality and instant updates
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
-        console.log('SW registered: ', registration)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('SW registered: ', registration)
+        }
 
         // Check for updates every 30 seconds
         setInterval(() => {
@@ -31,7 +49,9 @@ if ('serviceWorker' in navigator) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // New version available
-                console.log('New version available!')
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('New version available!')
+                }
                 showUpdateNotification()
               }
             })
@@ -46,7 +66,9 @@ if ('serviceWorker' in navigator) {
   // Listen for messages from service worker
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SW_UPDATED') {
-      console.log('Service worker updated, reloading page...')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Service worker updated, reloading page...')
+      }
       window.location.reload()
     }
   })

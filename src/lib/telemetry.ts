@@ -46,7 +46,7 @@ export function logTelemetryEvent(
 
   // Log to console in development
   if (import.meta.env.DEV) {
-    console.log('📊 Telemetry Event:', eventData)
+    console.log('Telemetry Event:', eventData)
   }
 
   // In production, you would send this to your analytics service

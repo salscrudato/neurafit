@@ -36,12 +36,16 @@ export default function Auth() {
       await signInWithPopup(auth, provider)
       // Success - SessionProvider will handle the rest
     } catch (error: any) {
-      console.log('Popup failed, trying redirect:', error.code)
+      // Suppress COOP-related console errors as they're expected in development
+      if (!error.message?.includes('Cross-Origin-Opener-Policy')) {
+        console.log('Popup failed, trying redirect:', error.code)
+      }
 
       // If popup fails due to COOP or being blocked, fall back to redirect
       if (error.code === 'auth/popup-blocked' ||
           error.code === 'auth/popup-closed-by-user' ||
-          error.message?.includes('Cross-Origin-Opener-Policy')) {
+          error.message?.includes('Cross-Origin-Opener-Policy') ||
+          error.message?.includes('window.closed')) {
         try {
           await signInWithRedirect(auth, provider)
           // Redirect will happen, don't set loading to false
@@ -50,7 +54,8 @@ export default function Auth() {
           console.error('Redirect also failed:', redirectError)
           alert('Failed to sign in with Google. Please try again.')
         }
-      } else {
+      } else if (error.code !== 'auth/cancelled-popup-request') {
+        // Only show error for non-cancellation errors
         console.error('Google sign-in error:', error)
         alert('Failed to sign in with Google. Please try again.')
       }

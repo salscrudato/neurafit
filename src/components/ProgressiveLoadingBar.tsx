@@ -87,7 +87,7 @@ export function ProgressiveLoadingBar({
 
       // Calculate progress within current stage
       const stageStart = stages.slice(0, newStage).reduce((sum, stage) => sum + stage.duration, 0)
-      const stageEnd = stageStart + (stages[newStage]?.duration || 0)
+      // const stageEnd = stageStart + (stages[newStage]?.duration || 0) // Unused for now
       const stageProgressValue = stages[newStage] 
         ? Math.min(((totalProgress - stageStart) / stages[newStage].duration) * 100, 100)
         : 100
@@ -183,7 +183,7 @@ export function ProgressiveLoadingBar({
           {stages.map((stage, index) => {
             const isCompleted = index < currentStage
             const isCurrent = index === currentStage
-            const isUpcoming = index > currentStage
+            // const isUpcoming = index > currentStage // Unused for now
             
             return (
               <div key={stage.id} className="flex flex-col items-center gap-2">

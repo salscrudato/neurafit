@@ -58,7 +58,7 @@ export default function Preview() {
             {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
               <Badge className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500">
                 <Brain className="h-3 w-3" />
-                Calibrated: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
+                {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
               </Badge>
             )}
           </div>

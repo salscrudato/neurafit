@@ -3,8 +3,11 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import { Zap, History, User } from 'lucide-react'
-import type { ReactElement } from 'react'
+// Removed unused ReactElement import
 import AppHeader from '../components/AppHeader'
+import { DashboardCard } from '../design-system/components/Card'
+import { Button } from '../design-system/components/Button'
+import { Stagger, Floating } from '../components/MicroInteractions'
 
 export default function Dashboard() {
   const nav = useNavigate()
@@ -39,26 +42,61 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Quick features */}
-      <section className="relative mx-auto max-w-6xl px-6 mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <DashCard onClick={() => nav('/generate')}
-          title="Generate Workout"
-          desc="AI-tailored plans from goals, experience, equipment & injuries."
-          gradient="from-blue-400 to-indigo-500"
-          icon={<Zap className="h-5 w-5" />}
-        />
-        <DashCard onClick={() => nav('/history')}
-          title="Workout History"
-          desc="Auto-saved sessions to review, repeat, and track progress."
-          gradient="from-emerald-400 to-teal-500"
-          icon={<History className="h-5 w-5" />}
-        />
-        <DashCard onClick={() => nav('/profile')}
-          title="Profile"
-          desc="Update goals, equipment, or injuries to keep plans accurate."
-          gradient="from-orange-400 to-amber-500"
-          icon={<User className="h-5 w-5" />}
-        />
+
+
+      {/* Quick Actions */}
+      <section className="relative mx-auto max-w-6xl px-6 mt-8">
+        <Stagger delay={100}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Floating intensity={5} duration={4000}>
+              <DashboardCard
+                title="Generate Workout"
+                description="AI-tailored plans from goals, experience, equipment & injuries."
+                icon={<Zap className="h-5 w-5" />}
+                action={
+                  <Button size="sm" onClick={() => nav('/generate')}>
+                    Start
+                  </Button>
+                }
+                interactive
+                ripple
+                onClick={() => nav('/generate')}
+              />
+            </Floating>
+
+            <Floating intensity={8} duration={3500}>
+              <DashboardCard
+                title="Workout History"
+                description="Auto-saved sessions to review, repeat, and track progress."
+                icon={<History className="h-5 w-5" />}
+                action={
+                  <Button size="sm" variant="secondary" onClick={() => nav('/history')}>
+                    View
+                  </Button>
+                }
+                interactive
+                ripple
+                onClick={() => nav('/history')}
+              />
+            </Floating>
+
+            <Floating intensity={6} duration={4500}>
+              <DashboardCard
+                title="Profile Settings"
+                description="Update goals, equipment, or injuries to keep plans accurate."
+                icon={<User className="h-5 w-5" />}
+                action={
+                  <Button size="sm" variant="outline" onClick={() => nav('/profile')}>
+                    Edit
+                  </Button>
+                }
+                interactive
+                ripple
+                onClick={() => nav('/profile')}
+              />
+            </Floating>
+          </div>
+        </Stagger>
       </section>
 
 
@@ -66,31 +104,5 @@ export default function Dashboard() {
   )
 }
 
-/* ---------- Reusable components ---------- */
-function DashCard({
-  title, desc, icon, gradient, onClick,
-}: {
-  title: string
-  desc: string
-  icon: ReactElement
-  gradient: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 text-left hover:bg-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300 shadow-sm"
-    >
-      <div className={`pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-tr ${gradient} opacity-15 blur-2xl`} />
-      <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 text-blue-600">
-        {icon}
-      </div>
-      <div className="font-semibold text-gray-900">{title}</div>
-      <p className="mt-1 text-sm text-gray-600">{desc}</p>
-      <div className="mt-4 text-sm text-blue-600 opacity-0 group-hover:opacity-100 transition">
-        Open →
-      </div>
-    </button>
-  )
-}
+// Old DashCard component removed - now using premium design system components
 

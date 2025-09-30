@@ -27,7 +27,7 @@ export function SmartWeightInput({
   onWeightChange,
   isOptimistic = false,
   previousWeights = [],
-  targetReps
+  targetReps: _targetReps
 }: SmartWeightInputProps) {
   const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
   const [showSuggestions, setShowSuggestions] = useState(false)

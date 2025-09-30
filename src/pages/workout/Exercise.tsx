@@ -1,5 +1,5 @@
 // src/pages/workout/Exercise.tsx
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lightbulb, Shield } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
@@ -20,6 +20,10 @@ import {
   type WeightHistory,
   type WorkoutSession
 } from '../../lib/weightHistory'
+
+import { useHaptics } from '../../lib/haptics'
+import { useBounce, useShake } from '../../components/MicroInteractions'
+import { PersonalizationEngine, getCurrentContext } from '../../lib/personalization'
 
 type ExerciseT = {
   name: string
@@ -48,6 +52,17 @@ export default function Exercise() {
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([])
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+
+  // Enhanced UX hooks
+  const containerRef = useRef<HTMLDivElement>(null)
+  const haptics = useHaptics()
+  const { bounce, bounceClass } = useBounce()
+  const { shake, shakeClass } = useShake()
+
+  // Smart rest period calculation
+  const [personalizationEngine, setPersonalizationEngine] = useState<PersonalizationEngine | null>(null)
+
+
 
   // Weight tracking state with optimistic updates
   const initialWeights = (() => {
@@ -90,6 +105,21 @@ export default function Exercise() {
       setI(ii); setSetNo(s)
       sessionStorage.removeItem('nf_return')
     }
+  }, [])
+
+  // Initialize personalization engine for smart rest periods
+  useEffect(() => {
+    const initPersonalization = async () => {
+      try {
+        const sessions = await fetchRecentSessions(10)
+        const engine = new PersonalizationEngine(sessions)
+        setPersonalizationEngine(engine)
+      } catch (error) {
+        console.error('Error initializing personalization for rest periods:', error)
+      }
+    }
+
+    initPersonalization()
   }, [])
 
   // Clear weight data ONLY when starting a completely fresh workout
@@ -180,6 +210,79 @@ export default function Exercise() {
     return startTimeStr ? parseInt(startTimeStr) : Date.now()
   }, [])
 
+  // Navigation function with smart rest periods - defined early so callbacks can use it
+  const goRest = useCallback((nextIndex: number, nextSet: number, seconds?: number) => {
+    let restDuration = seconds ?? ex.restSeconds ?? 60
+
+    // Use AI-powered personalization for optimal rest periods
+    if (personalizationEngine && !seconds) {
+      try {
+        const context = getCurrentContext()
+        const smartRestDuration = personalizationEngine.predictOptimalRestPeriod(
+          ex.name,
+          setNo,
+          context
+        )
+        restDuration = smartRestDuration
+        console.log(`[SMART REST] ${ex.name} set ${setNo}: ${smartRestDuration}s (vs default ${ex.restSeconds ?? 60}s)`)
+      } catch (error) {
+        console.error('Error calculating smart rest period:', error)
+        // Fall back to default
+      }
+    }
+
+    sessionStorage.setItem('nf_rest', String(restDuration))
+    sessionStorage.setItem('nf_next', JSON.stringify({ i: nextIndex, setNo: nextSet }))
+    nav('/workout/rest')
+  }, [nav, ex.restSeconds, ex.name, setNo, personalizationEngine])
+
+  // Enhanced set completion with haptic feedback
+  const completeCurrentSet = useCallback(() => {
+    const currentWeight = workoutWeights[i]?.[setNo]
+
+    if (currentWeight !== undefined) {
+      // Set already has a weight, mark as complete
+      haptics.setComplete()
+      bounce()
+
+      if (setNo < ex.sets) {
+        setSetNo(setNo + 1)
+      } else {
+        // Exercise complete
+        haptics.exerciseComplete()
+        if (i < list.length - 1) {
+          goRest(i + 1, 1)
+        } else {
+          // Workout complete
+          haptics.workoutComplete()
+          nav('/workout/complete')
+        }
+      }
+    } else {
+      // No weight entered, shake to indicate error
+      haptics.error()
+      shake()
+    }
+  }, [workoutWeights, i, setNo, ex.sets, haptics, bounce, shake, goRest, nav, list.length])
+
+  const skipCurrentSet = useCallback(() => {
+    updateWeight(null) // Mark as skipped
+    haptics.tap()
+
+    if (setNo < ex.sets) {
+      setSetNo(setNo + 1)
+    } else {
+      // Exercise complete
+      if (i < list.length - 1) {
+        goRest(i + 1, 1)
+      } else {
+        nav('/workout/complete')
+      }
+    }
+  }, [updateWeight, setNo, ex.sets, haptics, i, list.length, goRest, nav])
+
+
+
   // Calculate total completed sets across all exercises
   const totalCompletedSets = useMemo(() => {
     return Object.values(workoutWeights).reduce((total, exerciseWeights) => {
@@ -199,11 +302,7 @@ export default function Exercise() {
     }).length
   }, [workoutWeights])
 
-  const goRest = (nextIndex: number, nextSet: number, seconds?: number) => {
-    sessionStorage.setItem('nf_rest', String(seconds ?? ex.restSeconds ?? 60))
-    sessionStorage.setItem('nf_next', JSON.stringify({ i: nextIndex, setNo: nextSet }))
-    nav('/workout/rest')
-  }
+  // goRest function moved above to be available for callbacks
 
   const completeSet = () => {
     // RULE 1: If a set is complete regardless of whether or not a weight is entered,
@@ -308,7 +407,10 @@ export default function Exercise() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
+    <div
+      ref={containerRef}
+      className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative ${bounceClass} ${shakeClass}`}
+    >
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
@@ -362,7 +464,34 @@ export default function Exercise() {
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <Chip>Set {setNo} of {ex.sets}</Chip>
             <Chip>Reps: {ex.reps}</Chip>
-            <Chip>Rest: {ex.restSeconds ?? 60}s</Chip>
+            {(() => {
+              // Calculate smart rest period for display
+              let restDuration = ex.restSeconds ?? 60
+              let isSmartRest = false
+
+              if (personalizationEngine) {
+                try {
+                  const context = getCurrentContext()
+                  const smartRestDuration = personalizationEngine.predictOptimalRestPeriod(
+                    ex.name,
+                    setNo,
+                    context
+                  )
+                  if (smartRestDuration !== restDuration) {
+                    restDuration = smartRestDuration
+                    isSmartRest = true
+                  }
+                } catch (error) {
+                  // Fall back to default
+                }
+              }
+
+              return (
+                <Chip className={isSmartRest ? 'bg-blue-100 text-blue-700 border-blue-200' : ''}>
+                  Rest: {restDuration}s {isSmartRest && '🧠'}
+                </Chip>
+              )
+            })()}
           </div>
 
           {/* Enhanced weight input for exercises that use weights */}
@@ -438,16 +567,18 @@ export default function Exercise() {
           >
             Skip Exercise
           </button>
-          <div className="flex gap-2">
+
+
+          <div className="flex gap-2 mt-4">
             <button
               onClick={skipSet}
-              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200"
+              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200 active:scale-95"
             >
               Skip Set
             </button>
             <button
               onClick={completeSet}
-              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] transition-all duration-200 shadow-md"
+              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-md"
             >
               Complete Set
             </button>
@@ -459,90 +590,15 @@ export default function Exercise() {
 }
 
 /* ---------- Small components ---------- */
-function Chip({ children }: { children: React.ReactNode }) {
+function Chip({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-gray-700 text-xs">
+    <span className={`inline-flex items-center rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-gray-700 text-xs ${className}`}>
       {children}
     </span>
   )
 }
 
-function WeightInput({
-  currentWeight,
-  onWeightChange,
-  setNumber,
-  isOptimistic = false
-}: {
-  currentWeight: number | null
-  onWeightChange: (weight: number | null) => void
-  setNumber: number
-  isOptimistic?: boolean
-}) {
-  const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleSubmit = async () => {
-    const weight = inputValue.trim() === '' ? null : parseFloat(inputValue)
-    if (weight !== null && (isNaN(weight) || weight < 0)) return // Invalid input
-
-    setIsSubmitting(true)
-    try {
-      onWeightChange(weight)
-      // Add small delay to show feedback
-      await new Promise(resolve => setTimeout(resolve, 200))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit()
-      ;(e.target as HTMLInputElement).blur()
-    }
-  }
-
-  return (
-    <div className={`rounded-2xl border backdrop-blur-sm p-4 transition-all duration-200 ${
-      isOptimistic
-        ? 'border-blue-300 bg-blue-50/70 shadow-md'
-        : 'border-gray-200 bg-white/70'
-    }`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="font-medium text-gray-900 flex items-center gap-2">
-            Weight for Set {setNumber}
-            {isOptimistic && (
-              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-            )}
-          </div>
-          <div className="text-sm text-gray-600">
-            {isOptimistic ? 'Saving...' : 'Enter weight in lbs (optional)'}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onBlur={handleSubmit}
-            onKeyDown={handleKeyDown}
-            placeholder="0"
-            min="0"
-            step="0.5"
-            className="w-20 rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-          />
-          <span className="text-sm text-gray-600">lbs</span>
-        </div>
-      </div>
-      {currentWeight !== null && (
-        <div className="mt-2 text-xs text-green-600">
-          ✓ {currentWeight} lbs recorded
-        </div>
-      )}
-    </div>
-  )
-}
+// WeightInput removed - using SmartWeightInput instead
 
 function EmptyState() {
   const nav = useNavigate()
