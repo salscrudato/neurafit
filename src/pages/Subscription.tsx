@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
@@ -6,7 +6,7 @@ import { SubscriptionPlans } from '../components/SubscriptionPlans'
 import { PaymentForm } from '../components/PaymentForm'
 import { SubscriptionManagement } from '../components/SubscriptionManagement'
 import { useSubscription } from '../hooks/useSubscription'
-import { useSession } from '../hooks/useSession'
+// import { useSession } from '../hooks/useSession'
 import { getSubscriptionPlanByPriceId } from '../lib/stripe-config'
 
 type ViewState = 'plans' | 'payment' | 'success' | 'manage'
@@ -14,7 +14,8 @@ type ViewState = 'plans' | 'payment' | 'success' | 'manage'
 export default function Subscription() {
   const navigate = useNavigate()
   const { hasUnlimitedWorkouts } = useSubscription()
-  const { user, status } = useSession()
+  // Session hook available if needed for future features
+  // const { user, status } = useSession()
   const [currentView, setCurrentView] = useState<ViewState>(
     hasUnlimitedWorkouts ? 'manage' : 'plans'
   )
