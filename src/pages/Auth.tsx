@@ -8,6 +8,7 @@ import {
 } from 'firebase/auth'
 import { Zap, Brain, Target, Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import type { ReactElement } from 'react'
+import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -38,7 +39,14 @@ export default function Auth() {
 
     try {
       // Try popup first
-      await signInWithPopup(auth, provider)
+      const result = await signInWithPopup(auth, provider)
+      // Track successful Google sign in
+      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
+      if (isNewUser) {
+        trackUserSignUp('google')
+      } else {
+        trackUserLogin('google')
+      }
       // Success - SessionProvider will handle the rest
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
@@ -112,8 +120,10 @@ export default function Auth() {
     try {
       if (authMode === 'signup') {
         await createUserWithEmailAndPassword(auth, email, password)
+        trackUserSignUp('email')
       } else {
         await signInWithEmailAndPassword(auth, email, password)
+        trackUserLogin('email')
       }
       // Success - SessionProvider will handle the rest
     } catch (error) {

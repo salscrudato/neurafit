@@ -8,6 +8,7 @@ import {
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { stripePromise, STRIPE_CONFIG } from '../lib/stripe-config'
 import { createPaymentIntent } from '../lib/subscription'
+import { trackSubscriptionStarted, trackSubscriptionCompleted } from '../lib/firebase-analytics'
 
 interface PaymentFormProps {
   priceId: string
@@ -33,6 +34,9 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormProps) {
     setLoading(true)
     setMessage('')
 
+    // Track subscription attempt
+    trackSubscriptionStarted()
+
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
@@ -54,6 +58,8 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormProps) {
     } else {
       setMessage('Payment successful!')
       setMessageType('success')
+      // Track successful subscription
+      trackSubscriptionCompleted('stripe_payment_' + Date.now())
       onSuccess()
     }
 

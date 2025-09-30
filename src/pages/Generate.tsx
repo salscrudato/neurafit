@@ -11,6 +11,7 @@ import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
 import { useSubscription } from '../hooks/useSubscription'
 import { SimpleSubscription } from '../components/SimpleSubscription'
+import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 
 
 // Top 20 workout types organized by popularity (most to least common)
@@ -62,7 +63,7 @@ export default function Generate() {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
 
   // Subscription hooks
-  const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts } = useSubscription()
+  const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts, subscription } = useSubscription()
 
 
 
@@ -224,6 +225,7 @@ export default function Generate() {
 
     // Check subscription limits
     if (!canGenerateWorkout) {
+      trackFreeTrialLimitReached(subscription?.freeWorkoutsUsed || 0)
       setShowUpgradePrompt(true)
       return
     }
@@ -275,6 +277,9 @@ export default function Generate() {
             Boolean(progressionNote)
           )
         }
+
+        // Track workout generation in Firebase Analytics
+        trackWorkoutGenerated(hasUnlimitedWorkouts, subscription?.workoutCount || 0)
 
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
 

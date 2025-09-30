@@ -37,6 +37,7 @@ import {
   WEIGHT_RANGES,
   INJURY_OPTIONS
 } from '../config/onboarding'
+import { trackProfileComplete } from '../lib/firebase-analytics'
 
 /** ---------------- DATA ---------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -281,6 +282,14 @@ export default function Onboarding() {
         },
         { merge: true }
       )
+
+      // Track profile completion
+      trackProfileComplete(
+        draft.experience || 'Unknown',
+        draft.goals,
+        draft.equipment
+      )
+
       nav('/dashboard')
     } catch (error) {
       console.error('Error saving profile:', error)

@@ -21,8 +21,12 @@ import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoun
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
 import { lockOrientation, preventZoom } from './utils/orientation'
 import { versionManager } from './utils/version'
+import { usePageTracking } from './hooks/useAnalytics'
 
 export default function App() {
+  // Track page views automatically
+  usePageTracking()
+
   // Initialize mobile optimizations and version management
   useEffect(() => {
     const cleanupOrientation = lockOrientation()

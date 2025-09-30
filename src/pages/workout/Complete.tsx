@@ -6,6 +6,7 @@ import AppHeader from '../../components/AppHeader'
 import { isFeedbackUIEnabled } from '../../config/features'
 import { logAdaptiveFeedbackSubmitted, logAdaptivePersonalizationError } from '../../lib/telemetry'
 import { Bed, ThumbsUp, Flame, CheckCircle } from 'lucide-react'
+import { trackWorkoutCompleted } from '../../lib/firebase-analytics'
 
 type FeedbackSignal = 'easy' | 'right' | 'hard'
 
@@ -70,6 +71,12 @@ export default function Complete() {
         }
 
         const docRef = await addDoc(collection(db, 'users', uid, 'workouts'), workoutDoc)
+
+        // Track workout completion
+        const completedExercises = exercisesWithWeights.filter((ex: any) =>
+          ex.weights && Object.values(ex.weights).some((weight: any) => weight !== null)
+        ).length
+        trackWorkoutCompleted(docRef.id, actualDuration, completedExercises)
 
         // Store workout data and ID for feedback
         setWorkoutData({ ...workoutDoc, exercises: exercisesWithWeights })

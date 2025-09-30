@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Crown } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
 import { useSubscription } from '../../hooks/useSubscription'
+import { trackWorkoutStarted } from '../../lib/firebase-analytics'
 
 type Exercise = {
   name: string
@@ -96,6 +97,11 @@ export default function Preview() {
             onClick={() => {
               // Store workout start time
               sessionStorage.setItem('nf_workout_start_time', Date.now().toString())
+
+              // Track workout started
+              const workoutId = `workout_${Date.now()}`
+              trackWorkoutStarted(workoutId, exercises.length)
+
               nav('/workout/run')
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"

@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
 import { getFunctions } from "firebase/functions"
+import { getAnalytics, isSupported } from "firebase/analytics"
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKo_Bf8aPCWSPM9Nigcnga1t6_Psi70T8",
@@ -17,3 +18,18 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const fns = getFunctions(app)
+
+// Initialize Analytics (only in browser environment)
+let analytics: any = null
+if (typeof window !== 'undefined') {
+  isSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app)
+      console.log('Firebase Analytics initialized')
+    }
+  }).catch((error) => {
+    console.warn('Firebase Analytics not supported:', error)
+  })
+}
+
+export { analytics }
