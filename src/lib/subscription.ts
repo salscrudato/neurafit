@@ -17,6 +17,7 @@ const reactivateUserSubscriptionFn = httpsCallable(fns, 'reactivateUserSubscript
 const getCustomerPortalUrlFn = httpsCallable(fns, 'getCustomerPortalUrl')
 const getSubscriptionDetailsFn = httpsCallable(fns, 'getSubscriptionDetails')
 const getBillingHistoryFn = httpsCallable(fns, 'getBillingHistory')
+const testSubscriptionActivationFn = httpsCallable(fns, 'testSubscriptionActivation')
 
 export interface CreatePaymentIntentResult {
   subscriptionId: string
@@ -62,10 +63,29 @@ export interface BillingHistoryResult {
  */
 export async function createPaymentIntent(priceId: string): Promise<CreatePaymentIntentResult> {
   try {
+    console.log('📡 Calling createPaymentIntent function with priceId:', priceId)
     const result = await createPaymentIntentFn({ priceId })
-    return result.data as CreatePaymentIntentResult
+    console.log('📡 Function response:', result)
+
+    if (!result.data) {
+      console.error('❌ No data in function response:', result)
+      throw new Error('No data returned from payment intent function')
+    }
+
+    const data = result.data as CreatePaymentIntentResult
+    console.log('✅ Payment intent data:', data)
+
+    if (!data.clientSecret) {
+      console.error('❌ No client secret in response:', data)
+      throw new Error('No client secret returned')
+    }
+
+    return data
   } catch (error) {
-    console.error('Error creating payment intent:', error)
+    console.error('❌ Error creating payment intent:', error)
+    if (error instanceof Error) {
+      throw error
+    }
     throw new Error('Failed to create payment intent')
   }
 }
@@ -235,4 +255,22 @@ export function getDaysRemaining(subscription?: UserSubscription): number {
   const end = subscription.currentPeriodEnd
   if (end <= now) return 0
   return Math.ceil((end - now) / (1000 * 60 * 60 * 24))
+}
+
+/**
+ * Manually activate subscription (temporary fix for webhook issues)
+ */
+export async function activateSubscription(customerId: string, subscriptionId: string) {
+  try {
+    console.log('🔧 Manually activating subscription:', subscriptionId)
+    const result = await testSubscriptionActivationFn({
+      customerId,
+      subscriptionId
+    })
+    console.log('✅ Subscription activated:', result.data)
+    return result.data
+  } catch (error) {
+    console.error('❌ Error activating subscription:', error)
+    throw error
+  }
 }

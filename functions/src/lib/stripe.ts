@@ -199,9 +199,7 @@ export async function createSubscription(
           amount: invoice.amount_due,
           currency: invoice.currency,
           customer: customerId,
-          automatic_payment_methods: {
-            enabled: true,
-          },
+          payment_method_types: ['card'],
           metadata: {
             invoice_id: invoice.id,
             subscription_id: subscription.id,

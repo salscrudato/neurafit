@@ -7,7 +7,7 @@ import {
 } from '@stripe/react-stripe-js'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { stripePromise, STRIPE_CONFIG } from '../lib/stripe-config'
-import { createPaymentIntent } from '../lib/subscription'
+import { createPaymentIntent, activateSubscription } from '../lib/subscription'
 import { trackSubscriptionStarted, trackSubscriptionCompleted } from '../lib/firebase-analytics'
 
 interface PaymentFormProps {
@@ -17,7 +17,14 @@ interface PaymentFormProps {
   onCancel: () => void
 }
 
-function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormProps) {
+interface PaymentFormInnerProps {
+  onSuccess: () => void
+  onError: (error: string) => void
+  onCancel: () => void
+  paymentResult: {subscriptionId: string, customerId: string} | null
+}
+
+function PaymentFormInner({ onSuccess, onError, onCancel, paymentResult }: PaymentFormInnerProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -56,10 +63,26 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormProps) {
         onError('An unexpected error occurred.')
       }
     } else {
-      setMessage('Payment successful!')
+      setMessage('Payment successful! Activating subscription...')
       setMessageType('success')
+
       // Track successful subscription
       trackSubscriptionCompleted('stripe_payment_' + Date.now())
+
+      // Manually activate subscription (temporary fix for webhook issues)
+      if (paymentResult) {
+        try {
+          console.log('🔧 Activating subscription after successful payment')
+          await activateSubscription(paymentResult.customerId, paymentResult.subscriptionId)
+          setMessage('Subscription activated successfully!')
+          console.log('✅ Subscription activated successfully')
+        } catch (activationError) {
+          console.error('❌ Failed to activate subscription:', activationError)
+          setMessage('Payment successful, but subscription activation failed. Please contact support.')
+          setMessageType('error')
+        }
+      }
+
       onSuccess()
     }
 
@@ -71,9 +94,13 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Payment Element */}
         <div className="p-4 border border-gray-200 rounded-xl bg-white">
-          <PaymentElement 
+          <PaymentElement
             options={{
-              layout: 'tabs'
+              layout: 'tabs',
+              wallets: {
+                applePay: 'never',
+                googlePay: 'never'
+              }
             }}
           />
         </div>
@@ -134,12 +161,28 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
 
+  const [paymentResult, setPaymentResult] = useState<{subscriptionId: string, customerId: string} | null>(null)
+
   useEffect(() => {
+    // Prevent multiple initializations
+    if (clientSecret || error) {
+      console.log('🚫 Skipping initialization - already have clientSecret or error')
+      return
+    }
+
     const initializePayment = async () => {
       try {
+        if (!priceId) {
+          setError('No price ID provided')
+          onError('No price ID provided')
+          setLoading(false)
+          return
+        }
+
         setLoading(true)
         const result = await createPaymentIntent(priceId)
         setClientSecret(result.clientSecret)
+        setPaymentResult({ subscriptionId: result.subscriptionId, customerId: result.customerId })
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
         setError(errorMessage)
@@ -150,7 +193,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
     }
 
     initializePayment()
-  }, [priceId, onError])
+  }, [priceId]) // Removed onError from dependencies to prevent loops
 
   if (loading) {
     return (
@@ -159,6 +202,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
           <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
           <span className="text-gray-600">Initializing payment...</span>
         </div>
+
       </div>
     )
   }
@@ -227,11 +271,11 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
 
   return (
     <Elements stripe={stripePromise} options={options}>
-      <PaymentFormInner 
-        priceId={priceId}
+      <PaymentFormInner
         onSuccess={onSuccess}
         onError={onError}
         onCancel={onCancel}
+        paymentResult={paymentResult}
       />
     </Elements>
   )

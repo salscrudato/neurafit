@@ -16,6 +16,7 @@ import { Button } from '../design-system/components/Button'
 import { Stagger } from '../components/MicroInteractions'
 // import { AnalyticsEngine } from '../lib/analytics' // TODO: Fix type mismatch
 import { MotivationalBanner } from '../components/MotivationalBanner'
+import { SubscriptionStatusCard } from '../components/SubscriptionStatusCard'
 
 interface WorkoutItem {
   id: string
@@ -288,7 +289,7 @@ export default function Dashboard() {
       </section>
 
       {/* Profile Settings - Compact */}
-      <section className="relative mx-auto max-w-6xl px-6 mt-8 mb-12">
+      <section className="relative mx-auto max-w-6xl px-6 mt-8">
         <Stagger delay={250}>
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 shadow-sm">
             <div className="flex items-center justify-between">
@@ -306,6 +307,13 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
+        </Stagger>
+      </section>
+
+      {/* Subscription Status */}
+      <section className="relative mx-auto max-w-6xl px-6 mt-6 mb-12">
+        <Stagger delay={300}>
+          <SubscriptionStatusCard />
         </Stagger>
       </section>
 
