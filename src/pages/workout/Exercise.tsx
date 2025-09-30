@@ -23,17 +23,18 @@ import {
 
 
 import { useBounce, useShake } from '../../components/MicroInteractions'
-import { PersonalizationEngine, getCurrentContext } from '../../lib/personalization'
 
 type ExerciseT = {
   name: string
-  description?: string      // 3–5 layman sentences (from backend prompt)
+  description?: string      // 4-6 sentences with setup, execution, cues, breathing
   sets: number
-  reps: number | string
-  formTips?: string[]
-  safetyTips?: string[]
+  reps: number | string     // Can include ranges like "8-12" or time like "45s"
+  formTips?: string[]       // 2-3 critical technique cues
+  safetyTips?: string[]     // 2-3 injury prevention tips and modifications
   restSeconds?: number
   usesWeight?: boolean      // true if this exercise uses external weights
+  muscleGroups?: string[]   // Primary muscles worked for programming balance
+  difficulty?: string       // "beginner", "intermediate", or "advanced"
 }
 
 type PlanT = { exercises: ExerciseT[] }
@@ -59,8 +60,7 @@ export default function Exercise() {
   const { bounceClass } = useBounce()
   const { shakeClass } = useShake()
 
-  // Smart rest period calculation
-  const [personalizationEngine, setPersonalizationEngine] = useState<PersonalizationEngine | null>(null)
+  // Removed smart rest period calculation - using AI-generated rest periods directly
 
 
 
@@ -107,20 +107,7 @@ export default function Exercise() {
     }
   }, [])
 
-  // Initialize personalization engine for smart rest periods
-  useEffect(() => {
-    const initPersonalization = async () => {
-      try {
-        const sessions = await fetchRecentSessions(10)
-        const engine = new PersonalizationEngine(sessions)
-        setPersonalizationEngine(engine)
-      } catch (error) {
-        console.error('Error initializing personalization for rest periods:', error)
-      }
-    }
-
-    initPersonalization()
-  }, [])
+  // Removed personalization engine initialization - using AI rest periods directly
 
   // Clear weight data ONLY when starting a completely fresh workout
   // This should only happen when navigating directly to /workout/run from /workout/preview
@@ -210,31 +197,15 @@ export default function Exercise() {
     return startTimeStr ? parseInt(startTimeStr) : Date.now()
   }, [])
 
-  // Navigation function with smart rest periods - defined early so callbacks can use it
+  // Navigation function using AI-generated rest periods directly
   const goRest = useCallback((nextIndex: number, nextSet: number, seconds?: number) => {
-    let restDuration = seconds ?? ex.restSeconds ?? 60
-
-    // Use AI-powered personalization for optimal rest periods
-    if (personalizationEngine && !seconds) {
-      try {
-        const context = getCurrentContext()
-        const smartRestDuration = personalizationEngine.predictOptimalRestPeriod(
-          ex.name,
-          setNo,
-          context
-        )
-        restDuration = smartRestDuration
-        console.log(`[SMART REST] ${ex.name} set ${setNo}: ${smartRestDuration}s (vs default ${ex.restSeconds ?? 60}s)`)
-      } catch (error) {
-        console.error('Error calculating smart rest period:', error)
-        // Fall back to default
-      }
-    }
+    // Use the AI-generated rest period directly, or manual override if provided
+    const restDuration = seconds ?? ex.restSeconds ?? 60
 
     sessionStorage.setItem('nf_rest', String(restDuration))
     sessionStorage.setItem('nf_next', JSON.stringify({ i: nextIndex, setNo: nextSet }))
     nav('/workout/rest')
-  }, [nav, ex.restSeconds, ex.name, setNo, personalizationEngine])
+  }, [nav, ex.restSeconds])
 
 
 
@@ -419,34 +390,7 @@ export default function Exercise() {
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <Chip>Set {setNo} of {ex.sets}</Chip>
             <Chip>Reps: {ex.reps}</Chip>
-            {(() => {
-              // Calculate smart rest period for display
-              let restDuration = ex.restSeconds ?? 60
-              let isSmartRest = false
-
-              if (personalizationEngine) {
-                try {
-                  const context = getCurrentContext()
-                  const smartRestDuration = personalizationEngine.predictOptimalRestPeriod(
-                    ex.name,
-                    setNo,
-                    context
-                  )
-                  if (smartRestDuration !== restDuration) {
-                    restDuration = smartRestDuration
-                    isSmartRest = true
-                  }
-                } catch (error) {
-                  // Fall back to default
-                }
-              }
-
-              return (
-                <Chip className={isSmartRest ? 'bg-blue-100 text-blue-700 border-blue-200' : ''}>
-                  Rest: {restDuration}s
-                </Chip>
-              )
-            })()}
+            <Chip>Rest: {ex.restSeconds ?? 60}s</Chip>
           </div>
 
           {/* Enhanced weight input for exercises that use weights */}

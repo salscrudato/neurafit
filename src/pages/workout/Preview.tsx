@@ -14,6 +14,8 @@ type Exercise = {
   safetyTips?: string[]
   restSeconds?: number
   usesWeight?: boolean      // true if this exercise uses external weights
+  muscleGroups?: string[]   // Primary muscles worked
+  difficulty?: string       // "beginner", "intermediate", or "advanced"
 }
 
 type Plan = { exercises: Exercise[] }
