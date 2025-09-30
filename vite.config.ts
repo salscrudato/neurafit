@@ -143,37 +143,63 @@ export default defineConfig(({ command, mode }): UserConfig => {
             : 'assets/[name].[ext]',
 
           // Optimized chunk splitting strategy
-          manualChunks: {
+          manualChunks: (id) => {
             // Core React libraries
-            'react-core': ['react', 'react-dom'],
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core'
+            }
 
             // Routing
-            'react-router': ['react-router-dom'],
+            if (id.includes('react-router-dom')) {
+              return 'react-router'
+            }
 
             // Firebase services
-            'firebase-core': ['firebase/app'],
-            'firebase-auth': ['firebase/auth'],
-            'firebase-firestore': ['firebase/firestore'],
-            'firebase-functions': ['firebase/functions'],
-            'firebase-analytics': ['firebase/analytics'],
+            if (id.includes('firebase/app')) {
+              return 'firebase-core'
+            }
+            if (id.includes('firebase/auth')) {
+              return 'firebase-auth'
+            }
+            if (id.includes('firebase/firestore')) {
+              return 'firebase-firestore'
+            }
+            if (id.includes('firebase/functions')) {
+              return 'firebase-functions'
+            }
+            if (id.includes('firebase/analytics')) {
+              return 'firebase-analytics'
+            }
 
             // State management
-            'state-management': ['zustand', 'immer'],
+            if (id.includes('zustand') || id.includes('immer')) {
+              return 'state-management'
+            }
 
             // UI utilities
-            'ui-utils': ['class-variance-authority', 'clsx', 'tailwind-merge'],
+            if (id.includes('class-variance-authority') || id.includes('clsx') || id.includes('tailwind-merge')) {
+              return 'ui-utils'
+            }
 
             // Icons and UI components
-            'ui-icons': ['lucide-react'],
+            if (id.includes('lucide-react')) {
+              return 'ui-icons'
+            }
 
             // Payment processing
-            'stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+            if (id.includes('@stripe/')) {
+              return 'stripe'
+            }
 
             // Utilities
-            'utils': ['idb'],
+            if (id.includes('idb')) {
+              return 'utils'
+            }
 
-            // Firebase hooks (if used extensively)
-            'firebase-hooks': ['react-firebase-hooks'],
+            // Default vendor chunk for other node_modules
+            if (id.includes('node_modules')) {
+              return 'vendor'
+            }
           },
         },
 
@@ -187,6 +213,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
           )) {
             return true
           }
+
+
+
           return false
         },
       },
@@ -223,8 +252,6 @@ export default defineConfig(({ command, mode }): UserConfig => {
         'vitest',
         // Large libraries that should be code-split
         '@stripe/stripe-js',
-        // Problematic package with entry point issues
-        'react-firebase-hooks',
       ],
 
       // ESBuild options for dependency optimization
