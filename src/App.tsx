@@ -1,13 +1,14 @@
 import { useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+
 import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary'
 import LoadingSpinner from './components/LoadingSpinner'
 
-// Eager load critical pages
+// Eager-loaded critical pages
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 
-// Lazy load non-critical pages for better performance
+// Lazy-loaded non-critical pages
 const Onboarding = lazy(() => import('./pages/Onboarding'))
 const Generate = lazy(() => import('./pages/Generate'))
 const Preview = lazy(() => import('./pages/workout/Preview'))
@@ -21,17 +22,7 @@ const Subscription = lazy(() => import('./pages/Subscription'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Privacy = lazy(() => import('./pages/Privacy'))
 
-// Development/testing pages - only load in development
-const TestWorkout = lazy(() =>
-  process.env.NODE_ENV === 'development'
-    ? import('./pages/TestWorkout')
-    : Promise.resolve({ default: () => <Navigate to="/dashboard" replace /> })
-)
-const TestSubscription = lazy(() =>
-  process.env.NODE_ENV === 'development'
-    ? import('./pages/TestSubscription')
-    : Promise.resolve({ default: () => <Navigate to="/dashboard" replace /> })
-)
+
 
 import { AppProvider } from './providers/AppProvider'
 import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
@@ -41,10 +32,10 @@ import { usePageTracking } from './hooks/useAnalytics'
 import { trackSessionStart } from './lib/firebase-analytics'
 
 function AppContent() {
-  // Track page views automatically
+  // Automatically track page views
   usePageTracking()
 
-  // Initialize mobile optimizations and version management
+  // Handle mobile optimizations, version management, and analytics on mount
   useEffect(() => {
     const cleanupOrientation = lockOrientation()
     const cleanupZoom = preventZoom()
@@ -52,24 +43,25 @@ function AppContent() {
     // Track session start with location context
     trackSessionStart()
 
-    // Initialize version management
+    // Manage version information
     if (versionManager.isFirstRun()) {
       console.log('First run or updated version detected')
       versionManager.storeVersionInfo()
     }
 
-    // Start version checking (every 5 minutes in production, disabled in development)
+    // Start periodic version checking in production
     if (process.env.NODE_ENV === 'production') {
       versionManager.startVersionChecking(300000) // 5 minutes
     }
 
-    // Listen for version updates
+    // Event listener for version updates
     const handleVersionUpdate = () => {
       console.log('Version update detected by version manager')
     }
 
     window.addEventListener('versionUpdate', handleVersionUpdate)
 
+    // Cleanup on unmount
     return () => {
       cleanupOrientation()
       cleanupZoom()
@@ -77,158 +69,155 @@ function AppContent() {
       window.removeEventListener('versionUpdate', handleVersionUpdate)
     }
   }, [])
+
   return (
     <CriticalErrorBoundary>
       <div className="min-h-screen">
         <Routes>
+          {/* Public legal pages */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
 
-        {/* Public legal pages */}
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
+          {/* Landing route: determines user redirection */}
+          <Route path="/" element={<HomeGate authPage={<Auth />} />} />
 
-        {/* Landing: decides where to send user */}
-        <Route path="/" element={<HomeGate authPage={<Auth />} />} />
+          {/* Onboarding: requires authentication but not a complete profile */}
+          <Route
+            path="/onboarding"
+            element={
+              <RequireAuth>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Onboarding />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireAuth>
+            }
+          />
 
-        {/* Onboarding requires sign-in, but not a complete profile */}
-        <Route
-          path="/onboarding"
-          element={
-            <RequireAuth>
-              <PageErrorBoundary>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Onboarding />
-                </Suspense>
-              </PageErrorBoundary>
-            </RequireAuth>
-          }
-        />
+          {/* Protected routes: require completed profile */}
+          <Route
+            path="/dashboard"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Dashboard />
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/generate"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Generate />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/workout/preview"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Preview />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/workout/run"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Exercise />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/workout/rest"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Rest />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/workout/complete"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Complete />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <History />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/workout/:workoutId"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <WorkoutDetail />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Profile />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/subscription"
+            element={
+              <RequireProfile>
+                <PageErrorBoundary>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Subscription />
+                  </Suspense>
+                </PageErrorBoundary>
+              </RequireProfile>
+            }
+          />
 
-        {/* All “real app” routes require a completed profile */}
-        <Route
-          path="/dashboard"
-          element={
-            <RequireProfile>
-              <PageErrorBoundary>
-                <Dashboard />
-              </PageErrorBoundary>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/generate"
-          element={
-            <RequireProfile>
-              <PageErrorBoundary>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Generate />
-                </Suspense>
-              </PageErrorBoundary>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/workout/preview"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Preview />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/workout/run"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Exercise />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/workout/rest"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Rest />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/workout/complete"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Complete />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/history"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <History />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/workout/:workoutId"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <WorkoutDetail />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Profile />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/subscription"
-          element={
-            <RequireProfile>
-              <PageErrorBoundary>
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Subscription />
-                </Suspense>
-              </PageErrorBoundary>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/test-workout"
-          element={
-            <RequireProfile>
-              <Suspense fallback={<LoadingSpinner />}>
-                <TestWorkout />
-              </Suspense>
-            </RequireProfile>
-          }
-        />
-        <Route
-          path="/test-subscription"
-          element={
-            <RequireAuth>
-              <Suspense fallback={<LoadingSpinner />}>
-                <TestSubscription />
-              </Suspense>
-            </RequireAuth>
-          }
-        />
 
+
+          {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

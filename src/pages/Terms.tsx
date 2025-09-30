@@ -8,7 +8,7 @@ export default function Terms() {
         <header className="mb-8">
           <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">← Back</Link>
           <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight">Terms of Service</h1>
-          <p className="mt-2 text-gray-600">Last updated: January 1, 2025</p>
+          <p className="mt-2 text-gray-600">Last updated: September 30, 2025</p>
         </header>
 
         {/* Table of contents */}
@@ -70,7 +70,7 @@ export default function Terms() {
 
           <section>
             <h2 id="eligibility-and-accounts" className="text-lg font-semibold text-gray-900">4) Eligibility & Account Requirements</h2>
-            <p className="mt-2">You must be at least 13 years old (or the minimum age required in your jurisdiction) to use the Services. If you are under 18, you represent that you have your parent's or guardian's permission to use the Services.</p>
+            <p className="mt-2">You must be at least 18 years old to use the Services. If you are under 18, you may not use the Services.</p>
             <p className="mt-2">You are responsible for:</p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>Maintaining the confidentiality and security of your account credentials</li>
@@ -87,7 +87,7 @@ export default function Terms() {
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>Exercise at your own risk and within your physical capabilities</li>
               <li>Perform proper warm-up and cool-down routines</li>
-              <li>Use appropriate form, technique, and safety precautions</li>
+              <li>Use proper form, technique, and safety precautions</li>
               <li>Use properly maintained equipment and exercise in safe environments</li>
               <li>Choose weights, intensities, and progressions appropriate for your fitness level</li>
               <li>Modify, skip, or stop any exercise that feels unsafe or causes discomfort</li>
@@ -133,7 +133,7 @@ export default function Terms() {
 
           <section>
             <h2 id="disclaimers" className="text-lg font-semibold text-gray-900">9) Disclaimers</h2>
-            <p className="mt-2">THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. WE DISCLAIM ALL WARRANTIES INCLUDING FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABILITY, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICES WILL BE ACCURATE, RELIABLE, ERROR-FREE, UNINTERRUPTED, OR SAFE.</p>
+            <p className="mt-2">THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. WE DISCLAIM ALL WARRANTIES INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICES WILL BE ACCURATE, RELIABLE, ERROR-FREE, UNINTERRUPTED, OR SAFE.</p>
             <p className="mt-2">WE SPECIFICALLY DISCLAIM ANY WARRANTIES REGARDING THE SAFETY, EFFECTIVENESS, OR SUITABILITY OF AI-GENERATED WORKOUT RECOMMENDATIONS FOR YOUR PARTICULAR CIRCUMSTANCES.</p>
           </section>
 

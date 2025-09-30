@@ -16,7 +16,7 @@ export {
   getBillingHistory
 } from "./subscription-functions"
 export { cleanupSubscriptions } from "./cleanup-subscriptions"
-export { testSubscriptionActivation, testSubscriptionStatus } from "./test-subscription-flow"
+
 
 // Define the secret
 const openaiApiKey = defineSecret("OPENAI_API_KEY")

@@ -26,7 +26,7 @@ function getPageNameFromPath(pathname: string): string {
     '/history': 'Workout History',
     '/profile': 'Profile',
     '/subscription': 'Subscription',
-    '/test-subscription': 'Test Subscription',
+
     '/onboarding': 'Onboarding',
     '/auth': 'Authentication',
     '/workout/preview': 'Workout Preview',

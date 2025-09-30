@@ -7,7 +7,7 @@ import {
 } from '@stripe/react-stripe-js'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { stripePromise, STRIPE_CONFIG } from '../lib/stripe-config'
-import { createPaymentIntent, activateSubscription } from '../lib/subscription'
+import { createPaymentIntent } from '../lib/subscription'
 import { trackSubscriptionStarted, trackSubscriptionCompleted } from '../lib/firebase-analytics'
 
 interface PaymentFormProps {
@@ -21,10 +21,9 @@ interface PaymentFormInnerProps {
   onSuccess: () => void
   onError: (_error: string) => void
   onCancel: () => void
-  paymentResult: {subscriptionId: string, customerId: string} | null
 }
 
-function PaymentFormInner({ onSuccess, onError, onCancel, paymentResult }: PaymentFormInnerProps) {
+function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -69,19 +68,8 @@ function PaymentFormInner({ onSuccess, onError, onCancel, paymentResult }: Payme
       // Track successful subscription
       trackSubscriptionCompleted('stripe_payment_' + Date.now())
 
-      // Manually activate subscription (temporary fix for webhook issues)
-      if (paymentResult) {
-        try {
-          console.log('🔧 Activating subscription after successful payment')
-          await activateSubscription(paymentResult.customerId, paymentResult.subscriptionId)
-          setMessage('Subscription activated successfully!')
-          console.log('✅ Subscription activated successfully')
-        } catch (activationError) {
-          console.error('❌ Failed to activate subscription:', activationError)
-          setMessage('Payment successful, but subscription activation failed. Please contact support.')
-          setMessageType('error')
-        }
-      }
+      // Payment successful - webhook will handle subscription activation
+      setMessage('Subscription activated successfully!')
 
       onSuccess()
     }
@@ -161,7 +149,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
 
-  const [paymentResult, setPaymentResult] = useState<{subscriptionId: string, customerId: string} | null>(null)
+
 
   useEffect(() => {
     // Prevent multiple initializations
@@ -182,7 +170,6 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         setLoading(true)
         const result = await createPaymentIntent(priceId)
         setClientSecret(result.clientSecret)
-        setPaymentResult({ subscriptionId: result.subscriptionId, customerId: result.customerId })
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
         setError(errorMessage)
@@ -275,7 +262,6 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         onSuccess={onSuccess}
         onError={onError}
         onCancel={onCancel}
-        paymentResult={paymentResult}
       />
     </Elements>
   )

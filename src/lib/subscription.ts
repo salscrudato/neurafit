@@ -17,7 +17,7 @@ const reactivateUserSubscriptionFn = httpsCallable(fns, 'reactivateUserSubscript
 const getCustomerPortalUrlFn = httpsCallable(fns, 'getCustomerPortalUrl')
 const getSubscriptionDetailsFn = httpsCallable(fns, 'getSubscriptionDetails')
 const getBillingHistoryFn = httpsCallable(fns, 'getBillingHistory')
-const testSubscriptionActivationFn = httpsCallable(fns, 'testSubscriptionActivation')
+
 
 export interface CreatePaymentIntentResult {
   subscriptionId: string
@@ -257,20 +257,4 @@ export function getDaysRemaining(subscription?: UserSubscription): number {
   return Math.ceil((end - now) / (1000 * 60 * 60 * 24))
 }
 
-/**
- * Manually activate subscription (temporary fix for webhook issues)
- */
-export async function activateSubscription(customerId: string, subscriptionId: string) {
-  try {
-    console.log('🔧 Manually activating subscription:', subscriptionId)
-    const result = await testSubscriptionActivationFn({
-      customerId,
-      subscriptionId
-    })
-    console.log('✅ Subscription activated:', result.data)
-    return result.data
-  } catch (error) {
-    console.error('❌ Error activating subscription:', error)
-    throw error
-  }
-}
+

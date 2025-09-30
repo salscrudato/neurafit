@@ -133,8 +133,7 @@ export default function Subscription() {
               </h2>
               
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                Welcome to NeuraFit Pro! You now have unlimited access to AI-powered workouts 
-                tailored to your goals and preferences.
+                Welcome to NeuraFit Pro! You now have unlimited access to AI-powered workouts that evolve with you.
               </p>
               
               <div className="space-y-3">

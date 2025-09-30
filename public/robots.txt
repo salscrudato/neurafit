@@ -1,20 +1,68 @@
+# NeuraFit AI Workout Generator - Robots.txt
+# Updated: 2025-09-30
+
 User-agent: *
 Allow: /
 
-# Sitemap
+# Sitemap Location
 Sitemap: https://neurafit-ai-2025.web.app/sitemap.xml
 
-# Disallow sensitive areas
+# Crawl Delay (be respectful to search engines)
+Crawl-delay: 1
+
+# Disallow sensitive areas and private content
 Disallow: /api/
 Disallow: /_next/
 Disallow: /admin/
 Disallow: /private/
+Disallow: /user/
+Disallow: /auth/
+Disallow: /checkout/
+Disallow: /payment/
+Disallow: /webhook/
+Disallow: /internal/
+Disallow: /*.json$
+Disallow: /src/
+Disallow: /node_modules/
+Disallow: /dist/assets/
 
-# Allow important pages
+# Allow important public pages for SEO
 Allow: /
-Allow: /dashboard
 Allow: /generate
+Allow: /dashboard
 Allow: /history
 Allow: /profile
+Allow: /subscription
 Allow: /privacy
 Allow: /terms
+Allow: /manifest.json
+Allow: /sw.js
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.svg$
+Allow: /*.ico$
+
+# Special instructions for major search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 2
+
+# Block AI training crawlers (optional - uncomment if desired)
+# User-agent: GPTBot
+# Disallow: /
+#
+# User-agent: ChatGPT-User
+# Disallow: /
+#
+# User-agent: CCBot
+# Disallow: /

@@ -2,7 +2,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
-import { collection, getDocs, orderBy, query, limit } from 'firebase/firestore'
+import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { convertToDate } from '../utils/timestamp'
 import {
   Zap,
@@ -14,7 +14,6 @@ import AppHeader from '../components/AppHeader'
 import { DashboardCard } from '../design-system/components/SpecializedCards'
 import { Button } from '../design-system/components/Button'
 import { Stagger } from '../components/MicroInteractions'
-// import { AnalyticsEngine } from '../lib/analytics' // TODO: Fix type mismatch
 import { MotivationalBanner } from '../components/MotivationalBanner'
 import { SubscriptionStatusCard } from '../components/SubscriptionStatusCard'
 
@@ -62,11 +61,10 @@ export default function Dashboard() {
           return
         }
 
-        // Fetch workouts for statistics
+        // Fetch all workouts (assuming reasonable number per user)
         const workoutsQuery = query(
           collection(db, 'users', uid, 'workouts'),
-          orderBy('timestamp', 'desc'),
-          limit(20)
+          orderBy('timestamp', 'desc')
         )
         const workoutsSnap = await getDocs(workoutsQuery)
         const workouts = workoutsSnap.docs.map(doc => ({
@@ -76,27 +74,23 @@ export default function Dashboard() {
 
         // Calculate dashboard statistics
         if (workouts.length > 0) {
-          // TODO: Fix type mismatch between WorkoutItem[] and WorkoutSession[]
-          // const analytics = new AnalyticsEngine(workouts)
-          // const metrics = analytics.getPerformanceMetrics()
+          // Calculate consistency over last 30 days (percentage of active days)
+          const thirtyDaysAgo = new Date()
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+          const recentWorkouts = workouts.filter(w => convertToDate(w.timestamp) >= thirtyDaysAgo)
+          const activeDays = new Set(recentWorkouts.map(w => convertToDate(w.timestamp).toDateString())).size
+          const consistencyScore = Math.round((activeDays / 30) * 100)
 
-          // Simple metrics calculation without AnalyticsEngine
-          const totalWorkouts = workouts.length
-
-          // Calculate weekly workouts (last 7 days)
+          // Calculate weekly workouts (count in last 7 days)
           const weekAgo = new Date()
           weekAgo.setDate(weekAgo.getDate() - 7)
-          const weeklyWorkouts = workouts.filter(w =>
-            convertToDate(w.timestamp) > weekAgo
-          ).length
+          const weeklyWorkouts = workouts.filter(w => convertToDate(w.timestamp) >= weekAgo).length
 
           // Calculate recent streak
-          const sortedWorkouts = workouts.sort((a, b) =>
-            convertToDate(b.timestamp).getTime() - convertToDate(a.timestamp).getTime()
-          )
+          // Workouts are already sorted newest first from query
           let streak = 0
           let currentDate = new Date()
-          for (const workout of sortedWorkouts) {
+          for (const workout of workouts) {
             const workoutDate = convertToDate(workout.timestamp)
             if (!workout.timestamp) break
 
@@ -109,8 +103,7 @@ export default function Dashboard() {
             }
           }
 
-          // Simple consistency score based on workout frequency
-          const consistencyScore = Math.min((workouts.length / 12) * 100, 100) // Assume 12 workouts in period is 100%
+          const totalWorkouts = workouts.length
 
           setDashboardStats({
             totalWorkouts,
@@ -138,8 +131,6 @@ export default function Dashboard() {
     fetchDashboardData()
   }, [])
 
-
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -152,23 +143,11 @@ export default function Dashboard() {
             {/* Motivational banner skeleton */}
             <div className="h-24 bg-white/70 rounded-2xl shadow-sm"></div>
 
-            {/* Stats grid skeleton */}
-            <div>
-              <div className="h-6 bg-white/70 rounded-lg w-48 mb-4"></div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-24 bg-white/70 rounded-xl shadow-sm"></div>
-                ))}
-              </div>
-            </div>
-
-
-
             {/* Quick actions skeleton */}
             <div>
               <div className="h-6 bg-white/70 rounded-lg w-32 mb-4"></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[...Array(3)].map((_, i) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[...Array(2)].map((_, i) => (
                   <div key={i} className="h-48 bg-white/70 rounded-xl shadow-sm"></div>
                 ))}
               </div>
@@ -243,10 +222,6 @@ export default function Dashboard() {
           />
         </section>
       )}
-
-
-
-
 
       {/* Quick Actions */}
       <section className="relative mx-auto max-w-6xl px-6 mt-8">
@@ -325,6 +300,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
-// Old DashCard component removed - now using premium design system components
-

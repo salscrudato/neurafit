@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 export function HomeGate({ authPage }: { authPage: ReactNode }) {
   const { authStatus, user } = useApp()
 
-  // Only log in development for debugging
+  // Development-only logging for debugging
   if (process.env.NODE_ENV === 'development') {
     console.log('[HOME] HomeGate:', authStatus, user?.email || 'no user')
   }
@@ -20,6 +20,7 @@ export function HomeGate({ authPage }: { authPage: ReactNode }) {
 // Require any signed-in user
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { authStatus } = useApp()
+
   if (authStatus === 'loading') return <ScreenLoader />
   if (authStatus === 'signedOut') return <Navigate to="/" replace />
   return <>{children}</>
@@ -28,17 +29,18 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 // Require completed profile
 export function RequireProfile({ children }: { children: ReactNode }) {
   const { authStatus } = useApp()
+
   if (authStatus === 'loading') return <ScreenLoader />
   if (authStatus === 'signedOut') return <Navigate to="/" replace />
   if (authStatus === 'needsOnboarding') return <Navigate to="/onboarding" replace />
   return <>{children}</>
 }
 
-// Simple full-screen loader (Tailwind)
+// Simple full-screen loader using Tailwind classes
 function ScreenLoader() {
   return (
     <div className="min-h-screen grid place-items-center bg-white">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 border-r-slate-900" />
     </div>
   )
 }

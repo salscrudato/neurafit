@@ -1,51 +1,38 @@
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+
 import App from './App'
 import './index.css'
+
 import { suppressDevWarnings } from './utils/devUtils'
 import { cacheBustingManager } from './utils/cacheBusting'
 
 // Suppress common development warnings
 suppressDevWarnings()
 
-// Initialize cache busting only in production
+// Initialize cache busting in production
 if (process.env.NODE_ENV === 'production') {
   console.log('🚀 Initializing cache busting system...')
   const deploymentInfo = cacheBustingManager.getDeploymentInfo()
   console.log('📦 Deployment ID:', deploymentInfo.id)
 }
 
-// Performance monitoring will be initialized by AppProvider
-
-// Online/offline detection will be handled by AppProvider
-
-// Initialize app
-const root = ReactDOM.createRoot(document.getElementById('root')!)
-
-// Render app with error boundary
-root.render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
-)
-
-// App initialization complete
-
-// Clear all caches and storage on startup to ensure fresh content
+// Clear all caches on startup to ensure fresh content
 if ('caches' in window) {
-  caches.keys().then(cacheNames => {
-    cacheNames.forEach(cacheName => {
+  caches.keys().then((cacheNames) => {
+    cacheNames.forEach((cacheName) => {
       console.log('Clearing cache:', cacheName)
       caches.delete(cacheName)
     })
+  }).catch((error) => {
+    console.error('Error clearing caches:', error)
   })
 }
 
-// Only clear specific caches in development, not all storage
+// In development, clear specific version-related localStorage keys
 if (process.env.NODE_ENV === 'development') {
-  // Only clear version-related keys that might cause refresh loops
   const versionKeys = ['current-deployment-version', 'page-etag', 'page-last-modified', 'manifest-version']
-  versionKeys.forEach(key => {
+  versionKeys.forEach((key) => {
     if (localStorage.getItem(key)) {
       console.log('Clearing localStorage key:', key)
       localStorage.removeItem(key)
@@ -53,44 +40,44 @@ if (process.env.NODE_ENV === 'development') {
   })
 }
 
-// Setup service worker for PWA functionality
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('SW registered: ', registration)
-      })
-      .catch(registrationError => {
-        console.log('SW registration failed: ', registrationError)
-      })
-  })
-}
+// Render the application
+const root = ReactDOM.createRoot(document.getElementById('root')!)
+root.render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
+)
 
-// Performance monitoring will be handled by performanceMonitor
-
-// Register service worker for PWA functionality and instant updates
+// Register service worker for PWA functionality
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker
+      .register('/sw.js')
       .then((registration) => {
         if (process.env.NODE_ENV === 'development') {
-          console.log('SW registered: ', registration)
+          console.log('SW registered:', registration)
         }
 
-        // Check for updates every 10 minutes in production only
+        // Periodically check for updates in production
         if (process.env.NODE_ENV === 'production') {
-          setInterval(() => {
-            registration.update()
+          const updateInterval = setInterval(() => {
+            registration.update().catch((error) => {
+              console.error('Error updating service worker:', error)
+            })
           }, 600000) // 10 minutes
+
+          // Cleanup interval on unload
+          window.addEventListener('beforeunload', () => {
+            clearInterval(updateInterval)
+          })
         }
 
-        // Listen for updates
+        // Listen for update found
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New version available
                 if (process.env.NODE_ENV === 'development') {
                   console.log('New version available!')
                 }
@@ -101,7 +88,7 @@ if ('serviceWorker' in navigator) {
         })
       })
       .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError)
+        console.error('SW registration failed:', registrationError)
       })
   })
 
@@ -116,9 +103,11 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-// Show update notification to user
+// Function to show update notification
 function showUpdateNotification() {
-  // Create a subtle notification
+  // Check if notification already exists
+  if (document.getElementById('update-notification')) return
+
   const notification = document.createElement('div')
   notification.id = 'update-notification'
   notification.innerHTML = `
@@ -151,7 +140,7 @@ function showUpdateNotification() {
           <div style="opacity: 0.9; font-size: 13px;">New features and improvements are ready.</div>
         </div>
       </div>
-      <button onclick="applyUpdate()" style="
+      <button id="update-button" style="
         background: rgba(255,255,255,0.2);
         border: none;
         color: white;
@@ -163,7 +152,7 @@ function showUpdateNotification() {
         margin-top: 12px;
         width: 100%;
         transition: background 0.2s;
-      " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+      ">
         Update Now
       </button>
     </div>
@@ -181,25 +170,41 @@ function showUpdateNotification() {
 
   document.body.appendChild(notification)
 
+  // Add event listener to button
+  const updateButton = document.getElementById('update-button')
+  if (updateButton) {
+    updateButton.addEventListener('mouseover', () => {
+      updateButton.style.background = 'rgba(255,255,255,0.3)'
+    })
+    updateButton.addEventListener('mouseout', () => {
+      updateButton.style.background = 'rgba(255,255,255,0.2)'
+    })
+    updateButton.addEventListener('click', applyUpdate)
+  }
+
   // Auto-hide after 10 seconds
   setTimeout(() => {
-    if (document.getElementById('update-notification')) {
-      notification.style.animation = 'slideIn 0.3s ease-out reverse'
-      setTimeout(() => notification.remove(), 300)
+    const currentNotification = document.getElementById('update-notification')
+    if (currentNotification) {
+      currentNotification.style.animation = 'slideIn 0.3s ease-out reverse'
+      setTimeout(() => currentNotification.remove(), 300)
     }
   }, 10000)
 }
 
-// Apply update function
-window.applyUpdate = function() {
+// Function to apply update
+function applyUpdate() {
   const notification = document.getElementById('update-notification')
   if (notification) notification.remove()
 
-  // Tell service worker to skip waiting and activate
+  // Tell service worker to skip waiting
   if (navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
   }
 
-  // Reload the page
+  // Reload after a short delay
   setTimeout(() => window.location.reload(), 100)
 }
+
+// Expose applyUpdate globally if needed
+window.applyUpdate = applyUpdate

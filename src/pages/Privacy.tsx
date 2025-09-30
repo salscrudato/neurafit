@@ -8,7 +8,7 @@ export default function Privacy() {
         <header className="mb-8">
           <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">← Back</Link>
           <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight">Privacy Policy</h1>
-          <p className="mt-2 text-gray-600">Last updated: January 1, 2025</p>
+          <p className="mt-2 text-gray-600">Last updated: September 30, 2025</p>
         </header>
 
         {/* Table of contents */}
@@ -222,8 +222,7 @@ export default function Privacy() {
 
           <section>
             <h2 id="childrens-privacy" className="text-lg font-semibold text-gray-900">9) Children's Privacy</h2>
-            <p className="mt-2">Our Services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately so we can delete such information.</p>
-            <p className="mt-2">If you are between 13 and 18 years old, you may only use our Services with the involvement and consent of a parent or guardian.</p>
+            <p className="mt-2">Our Services are not intended for children under 18 years of age. We do not knowingly collect personal information from children under 18. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately so we can delete such information.</p>
           </section>
 
           <section>

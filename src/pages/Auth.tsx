@@ -20,11 +20,11 @@ export default function Auth() {
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
 
-  // Initialize component and performance optimizations
+  // Initialize component and apply performance optimizations
   useEffect(() => {
     setLoading(false)
 
-    // Optimize animations for reduced motion preference
+    // Respect reduced motion preference
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.style.setProperty('--animation-duration', '0.01ms')
     }
@@ -38,38 +38,36 @@ export default function Auth() {
     })
 
     try {
-      // Try popup first
+      // Attempt popup authentication first
       const result = await signInWithPopup(auth, provider)
-      // Track successful Google sign in
       const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
       if (isNewUser) {
         trackUserSignUp('google')
       } else {
         trackUserLogin('google')
       }
-      // Success - SessionProvider will handle the rest
+      // Success - AppProvider will handle navigation
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
-      // Suppress COOP-related console errors as they're expected in development
+      // Suppress expected COOP errors in development
       if (!firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
         console.log('Popup failed, trying redirect:', firebaseError.code)
       }
 
-      // If popup fails due to COOP or being blocked, fall back to redirect
+      // Fallback to redirect if popup fails
       if (firebaseError.code === 'auth/popup-blocked' ||
           firebaseError.code === 'auth/popup-closed-by-user' ||
           (error as Error)?.message?.includes('Cross-Origin-Opener-Policy') ||
           (error as Error)?.message?.includes('window.closed')) {
         try {
           await signInWithRedirect(auth, provider)
-          // Redirect will happen, don't set loading to false
+          // Redirect initiated, no need to reset loading
           return
         } catch (redirectError) {
           console.error('Redirect also failed:', redirectError)
           alert('Failed to sign in with Google. Please try again.')
         }
       } else if (firebaseError.code !== 'auth/cancelled-popup-request') {
-        // Only show error for non-cancellation errors
         console.error('Google sign-in error:', firebaseError)
         alert('Failed to sign in with Google. Please try again.')
       }
@@ -82,7 +80,7 @@ export default function Auth() {
     setEmailError('')
     setPasswordError('')
 
-    // Email validation
+    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!email) {
       setEmailError('Email is required')
@@ -92,7 +90,7 @@ export default function Auth() {
       isValid = false
     }
 
-    // Password validation
+    // Validate password
     if (!password) {
       setPasswordError('Password is required')
       isValid = false
@@ -101,7 +99,7 @@ export default function Auth() {
       isValid = false
     }
 
-    // Confirm password validation for signup
+    // Validate password confirmation for signup
     if (authMode === 'signup' && password !== confirmPassword) {
       setPasswordError('Passwords do not match')
       isValid = false
@@ -125,12 +123,12 @@ export default function Auth() {
         await signInWithEmailAndPassword(auth, email, password)
         trackUserLogin('email')
       }
-      // Success - SessionProvider will handle the rest
+      // Success - AppProvider will handle navigation
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
       console.error('Email auth error:', firebaseError)
 
-      // Handle specific Firebase auth errors
+      // Handle specific Firebase errors
       switch (firebaseError.code) {
         case 'auth/email-already-in-use':
           setEmailError('An account with this email already exists')
@@ -166,8 +164,6 @@ export default function Auth() {
     setEmailError('')
     setPasswordError('')
   }
-
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-gray-900 relative overflow-hidden" role="main" aria-label="NeuraFit Authentication Page">
@@ -433,8 +429,6 @@ export default function Auth() {
           </div>
         </div>
 
-
-
         {/* Enhanced Footer */}
         <div className="text-center pt-8 border-t border-gray-100/80">
           <p className="text-xs text-gray-500 leading-relaxed">
@@ -451,10 +445,6 @@ export default function Auth() {
 
   )
 }
-
-
-
-
 
 /* ---------- Enhanced Feature card ---------- */
 function EnhancedFeatureCard({

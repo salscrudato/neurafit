@@ -141,7 +141,7 @@ function SelectCard({
 
 function MultiGrid({
   items, selected, onToggle, cols = 2, allowNone
-}: { items: string[]; selected: string[]; onToggle: (_v: string) => void; cols?: 1 | 2; allowNone?: boolean }) {
+}: { items: string[]; selected: string[]; onToggle: (v: string) => void; cols?: 1 | 2; allowNone?: boolean }) {
   return (
     <div className={`grid gap-3 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
       {items.map((v) => (
@@ -211,7 +211,10 @@ export default function Onboarding() {
   useEffect(() => {
     (async () => {
       const uid = auth.currentUser?.uid
-      if (!uid) return setLoading(false)
+      if (!uid) {
+        setLoading(false)
+        return
+      }
       try {
         const snap = await getDoc(doc(db, 'users', uid))
         if (snap.exists()) {
@@ -335,8 +338,6 @@ export default function Onboarding() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30" onKeyDown={onKeyDown} tabIndex={0}>
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.05),transparent_50%)]" />
-
-
 
       {/* Content */}
       <div className="relative mx-auto max-w-3xl px-6 pt-12 pb-28">
@@ -646,4 +647,3 @@ function getGoalIcon(goal: string, className: string = "h-6 w-6") {
       return <Target className={className} />
   }
 }
-

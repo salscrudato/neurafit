@@ -1,6 +1,5 @@
 // src/pages/workout/Exercise.tsx
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Lightbulb, Shield } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
 import { useOptimisticUpdate, createWeightUpdateAction } from '../../lib/optimisticUpdates'
@@ -20,9 +19,8 @@ import {
   type WeightHistory,
   type WorkoutSession
 } from '../../lib/weightHistory'
-
-
-import { useBounce, useShake } from '../../hooks/useMicroInteractions.tsx'
+import { useBounce, useShake } from '../../hooks/useMicroInteractions'
+import { useNavigate } from 'react-router-dom'
 
 type ExerciseT = {
   name: string
@@ -107,7 +105,7 @@ export default function Exercise() {
         console.log('[CLEAR] Weight data cleared for fresh workout')
       }
 
-      // Set workout start time to prevent future clearing
+      // Set workout start time
       if (!hasWorkoutStartTime) {
         sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
         console.log('[TIME] Workout start time set')
@@ -510,4 +508,3 @@ function EmptyState() {
     </div>
   )
 }
-

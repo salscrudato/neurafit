@@ -7,10 +7,13 @@ import { EnhancedRestTimer } from '../../components/EnhancedRestTimer'
 export default function Rest() {
   const nav = useNavigate()
 
-  // Base timer state
-  const initial = Number(sessionStorage.getItem('nf_rest') || 60)
+  // Retrieve initial rest time, default to 60 seconds if not set
+  const initial = useMemo(() => {
+    const storedRest = sessionStorage.getItem('nf_rest')
+    return storedRest ? Number(storedRest) : 60
+  }, [])
 
-  // Next exercise data
+  // Parse next exercise data safely
   const nextExercise = useMemo(() => {
     try {
       const nextRaw = sessionStorage.getItem('nf_next')
@@ -30,13 +33,14 @@ export default function Rest() {
         reps: ex.reps,
         restSeconds: ex.restSeconds
       }
-    } catch {
+    } catch (error) {
+      console.error('Error parsing next exercise data:', error)
       return undefined
     }
   }, [])
 
   const handleComplete = () => {
-    // Hand off to Exercise screen
+    // Transfer next state to return state for Exercise screen
     const next = sessionStorage.getItem('nf_next')
     if (next) {
       sessionStorage.setItem('nf_return', next)

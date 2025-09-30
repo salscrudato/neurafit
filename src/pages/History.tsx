@@ -83,6 +83,7 @@ export default function History() {
       }
     })()
   }, [])
+
   const formatDate = (timestamp: Date | { toDate(): Date } | string) => {
     if (!timestamp) return 'Unknown date'
     const date = convertToDate(timestamp)

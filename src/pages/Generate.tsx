@@ -13,7 +13,6 @@ import { useSubscription } from '../hooks/useSubscription'
 import { SimpleSubscription } from '../components/SimpleSubscription'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 
-
 // Top 20 workout types organized by popularity (most to least common)
 const TYPES = [
   'Full Body',        // Most popular - comprehensive workout
@@ -65,22 +64,27 @@ export default function Generate() {
   // Subscription hooks
   const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts, subscription } = useSubscription()
 
-
-
   // Fetch profile on mount
   useEffect(() => {
-    (async () => {
+    const fetchProfile = async () => {
       const uid = auth.currentUser?.uid
-      if (!uid) return nav('/') // not signed in (guarded routes should prevent this)
+      if (!uid) {
+        nav('/')
+        return
+      }
       try {
         const snap = await getDoc(doc(db, 'users', uid))
         if (!snap.exists()) {
-          nav('/onboarding'); return
+          nav('/onboarding')
+          return
         }
         const p = snap.data() as Profile
-        // basic completeness check (align with your SessionProvider rule)
+        // Basic completeness check (align with your SessionProvider rule)
         const complete = !!(p.experience && p.goals?.length && p.personal?.height && p.personal?.weight)
-        if (!complete) { nav('/onboarding'); return }
+        if (!complete) {
+          nav('/onboarding')
+          return
+        }
         setProfile(p)
         // Initialize equipment from profile
         setEquipment(p.equipment || [])
@@ -89,14 +93,14 @@ export default function Generate() {
         if (isAdaptivePersonalizationEnabled()) {
           await fetchAdaptiveIntensity(uid)
         }
-
-
       } catch (error) {
         console.error('Error fetching profile:', error)
         // If there's a permission error, redirect to auth
         nav('/')
       }
-    })()
+    }
+
+    fetchProfile()
   }, [nav])
 
   // Fetch adaptive intensity based on recent workout feedback
@@ -216,8 +220,6 @@ export default function Generate() {
     }
   }
 
-
-
   const disabled = !type || !duration || loading || showProgressiveLoading
 
   async function generate() {
@@ -330,13 +332,33 @@ export default function Generate() {
       <AppHeader />
 
       <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-16 pt-6">
-        {/* Hero card */}
+        {/* SEO-Optimized Hero Section */}
         <section className="rounded-3xl border border-blue-100/50 bg-white/70 backdrop-blur-sm p-6 md:p-8 relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-400 opacity-10 blur-3xl" />
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Generate your next workout</h1>
-          <p className="mt-2 text-gray-600">
-            Tailored to your goals, experience, equipment and injuries—powered by GPT-4o-mini.
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+            AI Workout Generator - Create Custom Fitness Plans
+          </h1>
+          <p className="mt-3 text-gray-600 text-lg leading-relaxed max-w-3xl">
+            Generate <strong>personalized workout plans</strong> instantly with advanced AI technology.
+            Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by GPT-4o-mini.
+            <span className="text-blue-600 font-semibold">Get your custom training plan in 30 seconds!</span>
           </p>
+
+          {/* SEO benefit highlights */}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span>Personalized for your goals</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+              <span>Equipment-based customization</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span>Injury-safe modifications</span>
+            </div>
+          </div>
         </section>
 
         {/* Subscription Status */}
@@ -401,8 +423,6 @@ export default function Generate() {
             </div>
           </section>
         )}
-
-
 
         {/* Options */}
         <section className="mt-8 space-y-6">
