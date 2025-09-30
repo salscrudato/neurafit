@@ -1,9 +1,8 @@
 // src/pages/workout/Preview.tsx
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Brain, Crown } from 'lucide-react'
+import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Crown } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
-import { isIntensityCalibrationEnabled } from '../../config/features'
 import { useSubscription } from '../../session/SubscriptionProvider'
 
 type Exercise = {
@@ -31,7 +30,6 @@ export default function Preview() {
     duration: number
   }
   const exercises = Array.isArray(plan?.exercises) ? plan.exercises : []
-  const targetIntensity = plan?.metadata?.targetIntensity || 1.0
 
   const totalSets = useMemo(() => {
     return exercises.reduce((s, e) => s + (Number(e.sets) || 0), 0)
@@ -57,12 +55,6 @@ export default function Preview() {
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             <Badge><List className="h-4 w-4" /> {exercises.length} exercises</Badge>
             <Badge><Hash className="h-4 w-4" /> {totalSets} total sets</Badge>
-            {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
-              <Badge className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500">
-                <Brain className="h-3 w-3" />
-                {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
-              </Badge>
-            )}
             {hasUnlimitedWorkouts ? (
               <Badge className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-yellow-400">
                 <Crown className="h-3 w-3" />
