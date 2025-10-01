@@ -1,9 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions';
-import { getAnalytics, isSupported } from 'firebase/analytics';
-
+// Simple Firebase configuration without immediate imports
 const firebaseConfig = {
   apiKey: 'AIzaSyAKo_Bf8aPCWSPM9Nigcnga1t6_Psi70T8',
   authDomain: 'neurafit-ai-2025.firebaseapp.com',
@@ -14,47 +9,95 @@ const firebaseConfig = {
   measurementId: 'G-5LHTKTWX0M',
 };
 
+// Lazy initialization
+let firebaseApp: any = null;
+let authInstance: any = null;
+let dbInstance: any = null;
+let fnsInstance: any = null;
+let analyticsInstance: any = null;
+
 // Initialize Firebase app
-const app = initializeApp(firebaseConfig);
+const initApp = async () => {
+  if (firebaseApp) return firebaseApp;
+  const { initializeApp } = await import('firebase/app');
+  firebaseApp = initializeApp(firebaseConfig);
+  return firebaseApp;
+};
 
-// Initialize core services immediately
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const fns = getFunctions(app);
+// Initialize and export auth
+const initAuth = async () => {
+  if (authInstance) return authInstance;
+  const app = await initApp();
+  const { getAuth } = await import('firebase/auth');
+  authInstance = getAuth(app);
+  return authInstance;
+};
 
-// Initialize Analytics with proper error handling
-let analytics: ReturnType<typeof getAnalytics> | null = null;
-let analyticsInitialized = false;
+// Initialize and export firestore
+const initDb = async () => {
+  if (dbInstance) return dbInstance;
+  const app = await initApp();
+  const { getFirestore } = await import('firebase/firestore');
+  dbInstance = getFirestore(app);
+  return dbInstance;
+};
 
-// Function to get analytics instance safely
-export const getAnalyticsInstance = async (): Promise<ReturnType<typeof getAnalytics> | null> => {
-  if (analyticsInitialized) {
-    return analytics;
-  }
+// Initialize and export functions
+const initFns = async () => {
+  if (fnsInstance) return fnsInstance;
+  const app = await initApp();
+  const { getFunctions } = await import('firebase/functions');
+  fnsInstance = getFunctions(app);
+  return fnsInstance;
+};
+
+// Initialize and export analytics
+const initAnalytics = async () => {
+  if (analyticsInstance !== null) return analyticsInstance;
 
   if (typeof window === 'undefined') {
-    analyticsInitialized = true;
+    analyticsInstance = null;
     return null;
   }
 
   try {
+    const app = await initApp();
+    const { getAnalytics, isSupported } = await import('firebase/analytics');
     const supported = await isSupported();
+
     if (supported) {
-      analytics = getAnalytics(app);
-      analyticsInitialized = true;
+      analyticsInstance = getAnalytics(app);
       console.log('Firebase Analytics initialized');
-      return analytics;
     } else {
-      console.warn('Firebase Analytics not supported in this environment');
-      analyticsInitialized = true;
-      return null;
+      analyticsInstance = null;
+      console.warn('Firebase Analytics not supported');
     }
   } catch (error) {
-    console.warn('Error initializing Firebase Analytics:', error);
-    analyticsInitialized = true;
-    return null;
+    analyticsInstance = null;
+    console.warn('Analytics initialization failed:', error);
   }
+
+  return analyticsInstance;
 };
 
-// Export analytics for backward compatibility (may be null initially)
-export { analytics };
+// Export async getters
+export const getAuthInstance = initAuth;
+export const getFirestoreInstance = initDb;
+export const getFunctionsInstance = initFns;
+export const getAnalyticsInstance = initAnalytics;
+
+// Synchronous exports for backward compatibility
+export let auth: any;
+export let db: any;
+export let fns: any;
+export let analytics: any = null;
+
+// Initialize immediately but don't block
+Promise.all([initAuth(), initDb(), initFns(), initAnalytics()]).then(([authRes, dbRes, fnsRes, analyticsRes]) => {
+  auth = authRes;
+  db = dbRes;
+  fns = fnsRes;
+  analytics = analyticsRes;
+}).catch(error => {
+  console.error('Firebase initialization failed:', error);
+});
