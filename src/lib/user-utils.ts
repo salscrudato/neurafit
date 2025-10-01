@@ -7,11 +7,26 @@ import type { User } from 'firebase/auth';
  */
 export async function ensureUserDocument(user: User): Promise<void> {
   try {
-    const db = await getFirestoreInstance();
-    if (!db) {
-      throw new Error('Firestore not available');
+    console.log('🔍 Ensuring user document for:', user.uid);
+
+    // Wait a bit longer for Firebase to be ready
+    let retries = 0;
+    let db = null;
+
+    while (!db && retries < 10) {
+      db = await getFirestoreInstance();
+      if (!db) {
+        console.log(`⏳ Waiting for Firestore (attempt ${retries + 1}/10)...`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries++;
+      }
     }
 
+    if (!db) {
+      throw new Error('Firestore not available after retries');
+    }
+
+    console.log('✅ Firestore instance ready, creating user document...');
     const userDocRef = db.collection('users').doc(user.uid);
     const userDoc = await userDocRef.get();
 
