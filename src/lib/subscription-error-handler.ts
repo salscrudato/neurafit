@@ -4,8 +4,7 @@
  */
 
 import { httpsCallable } from 'firebase/functions'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { auth, db, fns } from './firebase'
+import { getAuthInstance, getFirestoreInstance, getFunctionsInstance } from './firebase'
 import type { UserSubscription } from '../types/subscription'
 
 interface RetryConfig {
@@ -152,20 +151,25 @@ class SubscriptionErrorHandler {
 
     // Main operation: Get from Firestore
     const mainOperation = async (): Promise<UserSubscription | null> => {
-      const userDocRef = doc(db, 'users', userId)
-      const userDoc = await getDoc(userDocRef)
-      
-      if (userDoc.exists()) {
+      const db = await getFirestoreInstance()
+      if (!db) return null
+
+      const userDocRef = db.collection('users').doc(userId)
+      const userDoc = await userDocRef.get()
+
+      if (userDoc.exists) {
         const userData = userDoc.data()
         return userData.subscription || null
       }
-      
+
       throw new Error('User document not found')
     }
 
     // Fallback 1: Verify with Stripe
     const stripeFallback = async (): Promise<FallbackResult> => {
       try {
+        const fns = await getFunctionsInstance()
+        if (!fns) throw new Error('Functions not available')
         const debugFunction = httpsCallable<void, DebugAllSubscriptionsResponse>(fns, 'debugAllSubscriptions')
         const result = await debugFunction()
         const responseData = result.data
@@ -227,7 +231,9 @@ class SubscriptionErrorHandler {
         // Try to find any subscription ID from localStorage or previous errors
         const subscriptionId = this.findSubscriptionIdFromLogs() || 'sub_1SDJcZQjUU16Imh7tJfjZX9n'
 
-        const emergencyFixFunction = httpsCallable<{ subscriptionId: string; forceActive: boolean }, EmergencySubscriptionFixResponse>(fns, 'emergencySubscriptionFix')
+        const fns2 = await getFunctionsInstance()
+        if (!fns2) throw new Error('Functions not available')
+        const emergencyFixFunction = httpsCallable<{ subscriptionId: string; forceActive: boolean }, EmergencySubscriptionFixResponse>(fns2, 'emergencySubscriptionFix')
         const result = await emergencyFixFunction({
           subscriptionId,
           forceActive: true
@@ -274,8 +280,11 @@ class SubscriptionErrorHandler {
     }
 
     const updateOperation = async (): Promise<void> => {
-      const userDocRef = doc(db, 'users', userId)
-      await setDoc(userDocRef, {
+      const db = await getFirestoreInstance()
+      if (!db) throw new Error('Firestore not available')
+
+      const userDocRef = db.collection('users').doc(userId)
+      await userDocRef.set({
         subscription: {
           ...subscription,
           updatedAt: Date.now()
@@ -287,8 +296,11 @@ class SubscriptionErrorHandler {
       // Fallback 1: Try with different merge strategy
       async (): Promise<FallbackResult> => {
         try {
-          const userDocRef = doc(db, 'users', userId)
-          await setDoc(userDocRef, {
+          const db = await getFirestoreInstance()
+          if (!db) throw new Error('Firestore not available')
+
+          const userDocRef = db.collection('users').doc(userId)
+          await userDocRef.set({
             subscription: subscription
           })
           return { success: true, method: 'firestore' }

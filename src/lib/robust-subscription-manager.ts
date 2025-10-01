@@ -3,9 +3,8 @@
  * Comprehensive solution for subscription persistence and state management
  */
 
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { auth, db, fns, getAuthInstance } from './firebase'
+import { getAuthInstance, getFirestoreInstance, getFunctionsInstance } from './firebase'
 import type { UserSubscription } from '../types/subscription'
 import { subscriptionErrorHandler } from './subscription-error-handler'
 
@@ -104,7 +103,7 @@ class RobustSubscriptionManager {
       const subscription = await this.getSubscriptionRobust(uid)
       
       // Step 2: Set up real-time listener
-      this.setupFirestoreListener(uid)
+      await this.setupFirestoreListener(uid)
       
       // Step 3: Notify all listeners
       this.notifyListeners(subscription)
@@ -161,19 +160,24 @@ class RobustSubscriptionManager {
   /**
    * Set up real-time Firestore listener
    */
-  private setupFirestoreListener(uid: string): void {
+  private async setupFirestoreListener(uid: string): Promise<void> {
     // Clean up existing listener
     const existingListener = this.firestoreListeners.get(uid)
     if (existingListener) {
       existingListener()
     }
 
-    const userDocRef = doc(db, 'users', uid)
-    
-    const unsubscribe = onSnapshot(
-      userDocRef,
+    const db = await getFirestoreInstance()
+    if (!db) {
+      console.error('❌ Firestore not available for listener setup')
+      return
+    }
+
+    const userDocRef = db.collection('users').doc(uid)
+
+    const unsubscribe = userDocRef.onSnapshot(
       (doc) => {
-        if (doc.exists()) {
+        if (doc.exists) {
           const userData = doc.data()
           const subscription = userData.subscription as UserSubscription | undefined
 
@@ -187,7 +191,7 @@ class RobustSubscriptionManager {
       },
       (error) => {
         console.error('❌ Firestore listener error:', error)
-        
+
         // On error, try to recover using cached data
         const cached = this.getCacheEntry(uid)
         if (cached && cached.data) {
@@ -204,14 +208,17 @@ class RobustSubscriptionManager {
    * Get subscription from Firestore
    */
   private async getFromFirestore(uid: string): Promise<UserSubscription | null> {
-    const userDocRef = doc(db, 'users', uid)
-    const userDoc = await getDoc(userDocRef)
-    
-    if (userDoc.exists()) {
+    const db = await getFirestoreInstance()
+    if (!db) return null
+
+    const userDocRef = db.collection('users').doc(uid)
+    const userDoc = await userDocRef.get()
+
+    if (userDoc.exists) {
       const userData = userDoc.data()
       return userData.subscription || null
     }
-    
+
     return null
   }
 
@@ -220,6 +227,9 @@ class RobustSubscriptionManager {
    */
   private async verifyWithStripe(_uid: string): Promise<UserSubscription | null> {
     try {
+      const fns = await getFunctionsInstance()
+      if (!fns) return null
+
       const debugFunction = httpsCallable(fns, 'debugAllSubscriptions')
       const result = await debugFunction()
       
@@ -256,9 +266,12 @@ class RobustSubscriptionManager {
    * Update Firestore with subscription data
    */
   private async updateFirestore(uid: string, subscription: UserSubscription): Promise<void> {
-    const userDocRef = doc(db, 'users', uid)
-    
-    await setDoc(userDocRef, {
+    const db = await getFirestoreInstance()
+    if (!db) throw new Error('Firestore not available')
+
+    const userDocRef = db.collection('users').doc(uid)
+
+    await userDocRef.set({
       subscription: {
         ...subscription,
         updatedAt: Date.now()
@@ -361,13 +374,15 @@ class RobustSubscriptionManager {
     this.listeners.set(id, listener)
     
     // Immediately call with current data if available
-    const user = auth.currentUser
-    if (user) {
-      const cached = this.getCacheEntry(user.uid)
-      if (cached) {
-        callback(cached.data)
+    getAuthInstance().then(auth => {
+      const user = auth?.currentUser
+      if (user) {
+        const cached = this.getCacheEntry(user.uid)
+        if (cached) {
+          callback(cached.data)
+        }
       }
-    }
+    })
     
     return id
   }
@@ -397,8 +412,9 @@ class RobustSubscriptionManager {
       clearInterval(this.healthCheckInterval)
     }
 
-    this.healthCheckInterval = setInterval(() => {
-      const user = auth.currentUser
+    this.healthCheckInterval = setInterval(async () => {
+      const auth = await getAuthInstance()
+      const user = auth?.currentUser
       if (user) {
         this.performHealthCheck(user.uid)
       }
@@ -430,6 +446,9 @@ class RobustSubscriptionManager {
 
   private async recoverStuckSubscription(uid: string, subscriptionId: string): Promise<void> {
     try {
+      const fns = await getFunctionsInstance()
+      if (!fns) throw new Error('Functions not available')
+
       const emergencyFixFunction = httpsCallable(fns, 'emergencySubscriptionFix')
       const result = await emergencyFixFunction({
         subscriptionId,
@@ -463,7 +482,8 @@ class RobustSubscriptionManager {
    * Public API methods
    */
   async refreshSubscription(): Promise<UserSubscription | null> {
-    const user = auth.currentUser
+    const auth = await getAuthInstance()
+    const user = auth?.currentUser
     if (!user) return null
 
     return await this.getSubscriptionRobust(user.uid, true)
@@ -478,7 +498,8 @@ class RobustSubscriptionManager {
 
       if (success) {
         // Force refresh to get updated data
-        const user = auth.currentUser
+        const auth = await getAuthInstance()
+        const user = auth?.currentUser
         if (user) {
           await this.getSubscriptionRobust(user.uid, true)
         }

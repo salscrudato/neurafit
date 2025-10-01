@@ -1,5 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { getFirestoreInstance } from './firebase';
 import type { User } from 'firebase/auth';
 
 /**
@@ -8,13 +7,17 @@ import type { User } from 'firebase/auth';
  */
 export async function ensureUserDocument(user: User): Promise<void> {
   try {
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
+    const db = await getFirestoreInstance();
+    if (!db) {
+      throw new Error('Firestore not available');
+    }
 
-    if (!userDoc.exists()) {
+    const userDocRef = db.collection('users').doc(user.uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
       console.log('Creating user document for:', user.uid);
-      await setDoc(
-        userDocRef,
+      await userDocRef.set(
         {
           uid: user.uid,
           email: user.email,
@@ -28,8 +31,7 @@ export async function ensureUserDocument(user: User): Promise<void> {
       console.log('User document created successfully');
     } else {
       // Optional: Update updated_at if document exists
-      await setDoc(
-        userDocRef,
+      await userDocRef.set(
         {
           updated_at: new Date().toISOString(),
         },
@@ -47,17 +49,21 @@ export async function ensureUserDocument(user: User): Promise<void> {
  */
 export async function createDefaultSubscription(uid: string): Promise<void> {
   try {
-    const userDocRef = doc(db, 'users', uid);
-    const userDoc = await getDoc(userDocRef);
+    const db = await getFirestoreInstance();
+    if (!db) {
+      throw new Error('Firestore not available');
+    }
 
-    if (!userDoc.exists()) {
+    const userDocRef = db.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
       throw new Error('User document does not exist');
     }
 
     const userData = userDoc.data();
     if (!userData?.subscription) {
-      await setDoc(
-        userDocRef,
+      await userDocRef.set(
         {
           subscription: {
             customerId: '',
