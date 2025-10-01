@@ -1,14 +1,21 @@
 // src/pages/Auth.tsx
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { auth } from '../lib/firebase'
-import {
-  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword
-} from 'firebase/auth'
+import { getAuthInstance } from '../lib/firebase'
 import { Zap, Brain, Target, Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
+
+// Declare global Firebase for compat API
+declare global {
+  interface Window {
+    firebase?: {
+      auth: {
+        GoogleAuthProvider: new () => any;
+      };
+    };
+  }
+}
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -32,45 +39,59 @@ export default function Auth() {
 
   const googleLogin = async () => {
     setLoading(true)
-    const provider = new GoogleAuthProvider()
-    provider.setCustomParameters({
-      prompt: 'select_account'
-    })
 
     try {
-      // Attempt popup authentication first
-      const result = await signInWithPopup(auth, provider)
-      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
-      if (isNewUser) {
-        trackUserSignUp('google')
-      } else {
-        trackUserLogin('google')
-      }
-      // Success - AppProvider will handle navigation
-    } catch (error) {
-      const firebaseError = error as { code?: string; message?: string }
-      // Suppress expected COOP errors in development
-      if (!firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
-        console.log('Popup failed, trying redirect:', firebaseError.code)
+      // Wait for Firebase auth to be ready
+      const auth = await getAuthInstance()
+      if (!auth || !window.firebase) {
+        throw new Error('Firebase Auth not available')
       }
 
-      // Fallback to redirect if popup fails
-      if (firebaseError.code === 'auth/popup-blocked' ||
-          firebaseError.code === 'auth/popup-closed-by-user' ||
-          (error as Error)?.message?.includes('Cross-Origin-Opener-Policy') ||
-          (error as Error)?.message?.includes('window.closed')) {
-        try {
-          await signInWithRedirect(auth, provider)
-          // Redirect initiated, no need to reset loading
-          return
-        } catch (redirectError) {
-          console.error('Redirect also failed:', redirectError)
+      // Use Firebase compat API for Google Auth
+      const provider = new window.firebase.auth.GoogleAuthProvider()
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      })
+
+      try {
+        // Attempt popup authentication first
+        const result = await auth.signInWithPopup(provider)
+        const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
+        if (isNewUser) {
+          trackUserSignUp('google')
+        } else {
+          trackUserLogin('google')
+        }
+        // Success - AppProvider will handle navigation
+      } catch (error) {
+        const firebaseError = error as { code?: string; message?: string }
+        // Suppress expected COOP errors in development
+        if (!firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
+          console.log('Popup failed, trying redirect:', firebaseError.code)
+        }
+
+        // Fallback to redirect if popup fails
+        if (firebaseError.code === 'auth/popup-blocked' ||
+            firebaseError.code === 'auth/popup-closed-by-user' ||
+            (error as Error)?.message?.includes('Cross-Origin-Opener-Policy') ||
+            (error as Error)?.message?.includes('window.closed')) {
+          try {
+            await auth.signInWithRedirect(provider)
+            // Redirect initiated, no need to reset loading
+            return
+          } catch (redirectError) {
+            console.error('Redirect also failed:', redirectError)
+            alert('Failed to sign in with Google. Please try again.')
+          }
+        } else if (firebaseError.code !== 'auth/cancelled-popup-request') {
+          console.error('Google sign-in error:', firebaseError)
           alert('Failed to sign in with Google. Please try again.')
         }
-      } else if (firebaseError.code !== 'auth/cancelled-popup-request') {
-        console.error('Google sign-in error:', firebaseError)
-        alert('Failed to sign in with Google. Please try again.')
+        setLoading(false)
       }
+    } catch (error) {
+      console.error('Failed to initialize Firebase Auth:', error)
+      alert('Authentication service not available. Please try again.')
       setLoading(false)
     }
   }
@@ -116,11 +137,17 @@ export default function Auth() {
     setLoading(true)
 
     try {
+      // Wait for Firebase auth to be ready
+      const auth = await getAuthInstance()
+      if (!auth) {
+        throw new Error('Firebase Auth not available')
+      }
+
       if (authMode === 'signup') {
-        await createUserWithEmailAndPassword(auth, email, password)
+        await auth.createUserWithEmailAndPassword(email, password)
         trackUserSignUp('email')
       } else {
-        await signInWithEmailAndPassword(auth, email, password)
+        await auth.signInWithEmailAndPassword(email, password)
         trackUserLogin('email')
       }
       // Success - AppProvider will handle navigation
