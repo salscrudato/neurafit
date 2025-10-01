@@ -88,8 +88,8 @@ export const emergencySubscriptionFix = onCall(
           workoutCount: 0,
           freeWorkoutsUsed: 0,
           freeWorkoutLimit: 5,
-          currentPeriodStart: 'current_period_start' in stripeSubscription && typeof (stripeSubscription as StripeSubscriptionWithPeriod).current_period_start === 'number' ? (stripeSubscription as StripeSubscriptionWithPeriod).current_period_start * 1000 : Date.now(),
-          currentPeriodEnd: 'current_period_end' in stripeSubscription && typeof (stripeSubscription as StripeSubscriptionWithPeriod).current_period_end === 'number' ? (stripeSubscription as StripeSubscriptionWithPeriod).current_period_end * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
+          currentPeriodStart: 'current_period_start' in stripeSubscription && typeof (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_start === 'number' ? (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_start! * 1000 : Date.now(),
+          currentPeriodEnd: 'current_period_end' in stripeSubscription && typeof (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_end === 'number' ? (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_end! * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
           cancelAtPeriodEnd: (stripeSubscription as Stripe.Subscription).cancel_at_period_end || false,
           createdAt: (stripeSubscription as Stripe.Subscription).created * 1000,
           updatedAt: Date.now()
@@ -141,8 +141,8 @@ export const emergencySubscriptionFix = onCall(
             subscriptionId: stripeSubscription.id,
             status: stripeSubscription.status as 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid',
             priceId: stripeSubscription.items.data[0]?.price.id,
-            currentPeriodStart: 'current_period_start' in stripeSubscription && typeof (stripeSubscription as StripeSubscriptionWithPeriod).current_period_start === 'number' ? (stripeSubscription as StripeSubscriptionWithPeriod).current_period_start * 1000 : Date.now(),
-            currentPeriodEnd: 'current_period_end' in stripeSubscription && typeof (stripeSubscription as StripeSubscriptionWithPeriod).current_period_end === 'number' ? (stripeSubscription as StripeSubscriptionWithPeriod).current_period_end * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
+            currentPeriodStart: 'current_period_start' in stripeSubscription && typeof (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_start === 'number' ? (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_start! * 1000 : Date.now(),
+            currentPeriodEnd: 'current_period_end' in stripeSubscription && typeof (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_end === 'number' ? (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_end! * 1000 : Date.now() + 30 * 24 * 60 * 60 * 1000,
             cancelAtPeriodEnd: (stripeSubscription as Stripe.Subscription).cancel_at_period_end || false,
             updatedAt: Date.now()
           });
@@ -222,8 +222,8 @@ export const debugAllSubscriptions = onCall(
           stripeData = {
             id: stripeSubscription.id,
             status: stripeSubscription.status,
-            current_period_start: 'current_period_start' in stripeSubscription && typeof (stripeSubscription as StripeSubscriptionWithPeriod).current_period_start === 'number' ? (stripeSubscription as StripeSubscriptionWithPeriod).current_period_start : Math.floor(Date.now() / 1000),
-            current_period_end: 'current_period_end' in stripeSubscription && typeof (stripeSubscription as StripeSubscriptionWithPeriod).current_period_end === 'number' ? (stripeSubscription as StripeSubscriptionWithPeriod).current_period_end : Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+            current_period_start: 'current_period_start' in stripeSubscription && typeof (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_start === 'number' ? (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_start! : Math.floor(Date.now() / 1000),
+            current_period_end: 'current_period_end' in stripeSubscription && typeof (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_end === 'number' ? (stripeSubscription as unknown as StripeSubscriptionWithPeriod).current_period_end! : Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
             cancel_at_period_end: (stripeSubscription as Stripe.Subscription).cancel_at_period_end
           };
           
