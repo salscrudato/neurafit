@@ -12,16 +12,24 @@ export function FirebaseInitializer({ children }: FirebaseInitializerProps) {
   useEffect(() => {
     const init = async () => {
       try {
-        await initializeFirebase();
-        setIsInitialized(true);
+        console.log('🚀 Starting Firebase initialization from React component...');
+        const services = await initializeFirebase();
+
+        // Verify services are available
+        if (services.auth && services.db && services.fns) {
+          console.log('✅ All Firebase services ready');
+          setIsInitialized(true);
+        } else {
+          throw new Error('Firebase services not properly initialized');
+        }
       } catch (err) {
-        console.error('Firebase initialization failed:', err);
+        console.error('❌ Firebase initialization failed:', err);
         setError(err instanceof Error ? err.message : 'Firebase initialization failed');
       }
     };
 
-    // Initialize Firebase after a short delay to ensure React is fully loaded
-    const timer = setTimeout(init, 100);
+    // Initialize Firebase after React is fully loaded
+    const timer = setTimeout(init, 200);
     return () => clearTimeout(timer);
   }, []);
 
