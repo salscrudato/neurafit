@@ -6,6 +6,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 import SubscriptionPersistenceGuard from './components/SubscriptionPersistenceGuard';
 import SubscriptionHealthMonitor from './components/SubscriptionHealthMonitor';
 import SubscriptionFixIntegration from './components/SubscriptionFixIntegration';
+import { FirebaseInitializer } from './components/FirebaseInitializer';
 
 // Eager-loaded critical pages
 import Auth from './pages/Auth';
@@ -249,8 +250,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <FirebaseInitializer>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </FirebaseInitializer>
   );
 }
