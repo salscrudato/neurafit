@@ -14,26 +14,51 @@ const firebaseConfig = {
   measurementId: 'G-5LHTKTWX0M',
 };
 
+// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
+
+// Initialize core services immediately
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const fns = getFunctions(app);
 
-// Initialize Analytics (only in browser environment)
+// Initialize Analytics with proper error handling
 let analytics: ReturnType<typeof getAnalytics> | null = null;
+let analyticsInitialized = false;
+
+// Function to get analytics instance safely
+export const getAnalyticsInstance = async (): Promise<ReturnType<typeof getAnalytics> | null> => {
+  if (analyticsInitialized) {
+    return analytics;
+  }
+
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const supported = await isSupported();
+    if (supported) {
+      analytics = getAnalytics(app);
+      analyticsInitialized = true;
+      console.log('Firebase Analytics initialized');
+      return analytics;
+    } else {
+      console.warn('Firebase Analytics not supported in this environment');
+      analyticsInitialized = true;
+      return null;
+    }
+  } catch (error) {
+    console.warn('Error initializing Firebase Analytics:', error);
+    analyticsInitialized = true;
+    return null;
+  }
+};
+
+// Initialize analytics immediately if in browser
 if (typeof window !== 'undefined') {
-  isSupported()
-    .then((supported) => {
-      if (supported) {
-        analytics = getAnalytics(app);
-        console.log('Firebase Analytics initialized');
-      } else {
-        console.warn('Firebase Analytics not supported in this environment');
-      }
-    })
-    .catch((error) => {
-      console.warn('Error checking Firebase Analytics support:', error);
-    });
+  getAnalyticsInstance().catch(console.warn);
 }
 
+// Export analytics for backward compatibility (may be null initially)
 export { analytics };

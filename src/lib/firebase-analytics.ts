@@ -1,24 +1,22 @@
 import { logEvent, setUserProperties, setUserId } from 'firebase/analytics';
-import { analytics } from './firebase';
+import { getAnalyticsInstance } from './firebase';
 
 /**
  * Firebase Analytics utility functions for NeuraFit
  * Tracks user interactions, workout generation, subscriptions, and more
  */
 
-// Check if analytics is available
-const isAnalyticsAvailable = (): boolean => {
-  return analytics !== null && typeof window !== 'undefined';
-};
-
 // Safe wrapper for analytics calls
-const safeAnalyticsCall = (fn: () => void): void => {
-  if (isAnalyticsAvailable()) {
-    try {
-      fn();
-    } catch (error) {
-      console.warn('Analytics error:', error);
+const safeAnalyticsCall = async (fn: (analytics: NonNullable<Awaited<ReturnType<typeof getAnalyticsInstance>>>) => void): Promise<void> => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const analytics = await getAnalyticsInstance();
+    if (analytics) {
+      fn(analytics);
     }
+  } catch (error) {
+    console.warn('Analytics error:', error);
   }
 };
 
@@ -26,24 +24,24 @@ const safeAnalyticsCall = (fn: () => void): void => {
  * User Authentication Events
  */
 export const trackUserSignUp = (method: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'sign_up', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'sign_up', {
       method: method, // 'google', 'email', etc.
     });
   });
 };
 
 export const trackUserLogin = (method: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'login', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'login', {
       method: method,
     });
   });
 };
 
 export const trackUserLogout = (): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'logout');
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'logout');
   });
 };
 
@@ -51,8 +49,8 @@ export const trackUserLogout = (): void => {
  * User Profile Events
  */
 export const trackProfileComplete = (experience: string, goals: string[], equipment: string[]): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'profile_complete', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'profile_complete', {
       experience_level: experience,
       goal_count: goals.length,
       equipment_count: equipment.length,
@@ -62,8 +60,8 @@ export const trackProfileComplete = (experience: string, goals: string[], equipm
 };
 
 export const trackProfileUpdate = (field: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'profile_update', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'profile_update', {
       field_updated: field,
     });
   });
@@ -73,8 +71,8 @@ export const trackProfileUpdate = (field: string): void => {
  * Workout Generation Events
  */
 export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: number): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'workout_generated', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'workout_generated', {
       is_subscribed: isSubscribed,
       workout_count: workoutCount,
       user_type: isSubscribed ? 'premium' : 'free',
@@ -83,8 +81,8 @@ export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: numbe
 };
 
 export const trackWorkoutStarted = (workoutId: string, exerciseCount: number): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'workout_started', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'workout_started', {
       workout_id: workoutId,
       exercise_count: exerciseCount,
     });
@@ -92,8 +90,8 @@ export const trackWorkoutStarted = (workoutId: string, exerciseCount: number): v
 };
 
 export const trackWorkoutCompleted = (workoutId: string, duration: number, exercisesCompleted: number): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'workout_completed', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'workout_completed', {
       workout_id: workoutId,
       duration_minutes: Math.round(duration / 60),
       exercises_completed: exercisesCompleted,
@@ -105,8 +103,8 @@ export const trackWorkoutCompleted = (workoutId: string, duration: number, exerc
  * Subscription Events
  */
 export const trackSubscriptionStarted = (): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'begin_checkout', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'begin_checkout', {
       currency: 'USD',
       value: 10.00,
       items: [
@@ -123,8 +121,8 @@ export const trackSubscriptionStarted = (): void => {
 };
 
 export const trackSubscriptionCompleted = (subscriptionId: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'purchase', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'purchase', {
       transaction_id: subscriptionId,
       currency: 'USD',
       value: 10.00,
@@ -142,8 +140,8 @@ export const trackSubscriptionCompleted = (subscriptionId: string): void => {
 };
 
 export const trackFreeTrialLimitReached = (workoutCount: number): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'free_trial_limit_reached', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'free_trial_limit_reached', {
       workout_count: workoutCount,
     });
   });
@@ -153,8 +151,8 @@ export const trackFreeTrialLimitReached = (workoutCount: number): void => {
  * Navigation Events
  */
 export const trackPageView = (pageName: string, pageTitle?: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'page_view', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'page_view', {
       page_title: pageTitle || pageName,
       page_location: window.location.href,
       page_path: window.location.pathname,
@@ -163,8 +161,8 @@ export const trackPageView = (pageName: string, pageTitle?: string): void => {
 };
 
 export const trackButtonClick = (buttonName: string, location: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'button_click', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'button_click', {
       button_name: buttonName,
       location: location,
     });
@@ -175,8 +173,8 @@ export const trackButtonClick = (buttonName: string, location: string): void => 
  * Error Tracking
  */
 export const trackError = (errorType: string, errorMessage: string, location: string): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, 'exception', {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, 'exception', {
       description: `${errorType}: ${errorMessage}`,
       fatal: false,
       location: location,
@@ -198,9 +196,9 @@ export const setUserAnalyticsProperties = (
     language?: string;
   }
 ): void => {
-  safeAnalyticsCall(() => {
-    setUserId(analytics!, userId);
-    setUserProperties(analytics!, {
+  safeAnalyticsCall((analytics) => {
+    setUserId(analytics, userId);
+    setUserProperties(analytics, {
       ...properties,
       // Add automatic timezone and language detection
       timezone: properties.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -213,8 +211,8 @@ export const setUserAnalyticsProperties = (
  * Custom Events
  */
 export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, eventName, parameters);
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, eventName, parameters);
   });
 };
 
@@ -222,7 +220,7 @@ export const trackCustomEvent = (eventName: string, parameters: Record<string, u
  * Session and Location Tracking
  */
 export const trackSessionStart = (): void => {
-  safeAnalyticsCall(() => {
+  safeAnalyticsCall((analytics) => {
     const sessionInfo = {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: navigator.language,
@@ -232,13 +230,13 @@ export const trackSessionStart = (): void => {
       referrer: document.referrer || 'direct',
     };
 
-    logEvent(analytics!, 'session_start', sessionInfo);
+    logEvent(analytics, 'session_start', sessionInfo);
   });
 };
 
 export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, unknown> = {}): void => {
-  safeAnalyticsCall(() => {
-    logEvent(analytics!, eventName, {
+  safeAnalyticsCall((analytics) => {
+    logEvent(analytics, eventName, {
       ...additionalParams,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: navigator.language,
@@ -251,9 +249,9 @@ export const trackLocationBasedEvent = (eventName: string, additionalParams: Rec
  * Enhanced User Properties with Location Context
  */
 export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>): void => {
-  safeAnalyticsCall(() => {
-    setUserId(analytics!, userId);
-    setUserProperties(analytics!, {
+  safeAnalyticsCall((analytics) => {
+    setUserId(analytics, userId);
+    setUserProperties(analytics, {
       experience_level: userProfile.experience as string | undefined,
       subscription_status: (userProfile.subscription as { status?: string })?.status || 'free',
       total_workouts: (userProfile.subscription as { workoutCount?: number })?.workoutCount || 0,
@@ -269,15 +267,16 @@ export const setEnhancedUserProperties = (userId: string, userProfile: Record<st
 /**
  * Debug function to check analytics status
  */
-export const getAnalyticsStatus = (): {
+export const getAnalyticsStatus = async (): Promise<{
   isAvailable: boolean;
-  analytics: typeof analytics;
+  analytics: Awaited<ReturnType<typeof getAnalyticsInstance>>;
   userAgent: string;
   timezone: string;
   language: string;
-} => {
+}> => {
+  const analytics = await getAnalyticsInstance();
   return {
-    isAvailable: isAnalyticsAvailable(),
+    isAvailable: analytics !== null,
     analytics: analytics,
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
     timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown',
