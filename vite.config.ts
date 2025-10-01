@@ -229,11 +229,6 @@ export default defineConfig(({ command, mode }): UserConfig => {
         'react',
         'react-dom',
         'react-router-dom',
-        'firebase/app',
-        'firebase/auth',
-        'firebase/firestore',
-        'firebase/functions',
-        'firebase/analytics',
         'zustand',
         'immer',
         'idb',
@@ -241,16 +236,21 @@ export default defineConfig(({ command, mode }): UserConfig => {
         'class-variance-authority',
         'clsx',
         'tailwind-merge',
-        '@stripe/stripe-js',
         '@stripe/react-stripe-js',
       ],
 
-      // Exclude from pre-bundling
+      // Exclude from pre-bundling to prevent circular dependencies
       exclude: [
         // Test utilities
         '@testing-library/react',
         '@testing-library/jest-dom',
         'vitest',
+        // Firebase modules - let them load naturally to avoid circular deps
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore',
+        'firebase/functions',
+        'firebase/analytics',
         // Large libraries that should be code-split
         '@stripe/stripe-js',
       ],

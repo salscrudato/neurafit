@@ -33,6 +33,7 @@ export const getAnalyticsInstance = async (): Promise<ReturnType<typeof getAnaly
   }
 
   if (typeof window === 'undefined') {
+    analyticsInitialized = true;
     return null;
   }
 
@@ -54,11 +55,6 @@ export const getAnalyticsInstance = async (): Promise<ReturnType<typeof getAnaly
     return null;
   }
 };
-
-// Initialize analytics immediately if in browser
-if (typeof window !== 'undefined') {
-  getAnalyticsInstance().catch(console.warn);
-}
 
 // Export analytics for backward compatibility (may be null initially)
 export { analytics };
