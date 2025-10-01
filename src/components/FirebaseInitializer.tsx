@@ -16,7 +16,7 @@ export function FirebaseInitializer({ children }: FirebaseInitializerProps) {
         const services = await initializeFirebase();
 
         // Verify services are available
-        if (services.auth && services.db && services.fns) {
+        if (services.auth && services.firestore && services.functions) {
           console.log('✅ All Firebase services ready');
           setIsInitialized(true);
         } else {

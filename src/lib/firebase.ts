@@ -1,91 +1,71 @@
-// Firebase configuration stored as a constant
-const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyAKo_Bf8aPCWSPM9Nigcnga1t6_Psi70T8',
-  authDomain: 'neurafit-ai-2025.firebaseapp.com',
-  projectId: 'neurafit-ai-2025',
-  storageBucket: 'neurafit-ai-2025.firebasestorage.app',
-  messagingSenderId: '226392212811',
-  appId: '1:226392212811:web:4e41b01723ca5ecec8d4ce',
-  measurementId: 'G-5LHTKTWX0M',
-} as const;
-
-// Firebase service instances - will be populated after initialization
+// Firebase service instances - will be populated from external loader
 interface FirebaseServices {
   app: any;
   auth: any;
-  db: any;
-  fns: any;
+  firestore: any;
+  functions: any;
   analytics: any;
 }
 
 let firebaseServices: FirebaseServices | null = null;
 let initializationPromise: Promise<FirebaseServices> | null = null;
 
-// Initialize Firebase with complete isolation from main bundle
+// Declare global Firebase loader interface
+declare global {
+  interface Window {
+    NeuraFitFirebase?: {
+      initialized: boolean;
+      services: any;
+      init: () => Promise<any>;
+      getServices: () => Promise<any>;
+    };
+  }
+}
+
+// Initialize Firebase using external loader (completely outside main bundle)
 export const initializeFirebase = async (): Promise<FirebaseServices> => {
   if (initializationPromise) return initializationPromise;
 
   initializationPromise = new Promise(async (resolve, reject) => {
     try {
-      console.log('🔥 Starting Firebase initialization...');
+      console.log('🔥 Starting Firebase initialization via external loader...');
 
-      // Use setTimeout to ensure this runs after all synchronous code
-      setTimeout(async () => {
-        try {
-          // Load Firebase modules with a delay to prevent bundling issues
-          const firebaseApp = await import('firebase/app');
-          await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+      // Wait for external Firebase loader to be available
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait
 
-          const firebaseAuth = await import('firebase/auth');
-          await new Promise(resolve => setTimeout(resolve, 50));
+      while (!window.NeuraFitFirebase && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
 
-          const firebaseFirestore = await import('firebase/firestore');
-          await new Promise(resolve => setTimeout(resolve, 50));
+      if (!window.NeuraFitFirebase) {
+        throw new Error('Firebase loader not available after 5 seconds');
+      }
 
-          const firebaseFunctions = await import('firebase/functions');
-          await new Promise(resolve => setTimeout(resolve, 50));
+      console.log('✅ Firebase loader found, initializing services...');
 
-          // Initialize Firebase app
-          const app = firebaseApp.initializeApp(FIREBASE_CONFIG);
-          console.log('✅ Firebase app initialized');
+      // Initialize Firebase via external loader
+      const services = await window.NeuraFitFirebase.getServices();
 
-          // Initialize services
-          const auth = firebaseAuth.getAuth(app);
-          const db = firebaseFirestore.getFirestore(app);
-          const fns = firebaseFunctions.getFunctions(app);
-          console.log('✅ Firebase services initialized');
+      if (!services || !services.auth || !services.firestore || !services.functions) {
+        throw new Error('Firebase services not properly initialized');
+      }
 
-          // Initialize analytics separately and safely
-          let analytics = null;
-          if (typeof window !== 'undefined') {
-            try {
-              const firebaseAnalytics = await import('firebase/analytics');
-              const supported = await firebaseAnalytics.isSupported();
+      // Map services to our interface
+      firebaseServices = {
+        app: services.app,
+        auth: services.auth,
+        firestore: services.firestore,
+        functions: services.functions,
+        analytics: services.analytics
+      };
 
-              if (supported) {
-                analytics = firebaseAnalytics.getAnalytics(app);
-                console.log('✅ Firebase Analytics initialized');
-              } else {
-                console.warn('⚠️ Firebase Analytics not supported');
-              }
-            } catch (error) {
-              console.warn('⚠️ Analytics initialization failed:', error);
-            }
-          }
-
-          // Store services
-          firebaseServices = { app, auth, db, fns, analytics };
-          console.log('🎉 Firebase initialization complete!');
-
-          resolve(firebaseServices);
-        } catch (error) {
-          console.error('❌ Firebase initialization failed:', error);
-          reject(error);
-        }
-      }, 100); // Delay initialization to ensure React is fully loaded
+      console.log('🎉 Firebase initialization complete via external loader!');
+      resolve(firebaseServices);
 
     } catch (error) {
-      console.error('❌ Firebase initialization setup failed:', error);
+      console.error('❌ Firebase initialization failed:', error);
       reject(error);
     }
   });
@@ -101,12 +81,12 @@ export const getAuthInstance = async () => {
 
 export const getFirestoreInstance = async () => {
   const services = await initializeFirebase();
-  return services.db;
+  return services.firestore;
 };
 
 export const getFunctionsInstance = async () => {
   const services = await initializeFirebase();
-  return services.fns;
+  return services.functions;
 };
 
 export const getAnalyticsInstance = async () => {
@@ -126,19 +106,19 @@ export const auth = new Proxy({} as any, {
 
 export const db = new Proxy({} as any, {
   get() {
-    if (!firebaseServices?.db) {
+    if (!firebaseServices?.firestore) {
       throw new Error('Firebase not initialized. Use getFirestoreInstance() or call initializeFirebase() first.');
     }
-    return firebaseServices.db;
+    return firebaseServices.firestore;
   }
 });
 
 export const fns = new Proxy({} as any, {
   get() {
-    if (!firebaseServices?.fns) {
+    if (!firebaseServices?.functions) {
       throw new Error('Firebase not initialized. Use getFunctionsInstance() or call initializeFirebase() first.');
     }
-    return firebaseServices.fns;
+    return firebaseServices.functions;
   }
 });
 
