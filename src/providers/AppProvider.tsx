@@ -1,7 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { getAuthInstance, getFirestoreInstance } from '../lib/firebase';
 import { useAppStore } from '../store';
 import { isProfileComplete } from '../session/types';
 import type { UserProfile } from '../session/types';
@@ -30,8 +28,16 @@ export function AppProvider({ children }: AppProviderProps) {
   useEffect(() => {
     let unsubDoc: (() => void) | null = null;
     let unsubSubscription: (() => void) | null = null;
+    let unsubAuth: (() => void) | null = null;
 
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+    const setupAuthListener = async () => {
+      const auth = await getAuthInstance();
+      if (!auth) {
+        console.error('❌ Auth instance not available');
+        return;
+      }
+
+      unsubAuth = auth.onAuthStateChanged(async (user: any) => {
       try {
         if (process.env.NODE_ENV === 'development') {
           console.log('🔐 Auth state changed:', user?.email || 'signed out');
@@ -60,11 +66,16 @@ export function AppProvider({ children }: AppProviderProps) {
           try {
             await ensureUserDocument(user);
 
-            const profileRef = doc(db, 'users', user.uid);
-            unsubDoc = onSnapshot(
-              profileRef,
+            const db = await getFirestoreInstance();
+            if (!db) {
+              console.error('❌ Firestore instance not available');
+              return;
+            }
+
+            const profileRef = db.collection('users').doc(user.uid);
+            unsubDoc = profileRef.onSnapshot(
               (snapshot) => {
-                if (!snapshot.exists()) {
+                if (!snapshot.exists) {
                   setProfile(null);
                   setAuthStatus('needsOnboarding');
                   return;
@@ -131,10 +142,15 @@ export function AppProvider({ children }: AppProviderProps) {
       } catch (error) {
         console.error('Auth state change error:', error);
       }
-    });
+      });
+    };
+
+    setupAuthListener();
 
     return () => {
-      unsubAuth();
+      if (unsubAuth) {
+        unsubAuth();
+      }
       unsubDoc?.();
       unsubSubscription?.();
     };

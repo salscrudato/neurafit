@@ -323,6 +323,9 @@ class SubscriptionErrorHandler {
     }
 
     const activateOperation = async (): Promise<boolean> => {
+      const fns = await getFunctionsInstance()
+      if (!fns) throw new Error('Functions not available')
+
       const emergencyFixFunction = httpsCallable<{ subscriptionId: string; forceActive: boolean }, EmergencySubscriptionFixResponse>(fns, 'emergencySubscriptionFix')
       const result = await emergencyFixFunction({
         subscriptionId,
@@ -340,6 +343,9 @@ class SubscriptionErrorHandler {
       // Fallback 1: Try with different subscription ID format
       async (): Promise<FallbackResult> => {
         try {
+          const fns = await getFunctionsInstance()
+          if (!fns) throw new Error('Functions not available')
+
           const emergencyFixFunction = httpsCallable<{ subscriptionId: string; forceActive: boolean }, EmergencySubscriptionFixResponse>(fns, 'emergencySubscriptionFix')
           const result = await emergencyFixFunction({
             subscriptionId: subscriptionId.startsWith('sub_') ? subscriptionId : `sub_${subscriptionId}`,
@@ -360,7 +366,8 @@ class SubscriptionErrorHandler {
       // Fallback 2: Manual Firestore update
       async (): Promise<FallbackResult> => {
         try {
-          const user = auth.currentUser
+          const auth = await getAuthInstance()
+          const user = auth?.currentUser
           if (!user) {
             return { success: false, method: 'firestore', error: 'User not authenticated' }
           }
