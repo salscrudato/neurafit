@@ -29,29 +29,36 @@
         try {
           console.log('🔥 Loading Firebase modules...');
           
-          // Load Firebase SDK from CDN to avoid bundling issues
+          // Load Firebase v9+ modular SDK from CDN
           const scripts = [
-            'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js',
-            'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js',
-            'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js',
-            'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js',
-            'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js'
+            'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
+            'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js',
+            'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js',
+            'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js',
+            'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js'
           ];
-          
+
           // Load scripts sequentially
           for (const src of scripts) {
             await this.loadScript(src);
             await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between loads
           }
-          
-          console.log('✅ Firebase scripts loaded');
-          
-          // Initialize Firebase
+
+          console.log('✅ Firebase compat scripts loaded');
+
+          // Initialize Firebase using compat API
           const app = firebase.initializeApp(firebaseConfig);
           const auth = firebase.auth();
           const firestore = firebase.firestore();
           const functions = firebase.functions();
-          
+
+          console.log('✅ Firebase services initialized:', {
+            app: !!app,
+            auth: !!auth,
+            firestore: !!firestore,
+            functions: !!functions
+          });
+
           // Initialize analytics if supported
           let analytics = null;
           try {
@@ -65,9 +72,18 @@
           } catch (error) {
             console.warn('⚠️ Analytics initialization failed:', error);
           }
-          
+
           this.services = { app, auth, firestore, functions, analytics };
           this.initialized = true;
+
+          // Expose Firebase functions globally for analytics
+          window.firebaseAnalytics = {
+            logEvent: firebase.analytics ? firebase.analytics.logEvent : () => {},
+            setUserProperties: firebase.analytics ? firebase.analytics.setUserProperties : () => {},
+            setUserId: firebase.analytics ? firebase.analytics.setUserId : () => {}
+          };
+
+          console.log('🎉 Firebase external loader initialization complete!');
           
           console.log('🎉 Firebase initialization complete!');
           resolve(this.services);

@@ -1,285 +1,74 @@
-import { logEvent, setUserProperties, setUserId } from 'firebase/analytics';
-import { getAnalyticsInstance } from './firebase';
-
 /**
  * Firebase Analytics utility functions for NeuraFit
- * Tracks user interactions, workout generation, subscriptions, and more
+ * Stubbed version to prevent Firebase bundling issues
+ * All analytics functions are disabled to avoid Firebase imports
  */
 
-// Safe wrapper for analytics calls
-const safeAnalyticsCall = async (fn: (analytics: NonNullable<Awaited<ReturnType<typeof getAnalyticsInstance>>>) => void): Promise<void> => {
-  if (typeof window === 'undefined') return;
-
-  try {
-    const analytics = await getAnalyticsInstance();
-    if (analytics) {
-      fn(analytics);
-    }
-  } catch (error) {
-    console.warn('Analytics error:', error);
-  }
+// Stub function - all analytics calls are no-ops to prevent bundling issues
+const stub = (..._args: any[]): void => {
+  // No-op to prevent Firebase bundling issues
 };
 
-/**
- * User Authentication Events
- */
-export const trackUserSignUp = (method: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'sign_up', {
-      method: method, // 'google', 'email', etc.
-    });
-  });
-};
+// User Authentication Events
+export const trackUserSignUp = (method: string): void => stub('sign_up', { method });
+export const trackUserLogin = (method: string): void => stub('login', { method });
+export const trackUserLogout = (): void => stub('logout');
 
-export const trackUserLogin = (method: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'login', {
-      method: method,
-    });
-  });
-};
+// User Profile Events
+export const trackProfileComplete = (experience: string, goals: string[], equipment: string[]): void => 
+  stub('profile_complete', { experience, goals: goals.length, equipment: equipment.length });
+export const trackProfileUpdate = (field: string): void => stub('profile_update', { field });
 
-export const trackUserLogout = (): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'logout');
-  });
-};
+// Workout Generation Events
+export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: number): void => 
+  stub('workout_generated', { isSubscribed, workoutCount });
+export const trackWorkoutStarted = (workoutId: string, exerciseCount: number): void => 
+  stub('workout_started', { workoutId, exerciseCount });
+export const trackWorkoutCompleted = (workoutId: string, duration: number, completionRate: number): void => 
+  stub('workout_completed', { workoutId, duration, completionRate });
+export const trackWorkoutAbandoned = (workoutId: string, exerciseIndex: number, reason: string): void => 
+  stub('workout_abandoned', { workoutId, exerciseIndex, reason });
 
-/**
- * User Profile Events
- */
-export const trackProfileComplete = (experience: string, goals: string[], equipment: string[]): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'profile_complete', {
-      experience_level: experience,
-      goal_count: goals.length,
-      equipment_count: equipment.length,
-      primary_goal: goals[0] || 'none',
-    });
-  });
-};
+// Exercise Events
+export const trackExerciseCompleted = (exerciseName: string, sets: number, reps: number): void => 
+  stub('exercise_completed', { exerciseName, sets, reps });
+export const trackExerciseSkipped = (exerciseName: string, reason: string): void => 
+  stub('exercise_skipped', { exerciseName, reason });
+export const trackRestCompleted = (duration: number): void => stub('rest_completed', { duration });
+export const trackRestSkipped = (): void => stub('rest_skipped');
 
-export const trackProfileUpdate = (field: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'profile_update', {
-      field_updated: field,
-    });
-  });
-};
+// Subscription Events
+export const trackSubscriptionStarted = (plan?: string, price?: number): void =>
+  stub('subscription_started', { plan, price });
+export const trackSubscriptionCompleted = (plan?: string, price?: number): void =>
+  stub('subscription_completed', { plan, price });
+export const trackSubscriptionCancelled = (plan: string, reason?: string): void =>
+  stub('subscription_cancelled', { plan, reason });
+export const trackSubscriptionReactivated = (plan: string): void =>
+  stub('subscription_reactivated', { plan });
+export const trackPaymentFailed = (plan: string, error: string): void => 
+  stub('payment_failed', { plan, error });
+export const trackFreeTrialStarted = (): void => stub('free_trial_started');
+export const trackFreeTrialEnded = (converted: boolean): void => 
+  stub('free_trial_ended', { converted });
+export const trackFreeTrialLimitReached = (workoutCount: number): void => 
+  stub('free_trial_limit_reached', { workoutCount });
 
-/**
- * Workout Generation Events
- */
-export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: number): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'workout_generated', {
-      is_subscribed: isSubscribed,
-      workout_count: workoutCount,
-      user_type: isSubscribed ? 'premium' : 'free',
-    });
-  });
-};
+// Navigation Events
+export const trackPageView = (pageName: string, pageTitle?: string): void => 
+  stub('page_view', { pageName, pageTitle });
+export const trackButtonClick = (buttonName: string, location: string): void => 
+  stub('button_click', { buttonName, location });
 
-export const trackWorkoutStarted = (workoutId: string, exerciseCount: number): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'workout_started', {
-      workout_id: workoutId,
-      exercise_count: exerciseCount,
-    });
-  });
-};
+// User Properties
+export const setUserAnalyticsProperties = (userId: string, properties: Record<string, any>): void => 
+  stub('set_user_properties', { userId, properties });
+export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, any>): void => 
+  stub('set_enhanced_user_properties', { userId, userProfile });
 
-export const trackWorkoutCompleted = (workoutId: string, duration: number, exercisesCompleted: number): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'workout_completed', {
-      workout_id: workoutId,
-      duration_minutes: Math.round(duration / 60),
-      exercises_completed: exercisesCompleted,
-    });
-  });
-};
-
-/**
- * Subscription Events
- */
-export const trackSubscriptionStarted = (): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'begin_checkout', {
-      currency: 'USD',
-      value: 10.00,
-      items: [
-        {
-          item_id: 'neurafit_pro_monthly',
-          item_name: 'NeuraFit Pro Monthly',
-          category: 'subscription',
-          price: 10.00,
-          quantity: 1,
-        },
-      ],
-    });
-  });
-};
-
-export const trackSubscriptionCompleted = (subscriptionId: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'purchase', {
-      transaction_id: subscriptionId,
-      currency: 'USD',
-      value: 10.00,
-      items: [
-        {
-          item_id: 'neurafit_pro_monthly',
-          item_name: 'NeuraFit Pro Monthly',
-          category: 'subscription',
-          price: 10.00,
-          quantity: 1,
-        },
-      ],
-    });
-  });
-};
-
-export const trackFreeTrialLimitReached = (workoutCount: number): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'free_trial_limit_reached', {
-      workout_count: workoutCount,
-    });
-  });
-};
-
-/**
- * Navigation Events
- */
-export const trackPageView = (pageName: string, pageTitle?: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'page_view', {
-      page_title: pageTitle || pageName,
-      page_location: window.location.href,
-      page_path: window.location.pathname,
-    });
-  });
-};
-
-export const trackButtonClick = (buttonName: string, location: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'button_click', {
-      button_name: buttonName,
-      location: location,
-    });
-  });
-};
-
-/**
- * Error Tracking
- */
-export const trackError = (errorType: string, errorMessage: string, location: string): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, 'exception', {
-      description: `${errorType}: ${errorMessage}`,
-      fatal: false,
-      location: location,
-    });
-  });
-};
-
-/**
- * User Properties
- */
-export const setUserAnalyticsProperties = (
-  userId: string,
-  properties: {
-    experience_level?: string;
-    subscription_status?: string;
-    total_workouts?: number;
-    signup_date?: string;
-    timezone?: string;
-    language?: string;
-  }
-): void => {
-  safeAnalyticsCall((analytics) => {
-    setUserId(analytics, userId);
-    setUserProperties(analytics, {
-      ...properties,
-      // Add automatic timezone and language detection
-      timezone: properties.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: properties.language || navigator.language,
-    });
-  });
-};
-
-/**
- * Custom Events
- */
-export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, eventName, parameters);
-  });
-};
-
-/**
- * Session and Location Tracking
- */
-export const trackSessionStart = (): void => {
-  safeAnalyticsCall((analytics) => {
-    const sessionInfo = {
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: navigator.language,
-      screen_resolution: `${screen.width}x${screen.height}`,
-      viewport_size: `${window.innerWidth}x${window.innerHeight}`,
-      user_agent: navigator.userAgent.substring(0, 100), // Truncate for analytics
-      referrer: document.referrer || 'direct',
-    };
-
-    logEvent(analytics, 'session_start', sessionInfo);
-  });
-};
-
-export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, unknown> = {}): void => {
-  safeAnalyticsCall((analytics) => {
-    logEvent(analytics, eventName, {
-      ...additionalParams,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: navigator.language,
-      timestamp: Date.now(),
-    });
-  });
-};
-
-/**
- * Enhanced User Properties with Location Context
- */
-export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>): void => {
-  safeAnalyticsCall((analytics) => {
-    setUserId(analytics, userId);
-    setUserProperties(analytics, {
-      experience_level: userProfile.experience as string | undefined,
-      subscription_status: (userProfile.subscription as { status?: string })?.status || 'free',
-      total_workouts: (userProfile.subscription as { workoutCount?: number })?.workoutCount || 0,
-      signup_date: new Date().toISOString().split('T')[0],
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: navigator.language,
-      primary_goals: (userProfile.goals as string[])?.slice(0, 3).join(',') || 'none',
-      equipment_access: (userProfile.equipment as unknown[])?.length || 0,
-    });
-  });
-};
-
-/**
- * Debug function to check analytics status
- */
-export const getAnalyticsStatus = async (): Promise<{
-  isAvailable: boolean;
-  analytics: Awaited<ReturnType<typeof getAnalyticsInstance>>;
-  userAgent: string;
-  timezone: string;
-  language: string;
-}> => {
-  const analytics = await getAnalyticsInstance();
-  return {
-    isAvailable: analytics !== null,
-    analytics: analytics,
-    userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
-    timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown',
-    language: typeof window !== 'undefined' ? navigator.language : 'unknown',
-  };
-};
+// Custom Events
+export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>): void => 
+  stub('custom_event', { eventName, parameters });
+export const trackSessionStart = (): void => stub('session_start');
+export const trackError = (error: string, context?: string): void => 
+  stub('error', { error, context });

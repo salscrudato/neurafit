@@ -94,39 +94,19 @@ export const getAnalyticsInstance = async () => {
   return services.analytics;
 };
 
-// Synchronous exports that throw helpful errors
-export const auth = new Proxy({} as any, {
-  get() {
-    if (!firebaseServices?.auth) {
-      throw new Error('Firebase not initialized. Use getAuthInstance() or call initializeFirebase() first.');
-    }
-    return firebaseServices.auth;
-  }
-});
+// Synchronous exports - will be populated after initialization
+export let auth: any = null;
+export let db: any = null;
+export let fns: any = null;
+export let analytics: any = null;
 
-export const db = new Proxy({} as any, {
-  get() {
-    if (!firebaseServices?.firestore) {
-      throw new Error('Firebase not initialized. Use getFirestoreInstance() or call initializeFirebase() first.');
-    }
-    return firebaseServices.firestore;
-  }
-});
-
-export const fns = new Proxy({} as any, {
-  get() {
-    if (!firebaseServices?.functions) {
-      throw new Error('Firebase not initialized. Use getFunctionsInstance() or call initializeFirebase() first.');
-    }
-    return firebaseServices.functions;
-  }
-});
-
-export const analytics = new Proxy({} as any, {
-  get() {
-    if (!firebaseServices?.analytics) {
-      throw new Error('Firebase Analytics not initialized. Use getAnalyticsInstance() or call initializeFirebase() first.');
-    }
-    return firebaseServices.analytics;
-  }
+// Initialize Firebase immediately and populate exports
+initializeFirebase().then(services => {
+  auth = services.auth;
+  db = services.firestore;
+  fns = services.functions;
+  analytics = services.analytics;
+  console.log('✅ Firebase synchronous exports populated');
+}).catch(error => {
+  console.error('❌ Failed to populate Firebase exports:', error);
 });
