@@ -1,8 +1,7 @@
 // src/pages/Dashboard.tsx
 import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { auth, db } from '../lib/firebase'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
+import { getAuthInstance, getFirestoreInstance } from '../lib/firebase'
 import { convertToDate } from '../utils/timestamp'
 import {
   Zap,
@@ -41,10 +40,19 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const nav = useNavigate()
-  const user = auth.currentUser
+  const [user, setUser] = useState<any>(null)
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Get current user
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const auth = await getAuthInstance()
+      setUser(auth?.currentUser)
+    }
+    getCurrentUser()
+  }, [])
 
   const firstName = useMemo(() => {
     const n = user?.displayName || user?.email || user?.phoneNumber || 'Athlete'
@@ -55,18 +63,22 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const uid = auth.currentUser?.uid
+        const auth = await getAuthInstance()
+        const uid = auth?.currentUser?.uid
         if (!uid) {
           setError('Not authenticated')
           return
         }
 
+        const db = await getFirestoreInstance()
+        if (!db) {
+          setError('Firestore not available')
+          return
+        }
+
         // Fetch all workouts (assuming reasonable number per user)
-        const workoutsQuery = query(
-          collection(db, 'users', uid, 'workouts'),
-          orderBy('timestamp', 'desc')
-        )
-        const workoutsSnap = await getDocs(workoutsQuery)
+        const workoutsRef = db.collection('users').doc(uid).collection('workouts')
+        const workoutsSnap = await workoutsRef.orderBy('timestamp', 'desc').get()
         const workouts = workoutsSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
