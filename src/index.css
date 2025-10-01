@@ -10,6 +10,11 @@
   }
 }
 
+/* Futuristic loading animations */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
 /* Enhanced Mobile-First Design System */
 
 /* Touch-friendly interactions */
