@@ -1,61 +1,51 @@
-import Stripe from 'stripe'
-import { getFirestore } from 'firebase-admin/firestore'
-import { initializeApp, getApps } from 'firebase-admin/app'
-
-// Extended Stripe types to include properties that exist but aren't in the official types
-interface ExtendedStripeInvoice extends Stripe.Invoice {
-  subscription?: string
-  payment_intent?: Stripe.PaymentIntent | string
-}
+import Stripe from 'stripe';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase-admin/app';
 
 // Initialize Firebase Admin if not already initialized
 if (getApps().length === 0) {
-  initializeApp()
+  initializeApp();
 }
 
-export const db = getFirestore()
+export const db = getFirestore();
 
 // Stripe client will be initialized with the secret key when needed
-let stripeClient: Stripe | null = null
+let stripeClient: Stripe | null = null;
 
 export function getStripeClient(secretKey: string): Stripe {
   if (!stripeClient) {
-    stripeClient = new Stripe(secretKey, {
-      apiVersion: '2025-08-27.basil',
-    })
+    stripeClient = new Stripe(secretKey);
   }
-  return stripeClient
+  return stripeClient;
 }
 
-// Legacy export for backward compatibility - will be removed
-export const stripe = new Stripe('sk_test_placeholder', {
-  apiVersion: '2025-08-27.basil',
-})
+// Export the stripe client for use in other modules
+export const stripe = stripeClient;
 
 // Subscription status mapping from Stripe to our types
-export type SubscriptionStatus = 
+export type SubscriptionStatus =
   | 'active'
-  | 'canceled' 
+  | 'canceled'
   | 'incomplete'
   | 'incomplete_expired'
   | 'past_due'
   | 'trialing'
-  | 'unpaid'
+  | 'unpaid';
 
 export interface UserSubscriptionData {
-  customerId: string
-  subscriptionId?: string
-  priceId?: string
-  status: SubscriptionStatus
-  currentPeriodStart?: number
-  currentPeriodEnd?: number
-  cancelAtPeriodEnd?: boolean
-  canceledAt?: number
-  workoutCount: number
-  freeWorkoutsUsed: number
-  freeWorkoutLimit: number
-  createdAt: number
-  updatedAt: number
+  customerId: string;
+  subscriptionId?: string;
+  priceId?: string;
+  status: SubscriptionStatus;
+  currentPeriodStart?: number;
+  currentPeriodEnd?: number;
+  cancelAtPeriodEnd?: boolean;
+  canceledAt?: number;
+  workoutCount: number;
+  freeWorkoutsUsed: number;
+  freeWorkoutLimit: number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 /**
@@ -67,20 +57,20 @@ export async function createOrGetCustomer(
   name?: string,
   stripeSecretKey?: string
 ): Promise<string> {
-  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : stripe
-
   try {
+    const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
+
     // Check if user already has a customer ID
-    const userDoc = await db.collection('users').doc(uid).get()
-    const userData = userDoc.data()
+    const userDoc = await db.collection('users').doc(uid).get();
+    const userData = userDoc.data();
 
     if (userData?.subscription?.customerId) {
       // Verify the customer still exists in Stripe
       try {
-        await stripeInstance.customers.retrieve(userData.subscription.customerId)
-        return userData.subscription.customerId
-      } catch {
-        console.log('Customer not found in Stripe, creating new one')
+        await stripeInstance.customers.retrieve(userData.subscription.customerId);
+        return userData.subscription.customerId;
+      } catch (error) {
+        console.log('Customer not found in Stripe, creating new one:', error);
       }
     }
 
@@ -89,9 +79,9 @@ export async function createOrGetCustomer(
       email,
       name,
       metadata: {
-        firebaseUID: uid
-      }
-    })
+        firebaseUID: uid,
+      },
+    });
 
     // Initialize subscription data in Firestore
     const subscriptionData: UserSubscriptionData = {
@@ -101,17 +91,20 @@ export async function createOrGetCustomer(
       freeWorkoutsUsed: 0,
       freeWorkoutLimit: 5,
       createdAt: Date.now(),
-      updatedAt: Date.now()
-    }
+      updatedAt: Date.now(),
+    };
 
-    await db.collection('users').doc(uid).set({
-      subscription: subscriptionData
-    }, { merge: true })
+    await db.collection('users').doc(uid).set(
+      {
+        subscription: subscriptionData,
+      },
+      { merge: true }
+    );
 
-    return customer.id
+    return customer.id;
   } catch (error) {
-    console.error('Error creating/getting customer:', error)
-    throw error
+    console.error('Error creating/getting customer:', error);
+    throw new Error('Failed to create or get Stripe customer');
   }
 }
 
@@ -124,44 +117,45 @@ export async function createSubscription(
   uid: string,
   stripeSecretKey?: string
 ): Promise<Stripe.Subscription> {
-  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : stripe
+  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
 
   try {
     // First, check for existing subscriptions for this customer
-    console.log('Checking for existing subscriptions for customer:', customerId)
+    console.log('Checking for existing subscriptions for customer:', customerId);
     const existingSubscriptions = await stripeInstance.subscriptions.list({
       customer: customerId,
       status: 'all',
-      limit: 10
-    })
+      limit: 10,
+    });
 
-    console.log(`Found ${existingSubscriptions.data.length} existing subscriptions`)
+    console.log(`Found ${existingSubscriptions.data.length} existing subscriptions`);
 
     // Cancel any incomplete subscriptions to avoid conflicts
     for (const sub of existingSubscriptions.data) {
       if (sub.status === 'incomplete' || sub.status === 'incomplete_expired') {
-        console.log('Canceling incomplete subscription:', sub.id)
+        console.log('Canceling incomplete subscription:', sub.id);
         try {
-          await stripeInstance.subscriptions.cancel(sub.id)
+          await stripeInstance.subscriptions.cancel(sub.id);
         } catch (cancelError) {
-          console.warn('Failed to cancel incomplete subscription:', sub.id, cancelError)
+          console.warn('Failed to cancel incomplete subscription:', sub.id, cancelError);
         }
       }
     }
 
     // Check if there's already an active subscription with the same price
-    const activeSubscription = existingSubscriptions.data.find(sub =>
-      (sub.status === 'active' || sub.status === 'trialing') &&
-      sub.items.data.some(item => item.price.id === priceId)
-    )
+    const activeSubscription = existingSubscriptions.data.find(
+      (sub) =>
+        (sub.status === 'active' || sub.status === 'trialing') &&
+        sub.items.data.some((item) => item.price.id === priceId)
+    );
 
     if (activeSubscription) {
-      console.log('Found existing active subscription:', activeSubscription.id)
-      return activeSubscription
+      console.log('Found existing active subscription:', activeSubscription.id);
+      return activeSubscription;
     }
 
-    console.log('Creating new subscription...')
-    console.log('Creating subscription with customer:', customerId, 'price:', priceId)
+    console.log('Creating new subscription...');
+    console.log('Creating subscription with customer:', customerId, 'price:', priceId);
 
     const subscription = await stripeInstance.subscriptions.create({
       customer: customerId,
@@ -170,71 +164,96 @@ export async function createSubscription(
       payment_settings: { save_default_payment_method: 'on_subscription' },
       expand: ['latest_invoice.payment_intent'],
       metadata: {
-        firebaseUID: uid
-      }
-    })
+        firebaseUID: uid,
+      },
+    });
 
-    console.log('Subscription created:', subscription.id, 'status:', subscription.status)
+    console.log('Subscription created:', subscription.id, 'status:', subscription.status);
 
     // Log invoice details for debugging
-    const invoice = subscription.latest_invoice as ExtendedStripeInvoice
-    if (invoice) {
-      console.log('Invoice:', invoice.id, 'status:', invoice.status)
-      console.log('Payment intent on invoice:', invoice.payment_intent ?
-        (typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent.id) : 'none')
+    const invoice = subscription.latest_invoice as string | Stripe.Invoice | null;
+    let expandedInvoice: Stripe.Invoice | null = null;
+
+    if (typeof invoice === 'string') {
+      expandedInvoice = await stripeInstance.invoices.retrieve(invoice, {
+        expand: ['payment_intent'],
+      });
+    } else if (invoice) {
+      expandedInvoice = invoice;
+    }
+
+    if (expandedInvoice) {
+      console.log('Invoice:', expandedInvoice.id, 'status:', expandedInvoice.status);
+      const invoiceWithPaymentIntent = expandedInvoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | string };
+      console.log(
+        'Payment intent on invoice:',
+        invoiceWithPaymentIntent.payment_intent
+          ? typeof invoiceWithPaymentIntent.payment_intent === 'string'
+            ? invoiceWithPaymentIntent.payment_intent
+            : invoiceWithPaymentIntent.payment_intent.id
+          : 'none'
+      );
     }
 
     // If no payment intent exists on the invoice, this might be a zero-amount invoice
     // or there might be an issue with the subscription setup
-    if (invoice && !invoice.payment_intent) {
-      console.log('No payment intent found on invoice')
-      console.log('Invoice amount_due:', invoice.amount_due)
-      console.log('Invoice currency:', invoice.currency)
-      console.log('Invoice total:', invoice.total)
+    const invoiceWithPaymentIntent = expandedInvoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | string };
+    if (expandedInvoice && !invoiceWithPaymentIntent.payment_intent) {
+      console.log('No payment intent found on invoice');
+      console.log('Invoice amount_due:', expandedInvoice.amount_due);
+      console.log('Invoice currency:', expandedInvoice.currency);
+      console.log('Invoice total:', expandedInvoice.total);
 
       // Check if this is a zero-amount invoice (like a trial)
-      if (invoice.amount_due === 0) {
-        console.log('Zero-amount invoice, no payment intent needed')
-        return subscription
+      if (expandedInvoice.amount_due === 0) {
+        console.log('Zero-amount invoice, no payment intent needed');
+        return subscription;
       }
 
       // For non-zero invoices without payment intents, create a payment intent manually
-      console.log('Invoice has amount due but no payment intent, creating payment intent manually...')
+      console.log('Invoice has amount due but no payment intent, creating payment intent manually...');
 
       try {
         const paymentIntent = await stripeInstance.paymentIntents.create({
-          amount: invoice.amount_due,
-          currency: invoice.currency,
+          amount: expandedInvoice.amount_due,
+          currency: expandedInvoice.currency,
           customer: customerId,
           payment_method_types: ['card'],
           metadata: {
-            invoice_id: invoice.id || '',
+            invoice_id: expandedInvoice.id || '',
             subscription_id: subscription.id,
-            firebaseUID: uid
-          }
-        })
+            firebaseUID: uid,
+          },
+        });
 
-        console.log('Manual payment intent created:', paymentIntent.id)
-        console.log('Payment intent client secret:', paymentIntent.client_secret ? 'present' : 'missing')
+        console.log('Manual payment intent created:', paymentIntent.id);
+        console.log('Payment intent client secret:', paymentIntent.client_secret ? 'present' : 'missing');
 
-        // Return a modified subscription object with the payment intent
+        // Update the invoice with the new payment intent
+        await stripeInstance.invoices.update(expandedInvoice.id!, {
+          metadata: {
+            payment_intent_id: paymentIntent.id,
+          },
+        } as Stripe.InvoiceUpdateParams);
+
+        // Return the subscription with updated invoice
         return {
           ...subscription,
           latest_invoice: {
-            ...invoice,
-            payment_intent: paymentIntent
-          }
-        } as Stripe.Subscription
+            ...expandedInvoice,
+            payment_intent: paymentIntent,
+          },
+        } as Stripe.Subscription;
       } catch (piError) {
-        console.error('Error creating manual payment intent:', piError)
-        throw piError
+        console.error('Error creating manual payment intent:', piError);
+        throw piError;
       }
     }
 
-    return subscription
+    return subscription;
   } catch (error) {
-    console.error('Error creating subscription:', error)
-    throw error
+    console.error('Error creating subscription:', error);
+    throw new Error('Failed to create subscription');
   }
 }
 
@@ -246,15 +265,28 @@ export async function updateUserSubscription(
   subscriptionData: Partial<UserSubscriptionData>
 ): Promise<void> {
   try {
-    await db.collection('users').doc(uid).set({
-      subscription: {
-        ...subscriptionData,
-        updatedAt: Date.now()
-      }
-    }, { merge: true })
+    console.log(`📝 Updating subscription for user ${uid}:`, subscriptionData);
+
+    await db.collection('users').doc(uid).set(
+      {
+        subscription: {
+          ...subscriptionData,
+          updatedAt: Date.now(),
+        },
+      },
+      { merge: true }
+    );
+
+    console.log(`✅ Successfully updated subscription for user ${uid}`);
+
+    // Verify the update was successful
+    const updatedDoc = await db.collection('users').doc(uid).get();
+    const updatedData = updatedDoc.data();
+    console.log(`🔍 Verified subscription status for user ${uid}:`, updatedData?.subscription?.status);
+
   } catch (error) {
-    console.error('Error updating user subscription:', error)
-    throw error
+    console.error(`❌ Error updating user subscription for ${uid}:`, error);
+    throw new Error(`Failed to update user subscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -263,50 +295,56 @@ export async function updateUserSubscription(
  */
 export async function getUserByCustomerId(customerId: string): Promise<string | null> {
   try {
-    const usersRef = db.collection('users')
-    const query = usersRef.where('subscription.customerId', '==', customerId)
-    const snapshot = await query.get()
-    
+    const usersRef = db.collection('users');
+    const query = usersRef.where('subscription.customerId', '==', customerId);
+    const snapshot = await query.get();
+
     if (snapshot.empty) {
-      return null
+      return null;
     }
-    
-    return snapshot.docs[0].id
+
+    return snapshot.docs[0].id;
   } catch (error) {
-    console.error('Error getting user by customer ID:', error)
-    return null
+    console.error('Error getting user by customer ID:', error);
+    return null;
   }
 }
 
 /**
  * Cancel a subscription
  */
-export async function cancelSubscription(subscriptionId: string, stripeSecretKey?: string): Promise<Stripe.Subscription> {
-  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : stripe
+export async function cancelSubscription(
+  subscriptionId: string,
+  stripeSecretKey?: string
+): Promise<Stripe.Subscription> {
+  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
 
   try {
     return await stripeInstance.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: true
-    })
+      cancel_at_period_end: true,
+    });
   } catch (error) {
-    console.error('Error canceling subscription:', error)
-    throw error
+    console.error('Error canceling subscription:', error);
+    throw new Error('Failed to cancel subscription');
   }
 }
 
 /**
  * Reactivate a subscription
  */
-export async function reactivateSubscription(subscriptionId: string, stripeSecretKey?: string): Promise<Stripe.Subscription> {
-  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : stripe
+export async function reactivateSubscription(
+  subscriptionId: string,
+  stripeSecretKey?: string
+): Promise<Stripe.Subscription> {
+  const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
 
   try {
     return await stripeInstance.subscriptions.update(subscriptionId, {
-      cancel_at_period_end: false
-    })
+      cancel_at_period_end: false,
+    });
   } catch (error) {
-    console.error('Error reactivating subscription:', error)
-    throw error
+    console.error('Error reactivating subscription:', error);
+    throw new Error('Failed to reactivate subscription');
   }
 }
 
@@ -315,10 +353,10 @@ export async function reactivateSubscription(subscriptionId: string, stripeSecre
  */
 export async function incrementWorkoutCount(uid: string): Promise<void> {
   try {
-    const userRef = db.collection('users').doc(uid)
-    const userDoc = await userRef.get()
-    const userData = userDoc.data()
-    
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
     if (!userData?.subscription) {
       // Initialize subscription data if it doesn't exist
       const subscriptionData: UserSubscriptionData = {
@@ -328,30 +366,36 @@ export async function incrementWorkoutCount(uid: string): Promise<void> {
         freeWorkoutsUsed: 1,
         freeWorkoutLimit: 5,
         createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
-      
-      await userRef.set({
-        subscription: subscriptionData
-      }, { merge: true })
+        updatedAt: Date.now(),
+      };
+
+      await userRef.set(
+        {
+          subscription: subscriptionData,
+        },
+        { merge: true }
+      );
     } else {
       // Increment counters
-      const currentSubscription = userData.subscription
-      const isActive = currentSubscription.status === 'active' || currentSubscription.status === 'trialing'
-      
-      await userRef.set({
-        subscription: {
-          ...currentSubscription,
-          workoutCount: (currentSubscription.workoutCount || 0) + 1,
-          freeWorkoutsUsed: isActive 
-            ? currentSubscription.freeWorkoutsUsed 
-            : (currentSubscription.freeWorkoutsUsed || 0) + 1,
-          updatedAt: Date.now()
-        }
-      }, { merge: true })
+      const currentSubscription = userData.subscription as UserSubscriptionData;
+      const isActive = currentSubscription.status === 'active' || currentSubscription.status === 'trialing';
+
+      await userRef.set(
+        {
+          subscription: {
+            ...currentSubscription,
+            workoutCount: (currentSubscription.workoutCount || 0) + 1,
+            freeWorkoutsUsed: isActive
+              ? currentSubscription.freeWorkoutsUsed || 0
+              : (currentSubscription.freeWorkoutsUsed || 0) + 1,
+            updatedAt: Date.now(),
+          },
+        },
+        { merge: true }
+      );
     }
   } catch (error) {
-    console.error('Error incrementing workout count:', error)
-    throw error
+    console.error('Error incrementing workout count:', error);
+    throw new Error('Failed to increment workout count');
   }
 }

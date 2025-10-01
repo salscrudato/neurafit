@@ -10,6 +10,8 @@ import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } fro
 import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
 import { useSubscription } from '../hooks/useSubscription'
+import { refreshSubscriptionData } from '../lib/subscription-sync'
+import SubscriptionErrorHandler, { SubscriptionStatusBanner } from '../components/SubscriptionErrorHandler'
 import { SimpleSubscription } from '../components/SimpleSubscription'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 
@@ -305,6 +307,24 @@ export default function Generate() {
         const error = e2 as { message?: string; status?: number; name?: string }
         // Check if it's a subscription error (402 Payment Required)
         if (error?.message?.includes('Subscription required') || error?.status === 402) {
+          // Before showing upgrade prompt, try refreshing subscription status
+          // This handles cases where payment was completed but subscription status hasn't synced yet
+          try {
+            console.log('🔄 Payment required error - checking for recent subscription updates...')
+            const freshSubscription = await refreshSubscriptionData()
+
+            if (freshSubscription && (freshSubscription.status === 'active' || freshSubscription.status === 'trialing')) {
+              console.log('✅ Found active subscription after refresh, retrying workout generation...')
+              // Retry the workout generation with fresh subscription data
+              setTimeout(() => {
+                generate()
+              }, 1000)
+              return
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing subscription data:', refreshError)
+          }
+
           setShowUpgradePrompt(true)
           return
         }
@@ -361,8 +381,11 @@ export default function Generate() {
           </div>
         </section>
 
-        {/* Subscription Status */}
-        {!hasUnlimitedWorkouts && (
+        {/* Subscription Status Banner */}
+        <SubscriptionStatusBanner className="mt-6" />
+
+        {/* Legacy Subscription Status - keeping for users with more than 1 workout remaining */}
+        {!hasUnlimitedWorkouts && remainingFreeWorkouts > 1 && (
           <section className="mt-6">
             <div className="rounded-2xl border border-blue-200 bg-blue-50/50 backdrop-blur-sm p-4 shadow-sm">
               <div className="flex items-center justify-between">
@@ -512,8 +535,16 @@ export default function Generate() {
 
         {/* Error */}
         {error && (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 shadow-sm">
-            {error}
+          <div className="mt-6">
+            <SubscriptionErrorHandler
+              error={error}
+              onRetry={() => {
+                setError(null)
+                generate()
+              }}
+              onUpgrade={() => setShowUpgradePrompt(true)}
+              showUpgradeOption={!hasUnlimitedWorkouts}
+            />
           </div>
         )}
 

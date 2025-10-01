@@ -79,7 +79,7 @@ class SEOAnalytics {
           observer.observe({ entryTypes: ['navigation', 'paint', 'largest-contentful-paint'] })
           // Initialize basic metrics
           this.reportMetric('performance_init', 1, 1)
-        } catch (e) {
+        } catch {
           // Observer not supported
         }
       }
@@ -192,8 +192,8 @@ class SEOAnalytics {
     console.log(`SEO Metric - ${name}: ${value} (${status})`)
     
     // Send to analytics if available
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'web_vitals', {
+    if (typeof window !== 'undefined' && (window as { gtag?: (..._args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (..._args: unknown[]) => void }).gtag('event', 'web_vitals', {
         event_category: 'SEO',
         event_label: name,
         value: Math.round(value),
@@ -215,10 +215,10 @@ class SEOAnalytics {
     }
   }
 
-  private reportEngagement(type: string, data: any) {
+  private reportEngagement(type: string, data: Record<string, unknown> | number) {
     // Track engagement metrics for SEO signals
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'user_engagement', {
+    if (typeof window !== 'undefined' && (window as { gtag?: (..._args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (..._args: unknown[]) => void }).gtag('event', 'user_engagement', {
         event_category: 'SEO',
         event_label: type,
         value: typeof data === 'number' ? data : 1,
@@ -231,9 +231,9 @@ class SEOAnalytics {
     console.warn('SEO Issues Detected:', issues)
     
     // Send to error tracking
-    if (typeof window !== 'undefined' && (window as any).gtag) {
+    if (typeof window !== 'undefined' && (window as { gtag?: (..._args: unknown[]) => void }).gtag) {
       issues.forEach(issue => {
-        (window as any).gtag('event', 'seo_issue', {
+        (window as unknown as { gtag: (..._args: unknown[]) => void }).gtag('event', 'seo_issue', {
           event_category: 'SEO',
           event_label: issue,
           value: 1

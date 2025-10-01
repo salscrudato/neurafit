@@ -164,7 +164,7 @@ export function generateKeywords(keywords: string[]): string {
 }
 
 // Generate structured data for different page types
-export function generateStructuredData(type: 'WebApplication' | 'Article' | 'FAQPage', data: any) {
+export function generateStructuredData(type: 'WebApplication' | 'Article' | 'FAQPage', data: Record<string, unknown>) {
   const baseStructure = {
     '@context': 'https://schema.org',
     '@type': type,

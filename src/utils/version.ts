@@ -166,8 +166,16 @@ export class VersionManager {
     }))
 
     // Also trigger service worker update check
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'CHECK_UPDATE' })
+    this.triggerServiceWorkerUpdate()
+  }
+
+  // Helper method to trigger service worker update
+  private async triggerServiceWorkerUpdate(): Promise<void> {
+    try {
+      const { sendCheckUpdateMessage } = await import('./service-worker-messaging')
+      sendCheckUpdateMessage()
+    } catch (error) {
+      console.warn('Failed to trigger service worker update:', error)
     }
   }
 
@@ -226,7 +234,14 @@ export class VersionManager {
       if ('serviceWorker' in navigator) {
         const registration = await navigator.serviceWorker.getRegistration()
         if (registration?.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+          try {
+            const { sendSkipWaitingMessage } = await import('./service-worker-messaging')
+            sendSkipWaitingMessage()
+          } catch (error) {
+            console.warn('Failed to send skip waiting message:', error)
+            // Fallback to direct message
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+          }
         }
       }
 

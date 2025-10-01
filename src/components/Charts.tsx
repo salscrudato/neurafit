@@ -62,11 +62,13 @@ export function LineChart({
 
   const pathD = useMemo(() => {
     if (points.length === 0) return ''
-    
-    return points.reduce((path, point, index) => {
+
+    let path = ''
+    points.forEach((point, index) => {
       const command = index === 0 ? 'M' : 'L'
-      return `${path} ${command} ${point.x} ${point.y}`
-    }, '')
+      path += ` ${command} ${point.x} ${point.y}`
+    })
+    return path
   }, [points])
 
   const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`

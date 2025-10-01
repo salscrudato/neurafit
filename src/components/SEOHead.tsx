@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getSEOConfig, generateKeywords } from '../config/seo'
 
-interface SEOHeadProps {
+export interface SEOHeadProps {
   title?: string
   description?: string
   keywords?: string[]
@@ -144,8 +144,8 @@ function addStructuredData(data: object) {
 
 function trackPageView(path: string, title: string) {
   // Track page views for SEO analytics
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('config', 'GA_MEASUREMENT_ID', {
+  if (typeof window !== 'undefined' && (window as { gtag?: Function }).gtag) {
+    ((window as unknown) as { gtag: Function }).gtag('config', 'GA_MEASUREMENT_ID', {
       page_title: title,
       page_location: `https://neurafit-ai-2025.web.app${path}`
     })
@@ -158,88 +158,8 @@ function trackPageView(path: string, title: string) {
   }
 }
 
-// Hook for easy SEO management in components
-export function useSEO(config: SEOHeadProps) {
-  return <SEOHead {...config} />
-}
+// Note: useSEO hook and StructuredDataTemplates have been moved to seo-utils.ts
+// to fix Fast Refresh warnings. Import them from there instead.
 
-// Pre-built structured data templates
-export const StructuredDataTemplates = {
-  WebApplication: (name: string, description: string, url: string) => ({
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name,
-    description,
-    url,
-    applicationCategory: 'HealthApplication',
-    operatingSystem: 'Web, iOS, Android',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock'
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '1247',
-      bestRating: '5',
-      worstRating: '1'
-    }
-  }),
-  
-  Article: (title: string, description: string, author: string, datePublished: string) => ({
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: title,
-    description,
-    author: {
-      '@type': 'Person',
-      name: author
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'NeuraFit',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://neurafit-ai-2025.web.app/android-chrome-512x512.png'
-      }
-    },
-    datePublished,
-    dateModified: new Date().toISOString()
-  }),
-  
-  FAQPage: (faqs: Array<{ question: string; answer: string }>) => ({
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map(faq => ({
-      '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.answer
-      }
-    }))
-  }),
-  
-  SoftwareApplication: (name: string, description: string, category: string) => ({
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name,
-    description,
-    applicationCategory: category,
-    operatingSystem: 'Web, iOS, Android',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD'
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '1247'
-    }
-  })
-}
 
 export default SEOHead

@@ -1,16 +1,16 @@
-import { onCall } from "firebase-functions/v2/https"
-import { defineSecret } from "firebase-functions/params"
+import { onCall } from 'firebase-functions/v2/https'
+import { defineSecret } from 'firebase-functions/params'
 import { getStripeClient } from './lib/stripe'
 
 // Define Stripe secret key
-const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY")
+const stripeSecretKey = defineSecret('STRIPE_SECRET_KEY')
 
 /**
  * Cleanup incomplete subscriptions for a customer
  */
 export const cleanupSubscriptions = onCall(
   {
-    region: "us-central1",
+    region: 'us-central1',
     secrets: [stripeSecretKey],
   },
   async (request) => {

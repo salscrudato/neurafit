@@ -29,10 +29,11 @@ export default function Subscription() {
 
   const handlePaymentSuccess = () => {
     setCurrentView('success')
-    // Refresh the page after a delay to show updated subscription status
+    // The PaymentForm component now handles subscription synchronization
+    // We'll refresh the page after a longer delay to ensure everything is synced
     setTimeout(() => {
       window.location.reload()
-    }, 3000)
+    }, 5000)
   }
 
   const handlePaymentError = (error: string) => {

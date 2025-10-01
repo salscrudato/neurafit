@@ -1,5 +1,5 @@
-import { logEvent, setUserProperties, setUserId } from 'firebase/analytics'
-import { analytics } from './firebase'
+import { logEvent, setUserProperties, setUserId } from 'firebase/analytics';
+import { analytics } from './firebase';
 
 /**
  * Firebase Analytics utility functions for NeuraFit
@@ -7,214 +7,221 @@ import { analytics } from './firebase'
  */
 
 // Check if analytics is available
-const isAnalyticsAvailable = () => {
-  return analytics !== null && typeof window !== 'undefined'
-}
+const isAnalyticsAvailable = (): boolean => {
+  return analytics !== null && typeof window !== 'undefined';
+};
 
 // Safe wrapper for analytics calls
-const safeAnalyticsCall = (fn: () => void) => {
+const safeAnalyticsCall = (fn: () => void): void => {
   if (isAnalyticsAvailable()) {
     try {
-      fn()
+      fn();
     } catch (error) {
-      console.warn('Analytics error:', error)
+      console.warn('Analytics error:', error);
     }
   }
-}
+};
 
 /**
  * User Authentication Events
  */
-export const trackUserSignUp = (method: string) => {
+export const trackUserSignUp = (method: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'sign_up', {
-      method: method // 'google', 'email', etc.
-    })
-  })
-}
+      method: method, // 'google', 'email', etc.
+    });
+  });
+};
 
-export const trackUserLogin = (method: string) => {
+export const trackUserLogin = (method: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'login', {
-      method: method
-    })
-  })
-}
+      method: method,
+    });
+  });
+};
 
-export const trackUserLogout = () => {
+export const trackUserLogout = (): void => {
   safeAnalyticsCall(() => {
-    logEvent(analytics!, 'logout')
-  })
-}
+    logEvent(analytics!, 'logout');
+  });
+};
 
 /**
  * User Profile Events
  */
-export const trackProfileComplete = (experience: string, goals: string[], equipment: string[]) => {
+export const trackProfileComplete = (experience: string, goals: string[], equipment: string[]): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'profile_complete', {
       experience_level: experience,
       goal_count: goals.length,
       equipment_count: equipment.length,
-      primary_goal: goals[0] || 'none'
-    })
-  })
-}
+      primary_goal: goals[0] || 'none',
+    });
+  });
+};
 
-export const trackProfileUpdate = (field: string) => {
+export const trackProfileUpdate = (field: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'profile_update', {
-      field_updated: field
-    })
-  })
-}
+      field_updated: field,
+    });
+  });
+};
 
 /**
  * Workout Generation Events
  */
-export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: number) => {
+export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: number): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'workout_generated', {
       is_subscribed: isSubscribed,
       workout_count: workoutCount,
-      user_type: isSubscribed ? 'premium' : 'free'
-    })
-  })
-}
+      user_type: isSubscribed ? 'premium' : 'free',
+    });
+  });
+};
 
-export const trackWorkoutStarted = (workoutId: string, exerciseCount: number) => {
+export const trackWorkoutStarted = (workoutId: string, exerciseCount: number): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'workout_started', {
       workout_id: workoutId,
-      exercise_count: exerciseCount
-    })
-  })
-}
+      exercise_count: exerciseCount,
+    });
+  });
+};
 
-export const trackWorkoutCompleted = (workoutId: string, duration: number, exercisesCompleted: number) => {
+export const trackWorkoutCompleted = (workoutId: string, duration: number, exercisesCompleted: number): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'workout_completed', {
       workout_id: workoutId,
       duration_minutes: Math.round(duration / 60),
-      exercises_completed: exercisesCompleted
-    })
-  })
-}
+      exercises_completed: exercisesCompleted,
+    });
+  });
+};
 
 /**
  * Subscription Events
  */
-export const trackSubscriptionStarted = () => {
+export const trackSubscriptionStarted = (): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'begin_checkout', {
       currency: 'USD',
       value: 10.00,
-      items: [{
-        item_id: 'neurafit_pro_monthly',
-        item_name: 'NeuraFit Pro Monthly',
-        category: 'subscription',
-        price: 10.00,
-        quantity: 1
-      }]
-    })
-  })
-}
+      items: [
+        {
+          item_id: 'neurafit_pro_monthly',
+          item_name: 'NeuraFit Pro Monthly',
+          category: 'subscription',
+          price: 10.00,
+          quantity: 1,
+        },
+      ],
+    });
+  });
+};
 
-export const trackSubscriptionCompleted = (subscriptionId: string) => {
+export const trackSubscriptionCompleted = (subscriptionId: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'purchase', {
       transaction_id: subscriptionId,
       currency: 'USD',
       value: 10.00,
-      items: [{
-        item_id: 'neurafit_pro_monthly',
-        item_name: 'NeuraFit Pro Monthly',
-        category: 'subscription',
-        price: 10.00,
-        quantity: 1
-      }]
-    })
-  })
-}
+      items: [
+        {
+          item_id: 'neurafit_pro_monthly',
+          item_name: 'NeuraFit Pro Monthly',
+          category: 'subscription',
+          price: 10.00,
+          quantity: 1,
+        },
+      ],
+    });
+  });
+};
 
-export const trackFreeTrialLimitReached = (workoutCount: number) => {
+export const trackFreeTrialLimitReached = (workoutCount: number): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'free_trial_limit_reached', {
-      workout_count: workoutCount
-    })
-  })
-}
+      workout_count: workoutCount,
+    });
+  });
+};
 
 /**
  * Navigation Events
  */
-export const trackPageView = (pageName: string, pageTitle?: string) => {
+export const trackPageView = (pageName: string, pageTitle?: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'page_view', {
       page_title: pageTitle || pageName,
       page_location: window.location.href,
-      page_path: window.location.pathname
-    })
-  })
-}
+      page_path: window.location.pathname,
+    });
+  });
+};
 
-export const trackButtonClick = (buttonName: string, location: string) => {
+export const trackButtonClick = (buttonName: string, location: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'button_click', {
       button_name: buttonName,
-      location: location
-    })
-  })
-}
+      location: location,
+    });
+  });
+};
 
 /**
  * Error Tracking
  */
-export const trackError = (errorType: string, errorMessage: string, location: string) => {
+export const trackError = (errorType: string, errorMessage: string, location: string): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, 'exception', {
       description: `${errorType}: ${errorMessage}`,
       fatal: false,
-      location: location
-    })
-  })
-}
+      location: location,
+    });
+  });
+};
 
 /**
  * User Properties
  */
-export const setUserAnalyticsProperties = (userId: string, properties: {
-  experience_level?: string
-  subscription_status?: string
-  total_workouts?: number
-  signup_date?: string
-  timezone?: string
-  language?: string
-}) => {
+export const setUserAnalyticsProperties = (
+  userId: string,
+  properties: {
+    experience_level?: string;
+    subscription_status?: string;
+    total_workouts?: number;
+    signup_date?: string;
+    timezone?: string;
+    language?: string;
+  }
+): void => {
   safeAnalyticsCall(() => {
-    setUserId(analytics!, userId)
+    setUserId(analytics!, userId);
     setUserProperties(analytics!, {
       ...properties,
       // Add automatic timezone and language detection
       timezone: properties.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      language: properties.language || navigator.language
-    })
-  })
-}
+      language: properties.language || navigator.language,
+    });
+  });
+};
 
 /**
  * Custom Events
  */
-export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>) => {
+export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>): void => {
   safeAnalyticsCall(() => {
-    logEvent(analytics!, eventName, parameters)
-  })
-}
+    logEvent(analytics!, eventName, parameters);
+  });
+};
 
 /**
  * Session and Location Tracking
  */
-export const trackSessionStart = () => {
+export const trackSessionStart = (): void => {
   safeAnalyticsCall(() => {
     const sessionInfo = {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -222,52 +229,58 @@ export const trackSessionStart = () => {
       screen_resolution: `${screen.width}x${screen.height}`,
       viewport_size: `${window.innerWidth}x${window.innerHeight}`,
       user_agent: navigator.userAgent.substring(0, 100), // Truncate for analytics
-      referrer: document.referrer || 'direct'
-    }
+      referrer: document.referrer || 'direct',
+    };
 
-    logEvent(analytics!, 'session_start', sessionInfo)
-  })
-}
+    logEvent(analytics!, 'session_start', sessionInfo);
+  });
+};
 
-export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, unknown> = {}) => {
+export const trackLocationBasedEvent = (eventName: string, additionalParams: Record<string, unknown> = {}): void => {
   safeAnalyticsCall(() => {
     logEvent(analytics!, eventName, {
       ...additionalParams,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: navigator.language,
-      timestamp: Date.now()
-    })
-  })
-}
+      timestamp: Date.now(),
+    });
+  });
+};
 
 /**
  * Enhanced User Properties with Location Context
  */
-export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>) => {
+export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>): void => {
   safeAnalyticsCall(() => {
-    setUserId(analytics!, userId)
+    setUserId(analytics!, userId);
     setUserProperties(analytics!, {
-      experience_level: userProfile.experience,
+      experience_level: userProfile.experience as string | undefined,
       subscription_status: (userProfile.subscription as { status?: string })?.status || 'free',
       total_workouts: (userProfile.subscription as { workoutCount?: number })?.workoutCount || 0,
       signup_date: new Date().toISOString().split('T')[0],
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       language: navigator.language,
       primary_goals: (userProfile.goals as string[])?.slice(0, 3).join(',') || 'none',
-      equipment_access: (userProfile.equipment as unknown[])?.length || 0
-    })
-  })
-}
+      equipment_access: (userProfile.equipment as unknown[])?.length || 0,
+    });
+  });
+};
 
 /**
  * Debug function to check analytics status
  */
-export const getAnalyticsStatus = () => {
+export const getAnalyticsStatus = (): {
+  isAvailable: boolean;
+  analytics: typeof analytics;
+  userAgent: string;
+  timezone: string;
+  language: string;
+} => {
   return {
     isAvailable: isAnalyticsAvailable(),
     analytics: analytics,
     userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'server',
     timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'unknown',
-    language: typeof window !== 'undefined' ? navigator.language : 'unknown'
-  }
-}
+    language: typeof window !== 'undefined' ? navigator.language : 'unknown',
+  };
+};

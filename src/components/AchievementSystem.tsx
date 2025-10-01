@@ -1,96 +1,101 @@
-// src/components/AchievementSystem.tsx
-import React, { useMemo } from 'react'
-import { Award, Calendar, Clock, Target, TrendingUp, Zap } from 'lucide-react'
-import { convertToDate, safeFormatTimestamp } from '../utils/timestamp'
+import React, { useMemo } from 'react';
+import { Award, Calendar, Clock, Target, TrendingUp, Zap } from 'lucide-react';
+import { convertToDate, safeFormatTimestamp } from '../utils/timestamp';
 
 interface WorkoutData {
-  id: string
-  workoutType: string
-  duration: number
-  plannedDuration?: number
+  id: string;
+  workoutType: string;
+  duration: number;
+  plannedDuration?: number;
   exercises?: {
-    name: string
-    sets: number
-    reps: string | number
-    weights?: Record<number, number | null>
-    usesWeight?: boolean
-  }[]
-  timestamp?: Date | { toDate(): Date } | string
+    name: string;
+    sets: number;
+    reps: string | number;
+    weights?: Record<number, number | null>;
+    usesWeight?: boolean;
+  }[];
+  timestamp?: Date | { toDate(): Date } | string;
 }
 
 interface Achievement {
-  id: string
-  title: string
-  description: string
-  icon: React.ReactNode
-  progress: number
-  maxProgress: number
-  unlocked: boolean
-  unlockedDate?: string
-  category: 'milestone' | 'consistency' | 'strength' | 'dedication'
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  progress: number;
+  maxProgress: number;
+  unlocked: boolean;
+  unlockedDate?: string;
+  category: 'milestone' | 'consistency' | 'strength' | 'dedication';
 }
 
 interface AchievementSystemProps {
-  workouts: WorkoutData[]
+  workouts: WorkoutData[];
 }
 
 export function AchievementSystem({ workouts }: AchievementSystemProps) {
   const achievements = useMemo((): Achievement[] => {
-    const totalWorkouts = workouts.length
-    const totalDuration = workouts.reduce((sum, w) => sum + (w.duration || 0), 0)
+    const validWorkouts = workouts.filter((w) => w.timestamp != null);
+    const sortedWorkouts = [...validWorkouts].sort(
+      (a, b) => convertToDate(a.timestamp!).getTime() - convertToDate(b.timestamp!).getTime()
+    );
+    const totalWorkouts = validWorkouts.length;
+    const totalDuration = workouts.reduce((sum, w) => sum + (w.duration || 0), 0);
     const totalVolume = workouts.reduce((sum, workout) => {
-      return sum + (workout.exercises?.reduce((exerciseSum, exercise) => {
-        if (exercise.weights && exercise.usesWeight) {
-          const weights = Object.values(exercise.weights).filter(w => w && w > 0) as number[]
-          const reps = typeof exercise.reps === 'number' ? exercise.reps : parseInt(exercise.reps) || 10
-          return exerciseSum + weights.reduce((weightSum, weight) => weightSum + (weight * reps), 0)
-        }
-        return exerciseSum
-      }, 0) || 0)
-    }, 0)
+      return (
+        sum +
+        (workout.exercises?.reduce((exerciseSum, exercise) => {
+          if (exercise.weights && exercise.usesWeight) {
+            const weights = Object.values(exercise.weights).filter((w) => w && w > 0) as number[];
+            const reps = typeof exercise.reps === 'number' ? exercise.reps : parseInt(exercise.reps) || 10;
+            return exerciseSum + weights.reduce((weightSum, weight) => weightSum + weight * reps, 0);
+          }
+          return exerciseSum;
+        }, 0) || 0)
+      );
+    }, 0);
 
     // Get max weight for any exercise
     const maxWeight = workouts.reduce((max, workout) => {
-      const workoutMax = workout.exercises?.reduce((exerciseMax, exercise) => {
-        if (exercise.weights && exercise.usesWeight) {
-          const weights = Object.values(exercise.weights).filter(w => w && w > 0) as number[]
-          return Math.max(exerciseMax, ...weights)
-        }
-        return exerciseMax
-      }, 0) || 0
-      return Math.max(max, workoutMax)
-    }, 0)
+      const workoutMax =
+        workout.exercises?.reduce((exerciseMax, exercise) => {
+          if (exercise.weights && exercise.usesWeight) {
+            const weights = Object.values(exercise.weights).filter((w) => w && w > 0) as number[];
+            return Math.max(exerciseMax, ...weights);
+          }
+          return exerciseMax;
+        }, 0) || 0;
+      return Math.max(max, workoutMax);
+    }, 0);
 
     // Calculate consistency (workouts in last 30 days)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    const recentWorkouts = workouts.filter(w => {
-      if (!w.timestamp) return false
-      const workoutDate = convertToDate(w.timestamp)
-      return workoutDate >= thirtyDaysAgo
-    }).length
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentWorkouts = validWorkouts.filter((w) => {
+      const workoutDate = convertToDate(w.timestamp!);
+      return workoutDate >= thirtyDaysAgo;
+    }).length;
 
     // Calculate weekly consistency (last 4 weeks)
-    const weeklyWorkouts = []
+    const weeklyWorkouts: number[] = [];
     for (let i = 0; i < 4; i++) {
-      const weekStart = new Date()
-      weekStart.setDate(weekStart.getDate() - (i * 7) - weekStart.getDay())
-      weekStart.setHours(0, 0, 0, 0)
-      
-      const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekStart.getDate() + 6)
-      weekEnd.setHours(23, 59, 59, 999)
-      
-      const weekCount = workouts.filter(w => {
-        if (!w.timestamp) return false
-        const workoutDate = convertToDate(w.timestamp)
-        return workoutDate >= weekStart && workoutDate <= weekEnd
-      }).length
-      
-      weeklyWorkouts.push(weekCount)
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - i * 7 - weekStart.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const weekCount = validWorkouts.filter((w) => {
+        const workoutDate = convertToDate(w.timestamp!);
+        return workoutDate >= weekStart && workoutDate <= weekEnd;
+      }).length;
+
+      weeklyWorkouts.push(weekCount);
     }
 
-    const consistentWeeks = weeklyWorkouts.filter(count => count >= 3).length
+    const consistentWeeks = weeklyWorkouts.filter((count) => count >= 3).length;
 
     return [
       // Milestone Achievements
@@ -102,8 +107,8 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 1),
         maxProgress: 1,
         unlocked: totalWorkouts >= 1,
-        unlockedDate: totalWorkouts >= 1 ? safeFormatTimestamp(workouts[workouts.length - 1]?.timestamp) : undefined,
-        category: 'milestone'
+        unlockedDate: totalWorkouts >= 1 ? safeFormatTimestamp(sortedWorkouts[0]?.timestamp) : undefined,
+        category: 'milestone',
       },
       {
         id: 'workout_5',
@@ -113,8 +118,8 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 5),
         maxProgress: 5,
         unlocked: totalWorkouts >= 5,
-        unlockedDate: totalWorkouts >= 5 ? safeFormatTimestamp(workouts[Math.max(0, workouts.length - 5)]?.timestamp) : undefined,
-        category: 'milestone'
+        unlockedDate: totalWorkouts >= 5 ? safeFormatTimestamp(sortedWorkouts[4]?.timestamp) : undefined,
+        category: 'milestone',
       },
       {
         id: 'workout_25',
@@ -124,8 +129,8 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 25),
         maxProgress: 25,
         unlocked: totalWorkouts >= 25,
-        unlockedDate: totalWorkouts >= 25 ? safeFormatTimestamp(workouts[Math.max(0, workouts.length - 25)]?.timestamp) : undefined,
-        category: 'milestone'
+        unlockedDate: totalWorkouts >= 25 ? safeFormatTimestamp(sortedWorkouts[24]?.timestamp) : undefined,
+        category: 'milestone',
       },
       {
         id: 'workout_50',
@@ -135,8 +140,8 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         progress: Math.min(totalWorkouts, 50),
         maxProgress: 50,
         unlocked: totalWorkouts >= 50,
-        unlockedDate: totalWorkouts >= 50 ? safeFormatTimestamp(workouts[Math.max(0, workouts.length - 50)]?.timestamp) : undefined,
-        category: 'milestone'
+        unlockedDate: totalWorkouts >= 50 ? safeFormatTimestamp(sortedWorkouts[49]?.timestamp) : undefined,
+        category: 'milestone',
       },
 
       // Consistency Achievements
@@ -149,7 +154,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 4,
         unlocked: consistentWeeks >= 4,
         unlockedDate: consistentWeeks >= 4 ? 'Recently achieved' : undefined,
-        category: 'consistency'
+        category: 'consistency',
       },
       {
         id: 'monthly_master',
@@ -160,7 +165,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 12,
         unlocked: recentWorkouts >= 12,
         unlockedDate: recentWorkouts >= 12 ? 'Recently achieved' : undefined,
-        category: 'consistency'
+        category: 'consistency',
       },
 
       // Strength Achievements
@@ -173,7 +178,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 100,
         unlocked: maxWeight >= 100,
         unlockedDate: maxWeight >= 100 ? 'Recently achieved' : undefined,
-        category: 'strength'
+        category: 'strength',
       },
       {
         id: 'heavy_lifter',
@@ -184,7 +189,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 200,
         unlocked: maxWeight >= 200,
         unlockedDate: maxWeight >= 200 ? 'Recently achieved' : undefined,
-        category: 'strength'
+        category: 'strength',
       },
       {
         id: 'powerhouse',
@@ -195,7 +200,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 300,
         unlocked: maxWeight >= 300,
         unlockedDate: maxWeight >= 300 ? 'Recently achieved' : undefined,
-        category: 'strength'
+        category: 'strength',
       },
 
       // Dedication Achievements
@@ -208,7 +213,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 300,
         unlocked: totalDuration >= 300,
         unlockedDate: totalDuration >= 300 ? 'Recently achieved' : undefined,
-        category: 'dedication'
+        category: 'dedication',
       },
       {
         id: 'time_dedication_20h',
@@ -219,7 +224,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 1200,
         unlocked: totalDuration >= 1200,
         unlockedDate: totalDuration >= 1200 ? 'Recently achieved' : undefined,
-        category: 'dedication'
+        category: 'dedication',
       },
       {
         id: 'volume_master',
@@ -230,20 +235,20 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         maxProgress: 50000,
         unlocked: totalVolume >= 50000,
         unlockedDate: totalVolume >= 50000 ? 'Recently achieved' : undefined,
-        category: 'dedication'
-      }
-    ]
-  }, [workouts])
+        category: 'dedication',
+      },
+    ];
+  }, [workouts]);
 
-  const unlockedAchievements = achievements.filter(a => a.unlocked)
-  const lockedAchievements = achievements.filter(a => !a.unlocked)
+  const unlockedAchievements = achievements.filter((a) => a.unlocked);
+  const lockedAchievements = achievements.filter((a) => !a.unlocked);
 
   const categoryColors = {
     milestone: 'from-blue-50 to-indigo-50 border-blue-200 text-blue-600',
     consistency: 'from-green-50 to-emerald-50 border-green-200 text-green-600',
     strength: 'from-red-50 to-orange-50 border-red-200 text-red-600',
-    dedication: 'from-purple-50 to-pink-50 border-purple-200 text-purple-600'
-  }
+    dedication: 'from-purple-50 to-pink-50 border-purple-200 text-purple-600',
+  };
 
   if (workouts.length === 0) {
     return (
@@ -254,7 +259,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
           <p className="text-gray-600">Complete your first workout to start earning achievements!</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -276,7 +281,7 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
           </span>
         </div>
         <div className="w-full bg-yellow-200 rounded-full h-3">
-          <div 
+          <div
             className="bg-gradient-to-r from-yellow-500 to-orange-500 h-3 rounded-full transition-all duration-500"
             style={{ width: `${(unlockedAchievements.length / achievements.length) * 100}%` }}
           />
@@ -285,11 +290,12 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
 
       <div className="space-y-4">
         {/* Unlocked Achievements */}
-        {unlockedAchievements.map(achievement => (
-          <div key={achievement.id} className={`flex items-center gap-4 p-4 bg-gradient-to-r rounded-xl border ${categoryColors[achievement.category]}`}>
-            <div className="text-current">
-              {achievement.icon}
-            </div>
+        {unlockedAchievements.map((achievement) => (
+          <div
+            key={achievement.id}
+            className={`flex items-center gap-4 p-4 bg-gradient-to-r rounded-xl border ${categoryColors[achievement.category]}`}
+          >
+            <div className="text-current">{achievement.icon}</div>
             <div className="flex-1">
               <div className="font-semibold text-gray-900">{achievement.title}</div>
               <div className="text-sm text-gray-600">{achievement.description}</div>
@@ -304,21 +310,21 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         ))}
 
         {/* Locked Achievements */}
-        {lockedAchievements.map(achievement => (
+        {lockedAchievements.map((achievement) => (
           <div key={achievement.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <div className="text-gray-400">
-              {achievement.icon}
-            </div>
+            <div className="text-gray-400">{achievement.icon}</div>
             <div className="flex-1">
               <div className="font-semibold text-gray-700">{achievement.title}</div>
               <div className="text-sm text-gray-500">{achievement.description}</div>
               <div className="mt-2">
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                   <span>Progress</span>
-                  <span>{achievement.progress} / {achievement.maxProgress}</span>
+                  <span>
+                    {achievement.progress} / {achievement.maxProgress}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(achievement.progress / achievement.maxProgress) * 100}%` }}
                   />
@@ -329,5 +335,5 @@ export function AchievementSystem({ workouts }: AchievementSystemProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }

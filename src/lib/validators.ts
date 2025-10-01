@@ -1,7 +1,7 @@
 // Common validation utilities
 // Extracts repeated validation logic into reusable functions
 
-import { handleValidationError } from './errorHandler.tsx'
+import { handleValidationError } from './error-handler-utils'
 
 // Validation result interface
 export interface ValidationResult {

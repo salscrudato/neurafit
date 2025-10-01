@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  useStripe, 
-  useElements, 
+import {
+  useStripe,
+  useElements,
   PaymentElement,
-  Elements 
+  Elements
 } from '@stripe/react-stripe-js'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { stripePromise, STRIPE_CONFIG } from '../lib/stripe-config'
 import { createPaymentIntent } from '../lib/subscription'
 import { trackSubscriptionStarted, trackSubscriptionCompleted } from '../lib/firebase-analytics'
+import { subscriptionFixManager } from '../lib/subscription-fix-final'
+
 
 interface PaymentFormProps {
   priceId: string
@@ -21,14 +23,18 @@ interface PaymentFormInnerProps {
   onSuccess: () => void
   onError: (_error: string) => void
   onCancel: () => void
+  subscriptionId: string
 }
 
-function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProps) {
+function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSubscriptionId }: PaymentFormInnerProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string>('')
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info'>('info')
+  const [activationMethod, setActivationMethod] = useState<string>('')
+  const [localSubscriptionId] = useState<string>('')
+
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -39,11 +45,12 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProp
 
     setLoading(true)
     setMessage('')
+    setActivationMethod('')
 
     // Track subscription attempt
     trackSubscriptionStarted()
 
-    const { error } = await stripe.confirmPayment({
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/profile?payment=success`,
@@ -61,17 +68,63 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProp
         setMessageType('error')
         onError('An unexpected error occurred.')
       }
-    } else {
-      setMessage('Payment successful! Activating subscription...')
-      setMessageType('success')
+      setLoading(false)
+      return
+    }
 
-      // Track successful subscription
-      trackSubscriptionCompleted('stripe_payment_' + Date.now())
+    // Payment succeeded - now use robust activation
+    setMessage('Payment successful! Activating subscription...')
+    setMessageType('success')
 
-      // Payment successful - webhook will handle subscription activation
-      setMessage('Subscription activated successfully!')
+    // Track successful subscription
+    trackSubscriptionCompleted('stripe_payment_' + Date.now())
 
-      onSuccess()
+    try {
+      // Extract subscription ID from payment intent metadata or use stored value
+      const currentSubscriptionId = propSubscriptionId || localSubscriptionId || (paymentIntent as { metadata?: { subscription_id?: string } })?.metadata?.subscription_id || ''
+
+      if (!currentSubscriptionId) {
+        throw new Error('No subscription ID found')
+      }
+
+      console.log(`🚀 Starting robust activation for subscription: ${currentSubscriptionId}`)
+
+      // Use subscription fix manager
+      const result = await subscriptionFixManager.fixSubscription(currentSubscriptionId)
+
+      if (result.success) {
+        setMessage(`Subscription activated successfully! (${result.method})`)
+        setActivationMethod(result.method)
+        setMessageType('success')
+
+        console.log(`✅ Subscription activated via ${result.method}`)
+
+        // Small delay to let the UI update
+        setTimeout(() => {
+          onSuccess()
+        }, 1500)
+      } else {
+        // Even if robust activation fails, the payment succeeded
+        setMessage('Payment processed! Your subscription will be activated shortly.')
+        setMessageType('info')
+        setActivationMethod(result.method)
+
+        console.log(`⚠️ Robust activation failed via ${result.method}: ${result.error}`)
+
+        // Still call onSuccess - user paid successfully
+        setTimeout(() => {
+          onSuccess()
+        }, 3000)
+      }
+    } catch (error) {
+      console.error('Error during robust subscription activation:', error)
+      setMessage('Payment processed! Your subscription will be activated shortly.')
+      setMessageType('info')
+
+      // Still call onSuccess - payment was successful
+      setTimeout(() => {
+        onSuccess()
+      }, 3000)
     }
 
     setLoading(false)
@@ -103,7 +156,14 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProp
           `}>
             {messageType === 'error' && <AlertCircle className="w-4 h-4" />}
             {messageType === 'success' && <CheckCircle className="w-4 h-4" />}
-            {message}
+            <div className="flex-1">
+              {message}
+              {activationMethod && (
+                <div className="text-xs opacity-75 mt-1">
+                  Activated via: {activationMethod}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -134,12 +194,16 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProp
         </div>
       </form>
 
+
+
       {/* Security Notice */}
       <div className="mt-6 text-center">
         <p className="text-xs text-gray-500">
           🔒 Your payment information is secure and encrypted
         </p>
       </div>
+
+
     </div>
   )
 }
@@ -148,8 +212,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
   const [clientSecret, setClientSecret] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-
-
+  const [subscriptionId, setSubscriptionId] = useState<string>('')
 
   useEffect(() => {
     // Prevent multiple initializations
@@ -170,6 +233,9 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         setLoading(true)
         const result = await createPaymentIntent(priceId)
         setClientSecret(result.clientSecret)
+        setSubscriptionId(result.subscriptionId)
+
+        console.log(`✅ Payment initialized - Subscription ID: ${result.subscriptionId}`)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
         setError(errorMessage)
@@ -262,6 +328,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         onSuccess={onSuccess}
         onError={onError}
         onCancel={onCancel}
+        subscriptionId={subscriptionId}
       />
     </Elements>
   )

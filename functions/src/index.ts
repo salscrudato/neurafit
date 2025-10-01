@@ -1,25 +1,37 @@
-import { onRequest } from "firebase-functions/v2/https"
-import { defineSecret } from "firebase-functions/params"
-import type { Request, Response } from "express"
-import OpenAI from "openai"
-import { getAdaptiveState, calculateRecentCompletionRate, generateProgressionNote } from "./lib/personalization"
-import { incrementWorkoutCount } from "./lib/stripe"
+import { onRequest } from 'firebase-functions/v2/https';
+import { defineSecret } from 'firebase-functions/params';
+import type { Request, Response } from 'express';
+import OpenAI from 'openai';
+import { getAdaptiveState, calculateRecentCompletionRate, generateProgressionNote } from './lib/personalization';
+import { incrementWorkoutCount } from './lib/stripe';
 
 // Export subscription functions
-export { stripeWebhook } from "./stripe-webhooks"
+export { stripeWebhook } from './stripe-webhooks';
 export {
   createPaymentIntent,
   cancelUserSubscription,
   reactivateUserSubscription,
   getCustomerPortalUrl,
   getSubscriptionDetails,
-  getBillingHistory
-} from "./subscription-functions"
-export { cleanupSubscriptions } from "./cleanup-subscriptions"
+  getBillingHistory,
+} from './subscription-functions';
+export { cleanupSubscriptions } from './cleanup-subscriptions';
+export {
+  getStripeSubscriptionStatus,
+  manualSyncSubscription,
+  checkWebhookDelivery,
+  forceWebhookProcessing,
+  debugSubscription,
+} from './subscription-debug';
 
+// Export emergency fix functions
+export {
+  emergencySubscriptionFix,
+  debugAllSubscriptions
+} from './emergency-subscription-fix';
 
 // Define the secret
-const openaiApiKey = defineSecret("OPENAI_API_KEY")
+const openaiApiKey = defineSecret('OPENAI_API_KEY');
 
 /**
  * AI-powered workout generator function
@@ -27,30 +39,30 @@ const openaiApiKey = defineSecret("OPENAI_API_KEY")
 export const generateWorkout = onRequest(
   {
     cors: [
-      "http://localhost:5173",                  // local dev
-      "https://neurafit-ai-2025.web.app",       // Firebase Hosting
-      "https://neurafit-ai-2025.firebaseapp.com"
+      'http://localhost:5173', // local dev
+      'https://neurafit-ai-2025.web.app', // Firebase Hosting
+      'https://neurafit-ai-2025.firebaseapp.com',
     ],
-    region: "us-central1",
+    region: 'us-central1',
     secrets: [openaiApiKey],
   },
   async (req: Request, res: Response): Promise<void> => {
     // Handle preflight
-    if (req.method === "OPTIONS") {
-      res.status(204).send("")
-      return
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
     }
 
-    if (req.method !== "POST") {
-      res.status(405).send("Method Not Allowed")
-      return
+    if (req.method !== 'POST') {
+      res.status(405).send('Method Not Allowed');
+      return;
     }
 
     try {
       // Initialize OpenAI client with the secret value
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-      })
+      });
 
       const {
         experience,
@@ -63,99 +75,136 @@ export const generateWorkout = onRequest(
         uid,
         targetIntensity,
         progressionNote,
-      } = req.body || {}
+      } = req.body as {
+        experience?: string;
+        goals?: string | string[];
+        equipment?: string | string[];
+        personalInfo?: { sex?: string; heightRange?: string; height?: string; weightRange?: string; weight?: string };
+        injuries?: { list?: string[]; notes?: string };
+        workoutType?: string;
+        duration?: number;
+        uid?: string;
+        targetIntensity?: number;
+        progressionNote?: string;
+      } || {};
 
       // Check subscription limits if uid is provided
       if (uid) {
         try {
-          const { getFirestore } = await import('firebase-admin/firestore')
-          const db = getFirestore()
+          const { getFirestore } = await import('firebase-admin/firestore');
+          const db = getFirestore();
 
-          const userDoc = await db.collection('users').doc(uid).get()
-          const userData = userDoc.data()
-          const subscription = userData?.subscription
+          const userDoc = await db.collection('users').doc(uid).get();
+          const userData = userDoc.data();
+          const subscription = userData?.subscription as { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number } | undefined;
 
-          if (subscription) {
-            const isActive = subscription.status === 'active' || subscription.status === 'trialing'
-            const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0
-            const freeWorkoutLimit = subscription.freeWorkoutLimit || 5
+          // Initialize subscription data for new users
+          if (!subscription) {
+            const initialSubscriptionData = {
+              status: 'incomplete',
+              workoutCount: 0,
+              freeWorkoutsUsed: 0,
+              freeWorkoutLimit: 5,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
+
+            await db.collection('users').doc(uid).set(
+              { subscription: initialSubscriptionData },
+              { merge: true }
+            );
+
+            console.log('Initialized subscription data for new user:', uid);
+          } else {
+            const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+            const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0;
+            const freeWorkoutLimit = subscription.freeWorkoutLimit || 5;
 
             // Check if user can generate workout
             if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {
               res.status(402).json({
-                error: "Subscription required",
-                message: "You've used all your free workouts. Please subscribe to continue.",
+                error: 'Subscription required',
+                message: 'You\'ve used all your free workouts. Please subscribe to continue.',
                 freeWorkoutsUsed,
-                freeWorkoutLimit
-              })
-              return
+                freeWorkoutLimit,
+              });
+              return;
             }
           }
         } catch (error) {
-          console.error('Error checking subscription:', error)
+          console.error('Error checking subscription:', error);
           // Continue with workout generation if subscription check fails
         }
       }
 
       // Handle adaptive personalization
-      let finalTargetIntensity = targetIntensity || 1.0
-      let finalProgressionNote = progressionNote || ''
+      let finalTargetIntensity = targetIntensity || 1.0;
+      let finalProgressionNote = progressionNote || '';
 
       // If uid provided but no targetIntensity, fetch from adaptive state
       if (uid && !targetIntensity) {
         try {
-          const adaptiveState = await getAdaptiveState(uid)
-          finalTargetIntensity = adaptiveState.difficultyScalar
+          const adaptiveState = await getAdaptiveState(uid);
+          finalTargetIntensity = adaptiveState.difficultyScalar;
 
           // Calculate recent completion rate if not available
-          let recentCompletion = adaptiveState.recentCompletionRate
+          let recentCompletion = adaptiveState.recentCompletionRate;
           if (recentCompletion === undefined) {
-            recentCompletion = await calculateRecentCompletionRate(uid)
+            recentCompletion = await calculateRecentCompletionRate(uid);
           }
 
-          finalProgressionNote = generateProgressionNote(
-            1.0, // baseline
-            finalTargetIntensity,
-            adaptiveState.lastFeedback
-          )
+          finalProgressionNote = generateProgressionNote(1.0, finalTargetIntensity, adaptiveState.lastFeedback);
         } catch (error) {
-          console.error('Error fetching adaptive state:', error)
+          console.error('Error fetching adaptive state:', error);
           // Continue with defaults
         }
       }
 
       // Get exercise recommendations, programming guidelines, and professional coaching context
-      const { getExerciseRecommendations, getProgrammingRecommendations } = await import('./lib/exerciseDatabase')
-      const { generateProfessionalPromptEnhancement } = await import('./lib/promptEnhancements')
+      const { getExerciseRecommendations, getProgrammingRecommendations } = await import('./lib/exerciseDatabase');
+      const { generateProfessionalPromptEnhancement } = await import('./lib/promptEnhancements');
+
+      // Filter out undefined values from arrays and ensure string types
+      const filteredGoals = Array.isArray(goals)
+        ? goals.filter((g): g is string => Boolean(g))
+        : [goals].filter((g): g is string => Boolean(g));
+      const filteredEquipment = Array.isArray(equipment)
+        ? equipment.filter((e): e is string => Boolean(e))
+        : [equipment].filter((e): e is string => Boolean(e));
+
+      const contextForExercises = {
+        experience,
+        goals: filteredGoals,
+        equipment: filteredEquipment,
+        injuries: injuries?.list || [],
+        workoutType,
+      };
 
       const contextForEnhancements = {
         experience,
-        goals: Array.isArray(goals) ? goals : [goals].filter(Boolean),
-        equipment: Array.isArray(equipment) ? equipment : [equipment].filter(Boolean),
+        goals: filteredGoals,
+        equipment: filteredEquipment,
         injuries: injuries?.list || [],
         workoutType,
-        duration,
+        duration: duration || 30, // Default to 30 minutes if not specified
         targetIntensity: finalTargetIntensity,
-        progressionNote: finalProgressionNote
-      }
+        progressionNote: finalProgressionNote,
+      };
 
-      const exerciseRecommendations = getExerciseRecommendations(contextForEnhancements)
-      const programmingGuidelines = getProgrammingRecommendations(
-        contextForEnhancements.goals,
-        experience || 'Beginner'
-      )
-      const professionalEnhancements = generateProfessionalPromptEnhancement(contextForEnhancements)
+      const exerciseRecommendations = getExerciseRecommendations(contextForExercises);
+      const programmingGuidelines = getProgrammingRecommendations(filteredGoals, experience || 'Beginner');
+      const professionalEnhancements = generateProfessionalPromptEnhancement(contextForEnhancements);
 
       // Build a structured prompt for GPT with professional fitness programming principles
-const prompt = `
+      const prompt = `
 You are a NASM-certified personal trainer with 10+ years of experience. Create a ${duration}-minute ${workoutType} workout following evidence-based fitness programming principles.
 
 CLIENT PROFILE:
-- Experience: ${experience || "—"}
-- Primary Goals: ${Array.isArray(goals) ? goals.join(", ") : goals || "—"}
-- Available Equipment: ${Array.isArray(equipment) ? equipment.join(", ") : equipment || "None"}
-- Demographics: ${personalInfo?.sex || "—"}, ${personalInfo?.heightRange || personalInfo?.height || "—"}, ${personalInfo?.weightRange || personalInfo?.weight || "—"}
-- Injuries/Limitations: ${(injuries?.list?.length ? injuries.list.join(", ") : "None")} ${injuries?.notes ? "(" + injuries.notes + ")" : ""}
+- Experience: ${experience || '—'}
+- Primary Goals: ${Array.isArray(goals) ? goals.join(', ') : goals || '—'}
+- Available Equipment: ${Array.isArray(equipment) ? equipment.join(', ') : equipment || 'None'}
+- Demographics: ${personalInfo?.sex || '—'}, ${personalInfo?.heightRange || personalInfo?.height || '—'}, ${personalInfo?.weightRange || personalInfo?.weight || '—'}
+- Injuries/Limitations: ${(injuries?.list?.length ? injuries.list.join(', ') : 'None')} ${injuries?.notes ? '(' + injuries.notes + ')' : ''}
 
 EVIDENCE-BASED PROGRAMMING GUIDELINES:
 - Sets: ${programmingGuidelines.sets?.[0]}-${programmingGuidelines.sets?.[1]} per exercise
@@ -174,11 +223,12 @@ CRITICAL REST PERIOD REQUIREMENTS (EXACT VALUES REQUIRED):
 - Higher intensity exercises need MORE rest, not less
 
 RECOMMENDED EXERCISE CATEGORIES:
-${exerciseRecommendations.length > 0 ?
-  exerciseRecommendations.slice(0, 8).map(ex =>
-    `- ${ex.name} (${ex.category}, ${ex.difficulty}): ${ex.muscleGroups.join(', ')}`
-  ).join('\n') :
-  '- Use fundamental movement patterns: squat, hinge, push, pull, carry, lunge'
+${exerciseRecommendations.length > 0
+    ? exerciseRecommendations
+      .slice(0, 8)
+      .map((ex) => `- ${ex.name} (${ex.category}, ${ex.difficulty}): ${ex.muscleGroups.join(', ')}`)
+      .join('\n')
+    : '- Use fundamental movement patterns: squat, hinge, push, pull, carry, lunge'
 }
 
 ADAPTIVE INTENSITY SCALING:
@@ -249,67 +299,85 @@ CRITICAL REQUIREMENTS:
 - Consider energy system demands and fatigue management throughout session
 - REST PERIODS ARE CRITICAL: Use the exact rest period guidelines above - these values are used directly in the app timer
 - Example rest periods: Squats=150s, Bicep Curls=75s, Jumping Jacks=60s, Arm Circles=30s
-`.trim()
+`.trim();
 
       // Call OpenAI
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: 'gpt-4o-mini',
         temperature: 0.7,
         messages: [
           {
-            role: "system",
-            content: "You are a precise fitness coach that only outputs valid JSON.",
+            role: 'system',
+            content: 'You are a precise fitness coach that only outputs valid JSON.',
           },
-          { role: "user", content: prompt },
+          { role: 'user', content: prompt },
         ],
-      })
+      });
 
-      const text = completion.choices?.[0]?.message?.content ?? ""
+      const text = completion.choices?.[0]?.message?.content ?? '';
 
       // Validate JSON output
       try {
-        const json = JSON.parse(text)
+        const json = JSON.parse(text) as {
+          exercises: {
+            name: string;
+            description: string;
+            sets: number;
+            reps: number | string;
+            formTips: string[];
+            safetyTips: string[];
+            restSeconds: number;
+            usesWeight: boolean;
+            muscleGroups: string[];
+            difficulty: string;
+          }[];
+          workoutSummary: {
+            totalVolume: string;
+            primaryFocus: string;
+            expectedRPE: string;
+          };
+        };
 
         // Professional workout validation and quality scoring
-        const { validateWorkoutPlan } = await import('./lib/exerciseValidation')
-        const { scoreWorkoutQuality } = await import('./lib/workoutQualityScorer')
+        const { validateWorkoutPlan } = await import('./lib/exerciseValidation');
+        const { scoreWorkoutQuality } = await import('./lib/workoutQualityScorer');
 
         const userProfileForValidation = {
           experience,
           injuries: injuries?.list || [],
-          duration,
-          goals: Array.isArray(goals) ? goals : [goals].filter(Boolean),
-          equipment: Array.isArray(equipment) ? equipment : [equipment].filter(Boolean),
-          workoutType
-        }
+          duration: duration || 30, // Default to 30 minutes if not specified
+          goals: filteredGoals,
+          equipment: filteredEquipment,
+          workoutType,
+        };
 
-        const validationResult = validateWorkoutPlan(json, userProfileForValidation)
-        const qualityScore = scoreWorkoutQuality(json, userProfileForValidation)
+        const validationResult = validateWorkoutPlan(json, userProfileForValidation);
+        const qualityScore = scoreWorkoutQuality(json, userProfileForValidation);
 
         // Log validation and quality metrics for monitoring
-        console.info('Workout Quality Score:', qualityScore.overall, qualityScore.breakdown)
+        console.info('Workout Quality Score:', qualityScore.overall, qualityScore.breakdown);
 
         if (validationResult.errors.length > 0) {
-          console.warn('Workout validation errors:', validationResult.errors)
+          console.warn('Workout validation errors:', validationResult.errors);
         }
         if (validationResult.warnings.length > 0) {
-          console.info('Workout validation warnings:', validationResult.warnings)
+          console.info('Workout validation warnings:', validationResult.warnings);
         }
 
         // Reject workouts with critical safety issues or very low quality
         if (!validationResult.isValid) {
-          console.error('Generated workout failed safety validation:', validationResult.errors)
+          console.error('Generated workout failed safety validation:', validationResult.errors);
           res.status(502).json({
-            error: "Generated workout failed safety validation",
+            error: 'Generated workout failed safety validation',
             validationErrors: validationResult.errors,
-            raw: text
-          })
-          return
+            raw: text,
+          });
+          return;
         }
 
         // Warn about low-quality workouts but don't reject (for now)
         if (qualityScore.overall < 60) {
-          console.warn('Generated workout has low quality score:', qualityScore.overall, qualityScore.feedback)
+          console.warn('Generated workout has low quality score:', qualityScore.overall, qualityScore.feedback);
         }
 
         // Add metadata to response including validation and quality results
@@ -320,38 +388,38 @@ CRITICAL REQUIREMENTS:
             progressionNote: finalProgressionNote || undefined,
             validation: {
               warnings: validationResult.warnings,
-              suggestions: validationResult.suggestions
+              suggestions: validationResult.suggestions,
             },
             qualityScore: {
               overall: qualityScore.overall,
               breakdown: qualityScore.breakdown,
               feedback: qualityScore.feedback,
-              recommendations: qualityScore.recommendations
-            }
-          }
-        }
+              recommendations: qualityScore.recommendations,
+            },
+          },
+        };
 
         // Increment workout count after successful generation
         if (uid) {
           try {
-            await incrementWorkoutCount(uid)
+            await incrementWorkoutCount(uid);
           } catch (error) {
-            console.error('Error incrementing workout count:', error)
+            console.error('Error incrementing workout count:', error);
             // Don't fail the request if workout count increment fails
           }
         }
 
-        res.json(response)
-        return
+        res.json(response);
+        return;
       } catch (parseError) {
-        console.error('JSON parsing error:', parseError)
-        res.status(502).json({ error: "Bad AI JSON", raw: text })
-        return
+        console.error('JSON parsing error:', parseError);
+        res.status(502).json({ error: 'Bad AI JSON', raw: text });
+        return;
       }
     } catch (e) {
-      console.error("Workout generation error", e)
-      res.status(500).json({ error: "Internal Server Error" })
-      return
+      console.error('Workout generation error', e);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
     }
   }
-)
+);

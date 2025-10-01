@@ -47,7 +47,7 @@ interface SEOMetrics {
 class SEOTracker {
   private config: SEOTrackingConfig
   private metrics: SEOMetrics
-  private trackingQueue: Array<{ event: string; data: any; timestamp: number }> = []
+  private trackingQueue: Array<{ event: string; data: Record<string, unknown>; timestamp: number }> = []
 
   constructor(config: SEOTrackingConfig = {}) {
     this.config = {
@@ -118,9 +118,9 @@ class SEOTracker {
     document.head.appendChild(script)
 
     // Initialize gtag
-    ;(window as any).dataLayer = (window as any).dataLayer || []
-    function gtag(...args: any[]) {
-      ;(window as any).dataLayer.push(args)
+    ;(window as { dataLayer?: unknown[] }).dataLayer = (window as { dataLayer?: unknown[] }).dataLayer || []
+    function gtag(...args: unknown[]) {
+      ;(window as unknown as { dataLayer: unknown[] }).dataLayer.push(args)
     }
     
     gtag('js', new Date())
@@ -136,7 +136,7 @@ class SEOTracker {
     })
 
     // Make gtag globally available
-    ;(window as any).gtag = gtag
+    ;(window as { gtag?: (..._args: unknown[]) => void }).gtag = gtag
   }
 
   private async trackCoreWebVitals() {
@@ -162,7 +162,7 @@ class SEOTracker {
 
         try {
           observer.observe({ entryTypes: ['paint'] })
-        } catch (e) {
+        } catch {
           // Observer not supported
         }
       }
@@ -342,8 +342,8 @@ class SEOTracker {
       timestamp: Date.now()
     })
 
-    if ((window as any).gtag) {
-      (window as any).gtag('event', action, eventData)
+    if ((window as { gtag?: (..._args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (..._args: unknown[]) => void }).gtag('event', action, eventData)
     }
 
     if (this.config.enableDebugMode) {
@@ -359,8 +359,8 @@ class SEOTracker {
       timestamp: Date.now()
     }
 
-    if ((window as any).gtag) {
-      (window as any).gtag('event', 'conversion', conversionData)
+    if ((window as { gtag?: (..._args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (..._args: unknown[]) => void }).gtag('event', 'conversion', conversionData)
     }
 
     this.trackEvent('conversion', conversionName, data)

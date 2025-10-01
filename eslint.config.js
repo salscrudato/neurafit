@@ -66,9 +66,18 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node,
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin
     },
     rules: {
-      ...js.configs.recommended.rules
+      ...js.configs.recommended.rules,
+      ...tseslint.configs.recommended.rules
     }
   }
 ]

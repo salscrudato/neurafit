@@ -1,82 +1,97 @@
-import { useEffect, Suspense, lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, Suspense, lazy } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
-import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary'
-import LoadingSpinner from './components/LoadingSpinner'
+import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
+import SubscriptionPersistenceGuard from './components/SubscriptionPersistenceGuard';
+import SubscriptionHealthMonitor from './components/SubscriptionHealthMonitor';
+import SubscriptionFixIntegration from './components/SubscriptionFixIntegration';
 
 // Eager-loaded critical pages
-import Auth from './pages/Auth'
-import Dashboard from './pages/Dashboard'
+import Auth from './pages/Auth';
+import Dashboard from './pages/Dashboard';
 
 // Lazy-loaded non-critical pages
-const Onboarding = lazy(() => import('./pages/Onboarding'))
-const Generate = lazy(() => import('./pages/Generate'))
-const Preview = lazy(() => import('./pages/workout/Preview'))
-const Exercise = lazy(() => import('./pages/workout/Exercise'))
-const Rest = lazy(() => import('./pages/workout/Rest'))
-const Complete = lazy(() => import('./pages/workout/Complete'))
-const History = lazy(() => import('./pages/History'))
-const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'))
-const Profile = lazy(() => import('./pages/Profile'))
-const Subscription = lazy(() => import('./pages/Subscription'))
-const Terms = lazy(() => import('./pages/Terms'))
-const Privacy = lazy(() => import('./pages/Privacy'))
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const Generate = lazy(() => import('./pages/Generate'));
+const Preview = lazy(() => import('./pages/workout/Preview'));
+const Exercise = lazy(() => import('./pages/workout/Exercise'));
+const Rest = lazy(() => import('./pages/workout/Rest'));
+const Complete = lazy(() => import('./pages/workout/Complete'));
+const History = lazy(() => import('./pages/History'));
+const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Subscription = lazy(() => import('./pages/Subscription'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
 
-
-
-import { AppProvider } from './providers/AppProvider'
-import { HomeGate, RequireAuth, RequireProfile } from './routes/guards'
-import { lockOrientation, preventZoom } from './utils/orientation'
-import { versionManager } from './utils/version'
-import { usePageTracking } from './hooks/useAnalytics'
-import { trackSessionStart } from './lib/firebase-analytics'
+import { AppProvider } from './providers/AppProvider';
+import { HomeGate, RequireAuth, RequireProfile } from './routes/guards';
+import { lockOrientation, preventZoom } from './utils/orientation';
+import { versionManager } from './utils/version';
+import { usePageTracking } from './hooks/useAnalytics';
+import { trackSessionStart } from './lib/firebase-analytics';
 
 function AppContent() {
   // Automatically track page views
-  usePageTracking()
+  usePageTracking();
 
   // Handle mobile optimizations, version management, and analytics on mount
   useEffect(() => {
-    const cleanupOrientation = lockOrientation()
-    const cleanupZoom = preventZoom()
+    const cleanupOrientation = lockOrientation();
+    const cleanupZoom = preventZoom();
 
     // Track session start with location context
-    trackSessionStart()
+    trackSessionStart();
 
     // Manage version information
     if (versionManager.isFirstRun()) {
-      console.log('First run or updated version detected')
-      versionManager.storeVersionInfo()
+      console.log('First run or updated version detected');
+      versionManager.storeVersionInfo();
     }
 
     // Start periodic version checking in production
     if (process.env.NODE_ENV === 'production') {
-      versionManager.startVersionChecking(300000) // 5 minutes
+      versionManager.startVersionChecking(300000); // 5 minutes
     }
 
     // Event listener for version updates
     const handleVersionUpdate = () => {
-      console.log('Version update detected by version manager')
-    }
+      console.log('Version update detected by version manager');
+    };
 
-    window.addEventListener('versionUpdate', handleVersionUpdate)
+    window.addEventListener('versionUpdate', handleVersionUpdate);
 
     // Cleanup on unmount
     return () => {
-      cleanupOrientation()
-      cleanupZoom()
-      versionManager.stopVersionChecking()
-      window.removeEventListener('versionUpdate', handleVersionUpdate)
-    }
-  }, [])
+      cleanupOrientation();
+      cleanupZoom();
+      versionManager.stopVersionChecking();
+      window.removeEventListener('versionUpdate', handleVersionUpdate);
+    };
+  }, []);
 
   return (
     <CriticalErrorBoundary>
       <div className="min-h-screen">
         <Routes>
           {/* Public legal pages */}
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
+          <Route
+            path="/terms"
+            element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <Terms />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <Privacy />
+              </Suspense>
+            }
+          />
 
           {/* Landing route: determines user redirection */}
           <Route path="/" element={<HomeGate authPage={<Auth />} />} />
@@ -215,14 +230,21 @@ function AppContent() {
             }
           />
 
-
-
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        {/* Final Subscription Fix Integration - Simple and reliable */}
+        <SubscriptionFixIntegration />
+
+        {/* Subscription Health Monitoring - Robust auto-detection and fixing */}
+        <SubscriptionHealthMonitor />
+
+        {/* Legacy Subscription Persistence Guard - Backup system */}
+        <SubscriptionPersistenceGuard />
       </div>
     </CriticalErrorBoundary>
-  )
+  );
 }
 
 export default function App() {
@@ -230,5 +252,5 @@ export default function App() {
     <AppProvider>
       <AppContent />
     </AppProvider>
-  )
+  );
 }

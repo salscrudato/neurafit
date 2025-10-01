@@ -108,36 +108,36 @@ export interface PerformanceMetrics {
 // Actions interface
 export interface AppActions {
   // Auth actions
-  setUser: (user: User | null) => void
-  setProfile: (profile: UserProfile | null) => void
-  setAuthStatus: (status: AppState['authStatus']) => void
+  setUser: (_user: User | null) => void
+  setProfile: (_profile: UserProfile | null) => void
+  setAuthStatus: (_status: AppState['authStatus']) => void
 
   // Subscription actions
-  setSubscription: (subscription: UserSubscription | null) => void
-  setSubscriptionLoading: (loading: boolean) => void
+  setSubscription: (_subscription: UserSubscription | null) => void
+  setSubscriptionLoading: (_loading: boolean) => void
 
   // Workout actions
-  startWorkout: (plan: WorkoutPlan, type: string, duration: number) => void
-  updateWorkoutProgress: (exerciseIndex: number, setIndex: number) => void
-  updateWeight: (exerciseIndex: number, setIndex: number, weight: number | null) => void
+  startWorkout: (_plan: WorkoutPlan, _type: string, _duration: number) => void
+  updateWorkoutProgress: (_exerciseIndex: number, _setIndex: number) => void
+  updateWeight: (_exerciseIndex: number, _setIndex: number, _weight: number | null) => void
   completeWorkout: () => void
   clearWorkout: () => void
   
   // Data persistence actions
-  addToHistory: (workout: WorkoutHistoryItem) => void
+  addToHistory: (_workout: WorkoutHistoryItem) => void
   syncPendingOperations: () => Promise<void>
-  addPendingOperation: (operation: Omit<PendingOperation, 'id' | 'timestamp' | 'retryCount'>) => void
+  addPendingOperation: (_operation: Omit<PendingOperation, 'id' | 'timestamp' | 'retryCount'>) => void
 
   // Error handling actions
-  addError: (error: Omit<AppError, 'id' | 'timestamp' | 'resolved'>) => void
-  resolveError: (errorId: string) => void
+  addError: (_error: Omit<AppError, 'id' | 'timestamp' | 'resolved'>) => void
+  resolveError: (_errorId: string) => void
   clearErrors: () => void
 
   // Performance actions
-  updatePerformanceMetrics: (metrics: Partial<PerformanceMetrics>) => void
+  updatePerformanceMetrics: (_metrics: Partial<PerformanceMetrics>) => void
 
   // Utility actions
-  setOnlineStatus: (isOnline: boolean) => void
+  setOnlineStatus: (_isOnline: boolean) => void
   updateLastSyncTime: () => void
   reset: () => void
 }

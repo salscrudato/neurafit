@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useApp } from '../providers/AppProvider'
+import { useApp } from '../providers/app-provider-utils'
 import type { ReactNode } from 'react'
 
 // Landing gate at "/"

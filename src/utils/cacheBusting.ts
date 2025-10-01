@@ -73,8 +73,8 @@ class CacheBustingManager {
   }
 
   // Enhanced fetch with aggressive cache busting
-  async fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+  async fetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url
     const bustedUrl = this.bustUrl(url)
     
     const headers = {
@@ -259,7 +259,14 @@ class CacheBustingManager {
         await registration.update()
         
         if (registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+          try {
+            const { sendSkipWaitingMessage } = await import('./service-worker-messaging')
+            sendSkipWaitingMessage()
+          } catch (error) {
+            console.warn('Failed to send skip waiting message:', error)
+            // Fallback to direct message
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+          }
         }
       }
     } catch (error) {
@@ -288,7 +295,7 @@ class CacheBustingManager {
 export const cacheBustingManager = CacheBustingManager.getInstance()
 
 // Enhanced fetch function with automatic cache busting
-export const cacheBustedFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+export const cacheBustedFetch = (input: string | URL | Request, init?: RequestInit) => {
   return cacheBustingManager.fetch(input, init)
 }
 

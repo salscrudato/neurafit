@@ -3,7 +3,7 @@
 
 export interface StructuredDataConfig {
   type: 'WebApplication' | 'Article' | 'FAQPage' | 'Review' | 'Organization' | 'Product' | 'HowTo'
-  data: Record<string, any>
+  data: Record<string, unknown>
 }
 
 // Base organization data for NeuraFit

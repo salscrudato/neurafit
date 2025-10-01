@@ -271,13 +271,44 @@ async function handleCacheFirst(request) {
  */
 self.addEventListener('message', (event) => {
   try {
-    if (!event.data || typeof event.data !== 'object') {
+    // Enhanced validation with debugging info
+    if (event.data === null || event.data === undefined) {
+      console.warn('SW: Received null/undefined message data from:', event.origin || 'unknown origin')
       return
     }
 
-    const { type, payload } = event.data
+    // Handle both object and primitive message formats
+    let messageType, messagePayload
+    if (typeof event.data === 'object' && event.data !== null) {
+      // Check for Firebase message format (eventType instead of type)
+      if (event.data.eventType && !event.data.type) {
+        // This is a Firebase internal message, ignore it silently
+        return
+      }
 
-    switch (type) {
+      messageType = event.data.type
+      messagePayload = event.data.payload
+
+      // Additional validation for object messages
+      if (event.data.type === null || event.data.type === undefined) {
+        console.warn('SW: Received object message with null/undefined type:', event.data)
+        return
+      }
+    } else if (typeof event.data === 'string') {
+      messageType = event.data
+      messagePayload = null
+    } else {
+      console.warn('SW: Received message with unsupported data type:', typeof event.data, 'Value:', event.data)
+      return
+    }
+
+    // Validate message type
+    if (!messageType || typeof messageType !== 'string' || messageType.trim() === '') {
+      console.warn('SW: Received message with invalid or missing type:', messageType, 'Full data:', event.data)
+      return
+    }
+
+    switch (messageType) {
       case 'SKIP_WAITING':
         console.log('SW: Received SKIP_WAITING message')
         self.skipWaiting()
@@ -317,8 +348,26 @@ self.addEventListener('message', (event) => {
         })
         break
 
+      case 'SUBSCRIPTION_UPDATED':
+        // Handle subscription update notifications
+        console.log('SW: Received SUBSCRIPTION_UPDATED message')
+        // Broadcast to all clients
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            try {
+              client.postMessage({
+                type: 'SUBSCRIPTION_SYNC_REQUIRED',
+                payload: messagePayload
+              })
+            } catch (error) {
+              console.warn('SW: Failed to notify client about subscription update:', error)
+            }
+          })
+        })
+        break
+
       default:
-        console.log('SW: Unknown message type:', type)
+        console.log('SW: Unknown message type:', messageType)
     }
   } catch (error) {
     console.error('SW: Message handler error:', error)

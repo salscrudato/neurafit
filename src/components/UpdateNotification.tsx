@@ -1,7 +1,7 @@
 // Update Notification Component
 // Shows instant notifications when new app versions are available
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Download, X } from 'lucide-react'
 import { versionManager } from '../utils/version'
 
@@ -18,6 +18,34 @@ export default function UpdateNotification({
   const [updateReason, setUpdateReason] = useState<string>('')
   const [isUpdating, setIsUpdating] = useState(false)
   const [countdown, setCountdown] = useState(10)
+
+  const handleUpdate = useCallback(async () => {
+    setIsUpdating(true)
+
+    try {
+      console.log('🔄 Starting app update...')
+      await versionManager.forceReload()
+    } catch (error) {
+      console.error('Update failed:', error)
+      setIsUpdating(false)
+    }
+  }, [])
+
+  const startCountdown = useCallback(() => {
+    setCountdown(10)
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          handleUpdate()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [handleUpdate])
 
   useEffect(() => {
     // Listen for version updates
@@ -42,40 +70,14 @@ export default function UpdateNotification({
       }
     }
 
-    window.addEventListener('versionUpdate', handleVersionUpdate as EventListener)
-    window.addEventListener('cacheUpdate', handleCacheUpdate as EventListener)
+    window.addEventListener('versionUpdate', handleVersionUpdate)
+    window.addEventListener('cacheUpdate', handleCacheUpdate)
 
     return () => {
-      window.removeEventListener('versionUpdate', handleVersionUpdate as EventListener)
-      window.removeEventListener('cacheUpdate', handleCacheUpdate as EventListener)
+      window.removeEventListener('versionUpdate', handleVersionUpdate)
+      window.removeEventListener('cacheUpdate', handleCacheUpdate)
     }
-  }, [autoUpdate])
-
-  const startCountdown = () => {
-    setCountdown(10)
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          handleUpdate()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
-  const handleUpdate = async () => {
-    setIsUpdating(true)
-    
-    try {
-      console.log('🔄 Starting app update...')
-      await versionManager.forceReload()
-    } catch (error) {
-      console.error('Update failed:', error)
-      setIsUpdating(false)
-    }
-  }
+  }, [autoUpdate, startCountdown])
 
   const handleDismiss = () => {
     setShowNotification(false)
@@ -174,43 +176,8 @@ export default function UpdateNotification({
   )
 }
 
-// Hook for using update notifications
-export function useUpdateNotification() {
-  const [hasUpdate, setHasUpdate] = useState(false)
-  const [updateDetails, setUpdateDetails] = useState<any>(null)
-
-  useEffect(() => {
-    const handleUpdate = (event: CustomEvent) => {
-      setHasUpdate(true)
-      setUpdateDetails(event.detail)
-    }
-
-    window.addEventListener('versionUpdate', handleUpdate as EventListener)
-    window.addEventListener('cacheUpdate', handleUpdate as EventListener)
-
-    return () => {
-      window.removeEventListener('versionUpdate', handleUpdate as EventListener)
-      window.removeEventListener('cacheUpdate', handleUpdate as EventListener)
-    }
-  }, [])
-
-  const triggerUpdate = async () => {
-    setHasUpdate(false)
-    await versionManager.forceReload()
-  }
-
-  const dismissUpdate = () => {
-    setHasUpdate(false)
-    setUpdateDetails(null)
-  }
-
-  return {
-    hasUpdate,
-    updateDetails,
-    triggerUpdate,
-    dismissUpdate
-  }
-}
+// Note: useUpdateNotification hook has been moved to update-notification-utils.ts
+// to fix Fast Refresh warnings. Import it from there instead.
 
 // Styles for the slide-in animation
 const styles = `

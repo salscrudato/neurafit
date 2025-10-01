@@ -1,7 +1,8 @@
 // Security utilities and enhancements
 // Provides security hardening, input sanitization, and protection mechanisms
 
-import { errorHandler, ErrorType } from './errorHandler.tsx'
+import { ErrorType } from './errorHandler.tsx'
+import { errorHandler } from './error-handler-utils'
 
 // Rate limiting configuration
 interface RateLimitConfig {
