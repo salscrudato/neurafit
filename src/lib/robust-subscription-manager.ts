@@ -5,7 +5,7 @@
 
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { auth, db, fns } from './firebase'
+import { auth, db, fns, getAuthInstance } from './firebase'
 import type { UserSubscription } from '../types/subscription'
 import { subscriptionErrorHandler } from './subscription-error-handler'
 
@@ -71,8 +71,14 @@ class RobustSubscriptionManager {
 
     console.log('🚀 Initializing Robust Subscription Manager...')
 
+    // Wait for Firebase auth to be ready
+    const authInstance = await getAuthInstance()
+    if (!authInstance) {
+      throw new Error('Firebase Auth not available')
+    }
+
     // Set up authentication listener
-    auth.onAuthStateChanged(async (user) => {
+    authInstance.onAuthStateChanged(async (user) => {
       if (user) {
         await this.initializeUserSubscription(user.uid)
       } else {

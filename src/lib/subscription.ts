@@ -3,20 +3,43 @@
  */
 
 import { httpsCallable } from 'firebase/functions'
-import { fns } from './firebase'
+import { fns, getFunctionsInstance } from './firebase'
 import type {
   UserSubscription,
   SubscriptionPlan,
   BillingHistory
 } from '../types/subscription'
 
-// Firebase Cloud Functions
-const createPaymentIntentFn = httpsCallable(fns, 'createPaymentIntent')
-const cancelUserSubscriptionFn = httpsCallable(fns, 'cancelUserSubscription')
-const reactivateUserSubscriptionFn = httpsCallable(fns, 'reactivateUserSubscription')
-const getCustomerPortalUrlFn = httpsCallable(fns, 'getCustomerPortalUrl')
-const getSubscriptionDetailsFn = httpsCallable(fns, 'getSubscriptionDetails')
-const getBillingHistoryFn = httpsCallable(fns, 'getBillingHistory')
+// Firebase Cloud Functions - lazy loaded to avoid initialization issues
+const getCreatePaymentIntentFn = async () => {
+  const functionsInstance = await getFunctionsInstance()
+  return httpsCallable(functionsInstance, 'createPaymentIntent')
+}
+
+const getCancelUserSubscriptionFn = async () => {
+  const functionsInstance = await getFunctionsInstance()
+  return httpsCallable(functionsInstance, 'cancelUserSubscription')
+}
+
+const getReactivateUserSubscriptionFn = async () => {
+  const functionsInstance = await getFunctionsInstance()
+  return httpsCallable(functionsInstance, 'reactivateUserSubscription')
+}
+
+const getCustomerPortalUrlFn = async () => {
+  const functionsInstance = await getFunctionsInstance()
+  return httpsCallable(functionsInstance, 'getCustomerPortalUrl')
+}
+
+const getSubscriptionDetailsFn = async () => {
+  const functionsInstance = await getFunctionsInstance()
+  return httpsCallable(functionsInstance, 'getSubscriptionDetails')
+}
+
+const getBillingHistoryFn = async () => {
+  const functionsInstance = await getFunctionsInstance()
+  return httpsCallable(functionsInstance, 'getBillingHistory')
+}
 
 
 export interface CreatePaymentIntentResult {
@@ -64,6 +87,7 @@ export interface BillingHistoryResult {
 export async function createPaymentIntent(priceId: string): Promise<CreatePaymentIntentResult> {
   try {
     console.log('📡 Calling createPaymentIntent function with priceId:', priceId)
+    const createPaymentIntentFn = await getCreatePaymentIntentFn()
     const result = await createPaymentIntentFn({ priceId })
     console.log('📡 Function response:', result)
 
@@ -95,6 +119,7 @@ export async function createPaymentIntent(priceId: string): Promise<CreatePaymen
  */
 export async function cancelSubscription(subscriptionId: string): Promise<CancelSubscriptionResult> {
   try {
+    const cancelUserSubscriptionFn = await getCancelUserSubscriptionFn()
     const result = await cancelUserSubscriptionFn({ subscriptionId })
     return result.data as CancelSubscriptionResult
   } catch (error) {
@@ -108,6 +133,7 @@ export async function cancelSubscription(subscriptionId: string): Promise<Cancel
  */
 export async function reactivateSubscription(subscriptionId: string): Promise<ReactivateSubscriptionResult> {
   try {
+    const reactivateUserSubscriptionFn = await getReactivateUserSubscriptionFn()
     const result = await reactivateUserSubscriptionFn({ subscriptionId })
     return result.data as ReactivateSubscriptionResult
   } catch (error) {
@@ -121,7 +147,8 @@ export async function reactivateSubscription(subscriptionId: string): Promise<Re
  */
 export async function getCustomerPortalUrl(customerId: string, returnUrl?: string): Promise<CustomerPortalResult> {
   try {
-    const result = await getCustomerPortalUrlFn({ customerId, returnUrl })
+    const customerPortalUrlFn = await getCustomerPortalUrlFn()
+    const result = await customerPortalUrlFn({ customerId, returnUrl })
     return result.data as CustomerPortalResult
   } catch (error) {
     console.error('Error getting customer portal URL:', error)
@@ -134,7 +161,8 @@ export async function getCustomerPortalUrl(customerId: string, returnUrl?: strin
  */
 export async function getSubscriptionDetails(subscriptionId: string): Promise<SubscriptionDetailsResult> {
   try {
-    const result = await getSubscriptionDetailsFn({ subscriptionId })
+    const subscriptionDetailsFn = await getSubscriptionDetailsFn()
+    const result = await subscriptionDetailsFn({ subscriptionId })
     return result.data as SubscriptionDetailsResult
   } catch (error) {
     console.error('Error getting subscription details:', error)
@@ -147,7 +175,8 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<Su
  */
 export async function getBillingHistory(customerId: string, limit = 10): Promise<BillingHistoryResult> {
   try {
-    const result = await getBillingHistoryFn({ customerId, limit })
+    const billingHistoryFn = await getBillingHistoryFn()
+    const result = await billingHistoryFn({ customerId, limit })
     return result.data as BillingHistoryResult
   } catch (error) {
     console.error('Error getting billing history:', error)

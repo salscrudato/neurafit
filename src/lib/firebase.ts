@@ -7,7 +7,6 @@ interface FirebaseServices {
   analytics: any;
 }
 
-let firebaseServices: FirebaseServices | null = null;
 let initializationPromise: Promise<FirebaseServices> | null = null;
 
 // Declare global Firebase loader interface
@@ -53,7 +52,7 @@ export const initializeFirebase = async (): Promise<FirebaseServices> => {
       }
 
       // Map services to our interface
-      firebaseServices = {
+      const mappedServices = {
         app: services.app,
         auth: services.auth,
         firestore: services.firestore,
@@ -62,7 +61,7 @@ export const initializeFirebase = async (): Promise<FirebaseServices> => {
       };
 
       console.log('🎉 Firebase initialization complete via external loader!');
-      resolve(firebaseServices);
+      resolve(mappedServices);
 
     } catch (error) {
       console.error('❌ Firebase initialization failed:', error);
@@ -94,19 +93,19 @@ export const getAnalyticsInstance = async () => {
   return services.analytics;
 };
 
-// Synchronous exports - will be populated after initialization
+// Synchronous exports - these will be null until Firebase is initialized
 export let auth: any = null;
 export let db: any = null;
 export let fns: any = null;
 export let analytics: any = null;
 
-// Initialize Firebase immediately and populate exports
+// Initialize Firebase and populate exports
 initializeFirebase().then(services => {
   auth = services.auth;
   db = services.firestore;
   fns = services.functions;
   analytics = services.analytics;
-  console.log('✅ Firebase synchronous exports populated');
+  console.log('✅ Firebase services ready for synchronous access');
 }).catch(error => {
-  console.error('❌ Failed to populate Firebase exports:', error);
+  console.error('❌ Failed to initialize Firebase services:', error);
 });
