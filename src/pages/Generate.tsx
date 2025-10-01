@@ -2,8 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
-import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase'
+import { getAuthInstance, getFirestoreInstance } from '../lib/firebase'
 import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
 import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
@@ -69,14 +68,22 @@ export default function Generate() {
   // Fetch profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
-      const uid = auth.currentUser?.uid
+      const auth = await getAuthInstance()
+      const uid = auth?.currentUser?.uid
       if (!uid) {
         nav('/')
         return
       }
       try {
-        const snap = await getDoc(doc(db, 'users', uid))
-        if (!snap.exists()) {
+        const db = await getFirestoreInstance()
+        if (!db) {
+          console.error('Firestore not available')
+          return
+        }
+
+        const userDocRef = db.collection('users').doc(uid)
+        const snap = await userDocRef.get()
+        if (!snap.exists) {
           nav('/onboarding')
           return
         }
@@ -108,10 +115,17 @@ export default function Generate() {
   // Fetch adaptive intensity based on recent workout feedback
   const fetchAdaptiveIntensity = async (uid: string) => {
     try {
+      const db = await getFirestoreInstance()
+      if (!db) {
+        console.error('Firestore not available')
+        setTargetIntensity(1.0)
+        setProgressionNote('')
+        return
+      }
+
       // Get recent workouts with feedback
-      const workoutsRef = collection(db, 'users', uid, 'workouts')
-      const q = query(workoutsRef, orderBy('timestamp', 'desc'), limit(5))
-      const snapshot = await getDocs(q)
+      const workoutsRef = db.collection('users').doc(uid).collection('workouts')
+      const snapshot = await workoutsRef.orderBy('timestamp', 'desc').limit(5).get()
 
       if (snapshot.empty) {
         setTargetIntensity(1.0)
@@ -238,7 +252,8 @@ export default function Generate() {
     setLoading(true)
     setShowProgressiveLoading(true)
 
-    const uid = auth.currentUser?.uid
+    const auth = await getAuthInstance()
+    const uid = auth?.currentUser?.uid
 
     const payload = {
       experience: profile.experience,
