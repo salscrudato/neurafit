@@ -207,15 +207,17 @@ MANDATORY STRUCTURE - FOLLOW EXACTLY:
 2. MAIN WORK (4-5 exercises): Progressive difficulty, balanced patterns
 3. COOL-DOWN (LAST 1-2 exercises): Static stretches, breathing, 60s rest
 
-WORKOUT TYPE REQUIREMENTS:
-- Strength: 3-6 reps, 3-5 sets, 150-180s rest, compound movements
-- HIIT: 30s work/15s rest OR 45s work/15s rest, metabolic exercises
-- Hypertrophy: 6-12 reps, 3-4 sets, 60-90s rest, muscle focus
-- Endurance: 12+ reps, 2-3 sets, 30-60s rest, circuit style
+WORKOUT TYPE REQUIREMENTS - MUST MATCH TYPE:
+- Strength: 3-6 reps, 3-5 sets, 150-180s rest, compound movements (squats, deadlifts, presses)
+- HIIT: 30s work/15s rest intervals, metabolic exercises (burpees, mountain climbers, thrusters)
+- Hypertrophy: 6-12 reps, 3-4 sets, 60-90s rest, muscle isolation (curls, extensions, flyes)
+- Endurance: 12+ reps, 2-3 sets, 30-60s rest, circuit style (bodyweight, light weights)
+- Yoga: Hold poses 30-60s, 1-2 sets, 15-30s transitions (asanas, flows, stretches)
+- Pilates: 8-15 reps, 2-3 sets, 30-45s rest, core focus (planks, bridges, rolls)
+- Cardio: Time-based intervals, bodyweight movements (jumping jacks, high knees, step-ups)
 
-EXAMPLE HIIT STRUCTURE:
-- Exercise 1: "HIIT Round 1: Burpees" - 30s work, 15s rest, 8 rounds
-- Exercise 2: "HIIT Round 2: Mountain Climbers" - 30s work, 15s rest, 6 rounds
+CRITICAL: YOGA workouts must ONLY contain yoga poses (Downward Dog, Warrior, Tree Pose, etc.)
+NEVER include weights, barbells, or HIIT exercises in Yoga workouts!
 
 EXERCISE DESCRIPTIONS MUST INCLUDE:
 - Equipment setup and starting position
@@ -265,21 +267,24 @@ JSON OUTPUT (EXACT FORMAT):
 }
 
 CRITICAL REQUIREMENTS - NON-NEGOTIABLE:
+- WORKOUT TYPE MUST MATCH: ${workoutType} workouts must contain ONLY ${workoutType} exercises
+- YOGA = yoga poses only (NO weights, NO HIIT, NO strength exercises)
+- STRENGTH = compound movements with weights/resistance
+- HIIT = high-intensity intervals with metabolic exercises
 - FIRST 2-3 exercises MUST be warm-up (dynamic movements, joint prep)
 - LAST 1-2 exercises MUST be cool-down (stretches, breathing)
-- MIDDLE exercises are main work (strength, HIIT, etc.)
+- MIDDLE exercises are main work matching the workout type
 - MUST reach exactly ${duration} minutes total duration
 - Use ONLY: ${filteredEquipment.join(', ') || 'bodyweight only'}
 - Scale for ${experience || 'beginner'}: Beginner=simple, Intermediate=moderate, Advanced=complex
-- HIIT MUST use interval timing: 30s work/15s rest or 45s work/15s rest
 - Include 7-8 total exercises to properly fill ${duration} minutes
 `.trim();
 
-      // Use GPT-3.5-turbo - fastest model for structured generation
-      console.log('⚡ Using GPT-3.5-turbo for ultra-fast workout generation');
+      // Use GPT-3.5-turbo - reliable model for workout generation
+      console.log('⚡ Using GPT-3.5-turbo with enhanced workout type matching');
       const completion = await client.chat.completions.create({
         model: 'gpt-3.5-turbo',
-        temperature: 0.3, // Lower temperature for faster, more focused responses
+        temperature: 0.3, // Lower temperature for consistent responses
         max_tokens: 1500, // Limit tokens for speed
         messages: [
           {
