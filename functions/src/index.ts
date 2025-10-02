@@ -190,64 +190,16 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Function to provide workout type context without prescribing exercises
+      // Streamlined workout type context for faster processing
       const getWorkoutTypeContext = (type: string) => {
         const contexts = {
-          'Yoga': `
-- Focus: Flexibility, balance, mindfulness, stress relief
-- Movement style: Flowing sequences, static holds, breathing coordination
-- Equipment: Bodyweight only, optional yoga mat
-- Intensity: Low to moderate, emphasis on form and breath
-- Rep format: Time-based holds (30-90 seconds)
-- Rest: Brief transitions between poses (15-30s)
-- Structure: Sun salutations, standing poses, seated poses, relaxation`,
-
-          'Strength': `
-- Focus: Muscle building, power development, progressive overload
-- Movement style: Controlled lifting, compound movements, heavy resistance
-- Equipment: Weights, barbells, dumbbells, resistance tools
-- Intensity: High load, lower reps for strength adaptation
-- Rep format: 3-6 reps for strength, 6-12 for hypertrophy
-- Rest: Longer periods (120-180s) for full recovery
-- Structure: Compound movements first, isolation second`,
-
-          'HIIT': `
-- Focus: Cardiovascular fitness, fat burning, metabolic conditioning
-- Movement style: High-intensity bursts, explosive movements
-- Equipment: Minimal equipment, bodyweight or light weights
-- Intensity: Maximum effort intervals with active recovery
-- Rep format: Time-based work/rest ratios (30s work/15s rest)
-- Rest: Short active recovery between intervals
-- Structure: Warm-up, interval rounds, cool-down`,
-
-          'Pilates': `
-- Focus: Core strength, stability, posture, controlled movement
-- Movement style: Precise, controlled, mind-body connection
-- Equipment: Bodyweight, optional resistance bands or balls
-- Intensity: Moderate, emphasis on quality over quantity
-- Rep format: 8-15 controlled repetitions
-- Rest: Minimal rest, flowing between exercises
-- Structure: Core activation, full-body integration, stretching`,
-
-          'Cardio': `
-- Focus: Cardiovascular endurance, heart rate elevation
-- Movement style: Continuous movement, rhythmic patterns
-- Equipment: Bodyweight preferred, minimal equipment
-- Intensity: Sustained moderate to high heart rate
-- Rep format: Time-based or high repetitions
-- Rest: Active recovery or brief pauses
-- Structure: Warm-up, sustained activity, cool-down`,
-
-          'Endurance': `
-- Focus: Muscular endurance, stamina, work capacity
-- Movement style: Higher volume, sustained effort
-- Equipment: Light weights or bodyweight
-- Intensity: Moderate, sustainable over longer duration
-- Rep format: 12+ repetitions or time-based
-- Rest: Short rest periods (30-60s)
-- Structure: Circuit-style, multiple rounds`
+          'Yoga': 'Focus: Flexibility, mindfulness. Style: Static holds 30-90s, flowing sequences. Equipment: Bodyweight only.',
+          'Strength': 'Focus: Muscle building. Style: 3-12 reps, compound movements. Equipment: Weights, resistance tools.',
+          'HIIT': 'Focus: Fat burning. Style: 30s work/15s rest intervals, explosive movements. Equipment: Minimal.',
+          'Pilates': 'Focus: Core strength. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
+          'Cardio': 'Focus: Endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
+          'Endurance': 'Focus: Stamina. Style: 12+ reps, circuit-style. Equipment: Light weights or bodyweight.'
         };
-
         return contexts[type as keyof typeof contexts] || contexts['Strength'];
       };
 
@@ -293,42 +245,22 @@ JSON format:
 }
 `.trim();
 
-      // Use GPT-4o-mini as primary model for reliability and speed
-      let completion;
-      let text = '';
+      // Use GPT-3.5-turbo as primary model for maximum speed and reliability
+      console.log('⚡ Using GPT-3.5-turbo for ultra-fast workout generation');
+      const completion = await client.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        temperature: 0.3,
+        max_tokens: 1200, // Reduced for faster response
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a certified personal trainer. Output only valid JSON with no markdown formatting.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      });
 
-      try {
-        console.log('🚀 Using GPT-4o-mini for professional workout generation');
-        completion = await client.chat.completions.create({
-          model: 'gpt-4o-mini',
-          temperature: 0.3,
-          max_tokens: 1500,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a certified personal trainer. Output only valid JSON with no markdown formatting.',
-            },
-            { role: 'user', content: prompt },
-          ],
-        });
-        text = completion.choices?.[0]?.message?.content ?? '';
-      } catch (error: any) {
-        // Fallback to GPT-3.5-turbo if GPT-4o-mini fails
-        console.log('⚠️ GPT-4o-mini failed, falling back to GPT-3.5-turbo');
-        completion = await client.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          temperature: 0.3,
-          max_tokens: 1500,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a certified personal trainer. Output only valid JSON with no markdown formatting.',
-            },
-            { role: 'user', content: prompt },
-          ],
-        });
-        text = completion.choices?.[0]?.message?.content ?? '';
-      }
+      const text = completion.choices?.[0]?.message?.content ?? '';
 
       // Clean JSON text by removing markdown code blocks if present
       const cleanedText = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
