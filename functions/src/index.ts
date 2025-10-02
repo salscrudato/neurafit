@@ -68,7 +68,7 @@ export const generateWorkout = onRequest(
         experience,
         goals,
         equipment,
-        personalInfo,
+        // personalInfo, // Removed for streamlined prompt
         injuries,
         workoutType,
         duration,
@@ -180,9 +180,7 @@ export const generateWorkout = onRequest(
         }
       }
 
-      // Get exercise recommendations, programming guidelines, and professional coaching context
-      const { getExerciseRecommendations, getProgrammingRecommendations } = await import('./lib/exerciseDatabase');
-      const { generateProfessionalPromptEnhancement } = await import('./lib/promptEnhancements');
+      // Streamlined prompt - removed unused imports
 
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
@@ -192,133 +190,89 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      const contextForExercises = {
-        experience,
-        goals: filteredGoals,
-        equipment: filteredEquipment,
-        injuries: injuries?.list || [],
-        workoutType,
-      };
+      // Streamlined for professional trainer prompt
 
-      const contextForEnhancements = {
-        experience,
-        goals: filteredGoals,
-        equipment: filteredEquipment,
-        injuries: injuries?.list || [],
-        workoutType,
-        duration: duration || 30, // Default to 30 minutes if not specified
-        targetIntensity: finalTargetIntensity,
-        progressionNote: finalProgressionNote,
-      };
+      // Professional trainer-optimized prompt for high-quality workouts
+      const prompt = `You are a NASM-certified personal trainer. Create a professional ${duration}-minute ${workoutType} workout for ${experience} level.
 
-      const exerciseRecommendations = getExerciseRecommendations(contextForExercises);
-      const programmingGuidelines = getProgrammingRecommendations(filteredGoals, experience || 'Beginner');
-      const professionalEnhancements = generateProfessionalPromptEnhancement(contextForEnhancements);
-
-      // Ultra-concise prompt for maximum speed
-      const prompt = `
-Create ${duration}min ${workoutType} workout for ${experience} level. Equipment: ${filteredEquipment.join(', ') || 'bodyweight'}. Goals: ${filteredGoals.join(', ')}.
-
-CLIENT PROFILE:
-- Experience: ${experience || '—'}
-- Primary Goals: ${Array.isArray(goals) ? goals.join(', ') : goals || '—'}
-- Available Equipment: ${Array.isArray(equipment) ? equipment.join(', ') : equipment || 'None'}
-- Demographics: ${personalInfo?.sex || '—'}, ${personalInfo?.heightRange || personalInfo?.height || '—'}, ${personalInfo?.weightRange || personalInfo?.weight || '—'}
+WORKOUT REQUIREMENTS:
+- Equipment: ${filteredEquipment.join(', ') || 'bodyweight only'}
+- Goals: ${filteredGoals.join(', ')}
+- Duration: MUST fill ${duration} minutes including warm-up and cool-down
+- Experience: ${experience} - scale complexity and intensity appropriately
 - Injuries/Limitations: ${(injuries?.list?.length ? injuries.list.join(', ') : 'None')} ${injuries?.notes ? '(' + injuries.notes + ')' : ''}
 
-EVIDENCE-BASED PROGRAMMING GUIDELINES:
-- Sets: ${programmingGuidelines.sets?.[0]}-${programmingGuidelines.sets?.[1]} per exercise
-- Reps: ${programmingGuidelines.reps?.[0]}-${programmingGuidelines.reps?.[1]} per set (or specify ranges like "8-12")
-- Rest: ${programmingGuidelines.restSeconds?.[0]}-${programmingGuidelines.restSeconds?.[1]} seconds between sets
-- Intensity: ${programmingGuidelines.intensity || 'Moderate to challenging'}
+MANDATORY STRUCTURE - FOLLOW EXACTLY:
+1. WARM-UP (FIRST 2-3 exercises): Dynamic movements, joint mobility, 30s rest
+2. MAIN WORK (4-5 exercises): Progressive difficulty, balanced patterns
+3. COOL-DOWN (LAST 1-2 exercises): Static stretches, breathing, 60s rest
 
-CRITICAL REST PERIOD REQUIREMENTS (EXACT VALUES REQUIRED):
-- Compound movements (squats, deadlifts, presses): 120-180 seconds (use specific values like 150, 120, 180)
-- Isolation exercises: 60-90 seconds (use specific values like 75, 60, 90)
-- Cardio/circuit exercises: 45-75 seconds (use specific values like 60, 45, 75)
-- Warm-up movements: 20-30 seconds (use specific values like 30, 20, 25)
-- Cool-down/stretching: 45-60 seconds (use specific values like 60, 45, 50)
-- The restSeconds value you provide will be used EXACTLY as the rest timer
-- NEVER use rest periods below 20 seconds except for dynamic warm-up
-- Higher intensity exercises need MORE rest, not less
+WORKOUT TYPE REQUIREMENTS:
+- Strength: 3-6 reps, 3-5 sets, 150-180s rest, compound movements
+- HIIT: 30s work/15s rest OR 45s work/15s rest, metabolic exercises
+- Hypertrophy: 6-12 reps, 3-4 sets, 60-90s rest, muscle focus
+- Endurance: 12+ reps, 2-3 sets, 30-60s rest, circuit style
 
-RECOMMENDED EXERCISE CATEGORIES:
-${exerciseRecommendations.length > 0
-    ? exerciseRecommendations
-      .slice(0, 8)
-      .map((ex) => `- ${ex.name} (${ex.category}, ${ex.difficulty}): ${ex.muscleGroups.join(', ')}`)
-      .join('\n')
-    : '- Use fundamental movement patterns: squat, hinge, push, pull, carry, lunge'
-}
+EXAMPLE HIIT STRUCTURE:
+- Exercise 1: "HIIT Round 1: Burpees" - 30s work, 15s rest, 8 rounds
+- Exercise 2: "HIIT Round 2: Mountain Climbers" - 30s work, 15s rest, 6 rounds
 
-ADAPTIVE INTENSITY SCALING:
-- Target Intensity: ${finalTargetIntensity.toFixed(2)} (1.0 = baseline, >1.0 = harder, <1.0 = easier)
-- Apply evidence-based progressive overload: adjust volume (sets×reps), intensity (load/difficulty), or density (rest periods)
-- For beginners: prioritize movement quality over intensity regardless of target
-- Never compromise safety for intensity targets
-${finalProgressionNote ? `- Progression Context: ${finalProgressionNote}` : ''}
+EXERCISE DESCRIPTIONS MUST INCLUDE:
+- Equipment setup and starting position
+- Step-by-step movement execution
+- Breathing pattern (when to inhale/exhale)
+- Key muscle activation cues
+- Safety considerations
 
-${professionalEnhancements}
+DURATION COMPLIANCE:
+- ${duration} minutes TOTAL including warm-up and cool-down
+- Calculate: Warm-up (4min) + Main work + Cool-down (3min) = ${duration}min
+- Add more exercises or sets to reach target duration
 
-PROFESSIONAL PROGRAMMING PRINCIPLES:
-1. MOVEMENT QUALITY FIRST: Prioritize proper form and movement patterns over load/intensity
-2. PROGRESSIVE OVERLOAD: Apply systematic progression appropriate to experience level
-3. INJURY PREVENTION: Include movement prep, avoid contraindicated exercises, provide modifications
-4. FUNCTIONAL PATTERNS: Emphasize compound movements and real-world movement patterns
-5. RECOVERY INTEGRATION: Include appropriate rest periods and consider workout density
-6. INDIVIDUAL ADAPTATION: Scale complexity and intensity to user's current capabilities
+CRITICAL REST PERIODS (use exact values):
+- Compound movements: 120-180s (squats=150s, deadlifts=180s, presses=120s)
+- Isolation exercises: 60-90s (curls=75s, extensions=60s)
+- Cardio/HIIT: 30-60s (burpees=45s, mountain climbers=30s)
+- Warm-up: 20-30s (arm circles=30s, leg swings=25s)
+- Cool-down: 45-60s (stretches=60s)
 
-WORKOUT STRUCTURE REQUIREMENTS:
-- Always include 3-5 minutes of dynamic warm-up (movement prep, activation)
-- Structure main work in logical progression (compound → isolation, or by movement pattern)
-- Include 2-3 minutes of cool-down/mobility work for sessions >20 minutes
-- Balance muscle groups and movement patterns within the session
-- For strength goals: 3-6 reps, 3-5 sets, 2-3 min rest
-- For hypertrophy: 6-12 reps, 3-4 sets, 60-90s rest
-- For endurance: 12+ reps or time-based, 2-3 sets, 30-60s rest
+INJURY CONSIDERATIONS:
+${(injuries?.list?.length ? injuries.list.join(', ') : 'None')} ${injuries?.notes ? '(' + injuries.notes + ')' : ''}
+- Provide modifications and alternatives for any limitations
+- Never include contraindicated exercises
 
-SAFETY & CONTRAINDICATIONS:
-- Knee injuries: Avoid deep squats, lunges, high-impact movements
-- Lower back: Avoid spinal flexion under load, heavy overhead work
-- Shoulder: Avoid overhead pressing, behind-neck movements if impingement history
-- Ankle: Modify jumping/plyometric movements, provide low-impact alternatives
-- Always provide regression options for complex movements
-
-OUTPUT REQUIREMENTS:
-- Output ONLY valid JSON (no markdown, code fences, or additional text)
-- Follow this exact schema:
+JSON OUTPUT (EXACT FORMAT):
 {
   "exercises": [
     {
-      "name": string,                    // Clear, specific exercise name
-      "description": string,             // 4-6 sentences: setup, execution, key cues, breathing pattern
-      "sets": number,                    // Evidence-based set recommendations
-      "reps": number | string,           // Specific rep ranges or time (e.g., "8-12" or "45s")
-      "formTips": string[],              // 2-3 critical technique cues
-      "safetyTips": string[],            // 2-3 injury prevention tips and modifications
-      "restSeconds": number,             // CRITICAL: Use exact rest periods from guidelines above - this value is used directly in the app
-      "usesWeight": boolean,             // true for external resistance, false for bodyweight
-      "muscleGroups": string[],          // Primary muscles worked (for programming balance)
-      "difficulty": string               // "beginner", "intermediate", or "advanced"
+      "name": "Specific Exercise Name",
+      "description": "Complete setup, execution, breathing, and cues (4-6 sentences)",
+      "sets": number,
+      "reps": "range or time",
+      "formTips": ["3 critical technique points"],
+      "safetyTips": ["2-3 injury prevention tips"],
+      "restSeconds": exact_number,
+      "usesWeight": boolean,
+      "muscleGroups": ["primary", "secondary"],
+      "difficulty": "${(experience || 'beginner').toLowerCase()}"
     }
   ],
   "workoutSummary": {
-    "totalVolume": string,               // Brief volume description
-    "primaryFocus": string,              // Main training stimulus
-    "expectedRPE": string                // Rate of perceived exertion estimate
+    "totalVolume": "detailed volume breakdown",
+    "primaryFocus": "specific training adaptation",
+    "expectedRPE": "appropriate intensity range"
   }
 }
 
-CRITICAL REQUIREMENTS:
-- Respect ALL injury limitations - provide alternatives, not just warnings
-- Use ONLY available equipment - no substitutions without explicit alternatives
-- Scale appropriately for experience level - beginners need simpler movements
-- Ensure workout fits time constraint including warm-up and cool-down
-- Provide specific rep ranges (e.g., "8-12") rather than single numbers when appropriate
-- Include unilateral work for muscle balance when relevant
-- Consider energy system demands and fatigue management throughout session
-- REST PERIODS ARE CRITICAL: Use the exact rest period guidelines above - these values are used directly in the app timer
-- Example rest periods: Squats=150s, Bicep Curls=75s, Jumping Jacks=60s, Arm Circles=30s
+CRITICAL REQUIREMENTS - NON-NEGOTIABLE:
+- FIRST 2-3 exercises MUST be warm-up (dynamic movements, joint prep)
+- LAST 1-2 exercises MUST be cool-down (stretches, breathing)
+- MIDDLE exercises are main work (strength, HIIT, etc.)
+- MUST reach exactly ${duration} minutes total duration
+- Use ONLY: ${filteredEquipment.join(', ') || 'bodyweight only'}
+- Scale for ${experience || 'beginner'}: Beginner=simple, Intermediate=moderate, Advanced=complex
+- HIIT MUST use interval timing: 30s work/15s rest or 45s work/15s rest
+- Include 7-8 total exercises to properly fill ${duration} minutes
 `.trim();
 
       // Use GPT-3.5-turbo - fastest model for structured generation
