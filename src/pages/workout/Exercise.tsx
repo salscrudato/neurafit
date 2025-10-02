@@ -79,39 +79,14 @@ export default function Exercise() {
     }
   }, [])
 
-  // Clear weight data ONLY when starting a completely fresh workout
+  // Set workout start time if not already set (fallback for direct navigation)
   useEffect(() => {
-    const isReturningFromRest = sessionStorage.getItem('nf_return')
     const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
-
-    console.log('[DEBUG] Weight clearing check - returning from rest:', !!isReturningFromRest, 'i:', i, 'setNo:', setNo, 'hasStartTime:', !!hasWorkoutStartTime)
-
-    // Only clear weights if:
-    // 1. Not returning from rest AND
-    // 2. At the very beginning (i=0, setNo=1) AND
-    // 3. No workout start time (meaning we haven't started the workout yet)
-    if (!isReturningFromRest && i === 0 && setNo === 1 && !hasWorkoutStartTime) {
-      const hasExistingWeights = sessionStorage.getItem('nf_workout_weights')
-      console.log('[DEBUG] Clearing existing weights for fresh workout:', hasExistingWeights)
-      if (hasExistingWeights) {
-        sessionStorage.removeItem('nf_workout_weights')
-        // Clear weights using optimistic update
-        const clearAction = {
-          optimisticUpdate: () => ({}),
-          serverUpdate: async () => ({}),
-          rollback: () => initialWeights
-        }
-        weightState.executeOptimisticUpdate(clearAction)
-        console.log('[CLEAR] Weight data cleared for fresh workout')
-      }
-
-      // Set workout start time
-      if (!hasWorkoutStartTime) {
-        sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
-        console.log('[TIME] Workout start time set')
-      }
+    if (!hasWorkoutStartTime) {
+      sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
+      console.log('[TIME] Workout start time set (fallback)')
     }
-  }, [i, setNo, initialWeights, weightState])
+  }, [])
 
   // Load weight history and recent sessions for current exercise
   const ex = list[i] as ExerciseT
@@ -182,12 +157,19 @@ export default function Exercise() {
   }, [list])
 
   const completedExercises = useMemo(() => {
+    // Count exercises that are fully completed (all sets done)
     return Object.keys(weightState.data).filter(exerciseIndex => {
-      const exerciseWeights = weightState.data[parseInt(exerciseIndex)] || {}
+      const exerciseIndex_num = parseInt(exerciseIndex)
+      const exercise = list[exerciseIndex_num]
+      if (!exercise) return false
+
+      const exerciseWeights = weightState.data[exerciseIndex_num] || {}
       const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
-      return completedCount > 0
+
+      // Only count as completed if all sets are done
+      return completedCount === exercise.sets
     }).length
-  }, [weightState.data])
+  }, [weightState.data, list])
 
   // Early returns after all hooks are called
   if (!saved) return <EmptyState />

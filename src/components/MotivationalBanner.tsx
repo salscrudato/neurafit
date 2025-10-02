@@ -68,18 +68,19 @@ export function MotivationalBanner({
   const Icon = motivation.icon
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${motivation.bgColor} border border-white/50 shadow-sm hover:shadow-md transition-all duration-300`}>
-      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent" />
-      <div className="relative p-6">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${motivation.color} flex items-center justify-center shadow-lg`}>
-            <Icon className="h-6 w-6 text-white" />
+    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${motivation.bgColor} border border-white/60 shadow-xl shadow-slate-200/30 hover:shadow-2xl hover:shadow-slate-300/20 transition-all duration-500`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-white/20 to-transparent" />
+      <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-white/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
+      <div className="relative p-8">
+        <div className="flex items-center gap-6">
+          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-xl shadow-current/25 group-hover:shadow-current/40 transition-shadow duration-300`}>
+            <Icon className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">
+            <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
               {motivation.title}
             </h3>
-            <p className="text-gray-700 text-sm leading-relaxed">
+            <p className="text-gray-700 leading-relaxed">
               {motivation.message}
             </p>
           </div>

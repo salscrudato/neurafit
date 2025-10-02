@@ -193,21 +193,23 @@ export function MotivationalMessage({
   totalSets,
   exerciseName
 }: MotivationalMessageProps) {
+  // Use exercise completion percentage for motivational messages, not overall workout progress
+  const exerciseCompletionPct = Math.round((completedSets / totalSets) * 100)
+
   const getMotivationalMessage = () => {
-    if (progress >= 90) return { text: "Almost there! Finish strong!", icon: <Zap className="h-4 w-4" /> }
-    if (progress >= 75) return { text: "You're crushing it! Keep going!", icon: <Flame className="h-4 w-4" /> }
-    if (progress >= 50) return { text: "Halfway there! You've got this!", icon: <Zap className="h-4 w-4" /> }
-    if (progress >= 25) return { text: "Great start! Building momentum!", icon: <Rocket className="h-4 w-4" /> }
+    if (exerciseCompletionPct >= 90) return { text: "Almost there! Finish strong!", icon: <Zap className="h-4 w-4" /> }
+    if (exerciseCompletionPct >= 75) return { text: "You're crushing it! Keep going!", icon: <Flame className="h-4 w-4" /> }
+    if (exerciseCompletionPct >= 50) return { text: "Halfway there! You've got this!", icon: <Zap className="h-4 w-4" /> }
+    if (exerciseCompletionPct >= 25) return { text: "Great start! Building momentum!", icon: <Rocket className="h-4 w-4" /> }
     if (completedSets > 0) return { text: "Nice work! One set at a time!", icon: <Sparkles className="h-4 w-4" /> }
     return { text: "Let's do this! You're stronger than you think!", icon: <Target className="h-4 w-4" /> }
   }
 
   const getCompletionMessage = () => {
-    const percentage = Math.round((completedSets / totalSets) * 100)
-    if (percentage === 100) return { text: `${exerciseName} completed!`, icon: <PartyPopper className="h-4 w-4" /> }
-    if (percentage >= 75) return { text: `${percentage}% complete - almost done!`, icon: null }
-    if (percentage >= 50) return { text: `${percentage}% complete - keep it up!`, icon: null }
-    if (percentage > 0) return { text: `${percentage}% complete - great progress!`, icon: null }
+    if (exerciseCompletionPct === 100) return { text: `${exerciseName} completed!`, icon: <PartyPopper className="h-4 w-4" /> }
+    if (exerciseCompletionPct >= 75) return { text: `${exerciseCompletionPct}% complete - almost done!`, icon: null }
+    if (exerciseCompletionPct >= 50) return { text: `${exerciseCompletionPct}% complete - keep it up!`, icon: null }
+    if (exerciseCompletionPct > 0) return { text: `${exerciseCompletionPct}% complete - great progress!`, icon: null }
     return { text: "Ready to start? You've got this!", icon: null }
   }
 
@@ -291,12 +293,12 @@ export function WorkoutStats({
         <div className="text-2xl font-bold text-blue-600">{elapsedMinutes}</div>
         <div className="text-xs text-gray-600">Minutes</div>
       </div>
-      
+
       <div className="text-center">
         <div className="text-2xl font-bold text-green-600">{completionRate}%</div>
         <div className="text-xs text-gray-600">Complete</div>
       </div>
-      
+
       <div className="text-center">
         <div className="text-2xl font-bold text-indigo-600">
           {completedExercises}/{totalExercises}

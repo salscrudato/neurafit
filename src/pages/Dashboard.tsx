@@ -136,22 +136,28 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative">
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-slate-200/20 to-blue-200/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-blue-200/20 to-slate-200/20 rounded-full blur-3xl" />
+        </div>
+
         <AppHeader />
-        <div className="relative mx-auto max-w-6xl px-6 pt-6">
-          <div className="animate-pulse space-y-8">
+        <div className="relative mx-auto max-w-6xl px-6 pt-8">
+          <div className="animate-pulse space-y-12">
             {/* Hero skeleton */}
-            <div className="h-32 bg-white/70 rounded-3xl shadow-sm"></div>
+            <div className="h-40 bg-gradient-to-br from-white/90 to-white/70 rounded-3xl shadow-xl shadow-slate-200/40 backdrop-blur-xl border border-white/60"></div>
 
             {/* Motivational banner skeleton */}
-            <div className="h-24 bg-white/70 rounded-2xl shadow-sm"></div>
+            <div className="h-28 bg-gradient-to-br from-white/90 to-white/70 rounded-3xl shadow-xl shadow-slate-200/40 backdrop-blur-xl border border-white/60"></div>
 
             {/* Quick actions skeleton */}
             <div>
-              <div className="h-6 bg-white/70 rounded-lg w-32 mb-4"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="h-8 bg-gradient-to-r from-slate-200/80 to-slate-100/60 rounded-lg w-40 mb-8"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-48 bg-white/70 rounded-xl shadow-sm"></div>
+                  <div key={i} className="h-56 bg-gradient-to-br from-white/90 to-white/70 rounded-2xl shadow-lg shadow-slate-200/30 backdrop-blur-xl border border-white/60"></div>
                 ))}
               </div>
             </div>
@@ -192,22 +198,24 @@ export default function Dashboard() {
       <AppHeader />
 
       {/* Hero Section */}
-      <section className="relative mx-auto max-w-6xl px-6 pt-6">
-        <div className="rounded-3xl border border-slate-200/50 bg-white/80 backdrop-blur-sm p-6 md:p-8 relative overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-slate-300/30 to-blue-300/30 opacity-60 blur-3xl" />
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <section className="relative mx-auto max-w-6xl px-6 pt-8">
+        <div className="group relative rounded-3xl border border-white/60 bg-gradient-to-br from-white/95 via-white/85 to-white/75 backdrop-blur-xl p-8 md:p-10 overflow-hidden shadow-xl shadow-slate-200/40 hover:shadow-2xl hover:shadow-slate-300/25 transition-all duration-500">
+          {/* Enhanced background elements */}
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-tr from-blue-400/20 via-indigo-400/15 to-purple-400/10 opacity-70 blur-3xl group-hover:opacity-90 transition-opacity duration-500" />
+          <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-gradient-to-tr from-slate-400/15 via-gray-400/10 to-blue-400/5 opacity-50 blur-2xl" />
+
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
                 Welcome back, {firstName}.
               </h1>
-              <p className="mt-2 text-gray-600 max-w-2xl">
+              <p className="mt-4 text-slate-600 max-w-2xl text-lg leading-relaxed">
                 {dashboardStats?.totalWorkouts === 0
                   ? "Ready to start your fitness journey? Generate your first AI-powered workout below."
                   : "Keep up the momentum! Your personalized workouts are getting smarter with every session."
                 }
               </p>
             </div>
-
           </div>
         </div>
       </section>
@@ -225,75 +233,88 @@ export default function Dashboard() {
       )}
 
       {/* Quick Actions */}
-      <section className="relative mx-auto max-w-6xl px-6 mt-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Quick Actions</h2>
-          <p className="text-gray-600">Everything you need to stay on track</p>
+      <section className="relative mx-auto max-w-6xl px-6 mt-12">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3">Quick Actions</h2>
+          <p className="text-slate-600 text-lg">Everything you need to stay on track</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card
-            variant="elevated"
-            rounded="xl"
-            className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div
+            className="group relative cursor-pointer"
             onClick={() => nav('/generate')}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Zap className="h-5 w-5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
+            <Card
+              variant="elevated"
+              rounded="xl"
+              className="relative p-8 border border-white/60 bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30 hover:shadow-xl hover:shadow-blue-200/20 transition-all duration-500 group-hover:scale-[1.02] group-hover:border-blue-200/50"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-4 flex-1">
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 transition-shadow duration-300">
+                    <Zap className="h-7 w-7" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-900 transition-colors">Generate Workout</h3>
+                    <p className="text-slate-600 leading-relaxed">AI-tailored plans from goals, experience, equipment & injuries.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Generate Workout</h3>
-                  <p className="text-sm text-gray-600">AI-tailored plans from goals, experience, equipment & injuries.</p>
-                </div>
+                <Button size="sm" className="ml-4 shadow-md hover:shadow-lg transition-shadow" onClick={() => nav('/generate')}>
+                  Start Now
+                </Button>
               </div>
-              <Button size="sm" onClick={() => nav('/generate')}>
-                Start Now
-              </Button>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card
-            variant="elevated"
-            rounded="xl"
-            className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
+          <div
+            className="group relative cursor-pointer"
             onClick={() => nav('/history')}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                  <History className="h-5 w-5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-500/10 to-gray-500/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
+            <Card
+              variant="elevated"
+              rounded="xl"
+              className="relative p-8 border border-white/60 bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30 hover:shadow-xl hover:shadow-slate-200/20 transition-all duration-500 group-hover:scale-[1.02] group-hover:border-slate-200/50"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-4 flex-1">
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center text-white shadow-lg shadow-slate-500/25 group-hover:shadow-slate-500/40 transition-shadow duration-300">
+                    <History className="h-7 w-7" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-slate-800 transition-colors">Workout History</h3>
+                    <p className="text-slate-600 leading-relaxed">Auto-saved sessions to review, repeat, and track progress.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Workout History</h3>
-                  <p className="text-sm text-gray-600">Auto-saved sessions to review, repeat, and track progress.</p>
-                </div>
+                <Button size="sm" variant="secondary" className="ml-4 shadow-md hover:shadow-lg transition-shadow" onClick={() => nav('/history')}>
+                  View History
+                </Button>
               </div>
-              <Button size="sm" variant="secondary" onClick={() => nav('/history')}>
-                View History
-              </Button>
-            </div>
-          </Card>
+            </Card>
+          </div>
         </div>
       </section>
 
       {/* Profile Settings - Compact */}
-      <section className="relative mx-auto max-w-6xl px-6 mt-8">
-        <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                <UserIcon className="h-5 w-5 text-slate-600" />
+      <section className="relative mx-auto max-w-6xl px-6 mt-12">
+        <div className="group relative cursor-pointer" onClick={() => nav('/profile')}>
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-400/5 to-gray-400/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300 opacity-0 group-hover:opacity-100" />
+          <div className="relative bg-gradient-to-br from-white/90 via-white/80 to-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-lg shadow-slate-200/20 hover:shadow-xl hover:shadow-slate-200/30 transition-all duration-500 group-hover:scale-[1.01]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center shadow-lg shadow-slate-500/20">
+                  <UserIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-slate-800 transition-colors">Profile Settings</h3>
+                  <p className="text-slate-600">Update goals, equipment, or injuries</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-slate-900">Profile Settings</h3>
-                <p className="text-sm text-slate-600">Update goals, equipment, or injuries</p>
-              </div>
+              <Button size="sm" variant="outline" className="shadow-md hover:shadow-lg transition-shadow" onClick={() => nav('/profile')}>
+                Edit Profile
+              </Button>
             </div>
-            <Button size="sm" variant="outline" onClick={() => nav('/profile')}>
-              Edit Profile
-            </Button>
           </div>
         </div>
       </section>
