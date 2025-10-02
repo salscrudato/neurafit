@@ -14,7 +14,7 @@ import { subscriptionService } from '../lib/subscriptionService'
 import { SubscriptionManager } from '../components/SubscriptionManager'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 
-// Top 20 workout types organized by popularity (most to least common)
+// Top 22 workout types organized by popularity (most to least common)
 const TYPES = [
   'Full Body',        // Most popular - comprehensive workout
   'Upper Body',       // Very popular - convenient split
@@ -31,7 +31,10 @@ const TYPES = [
   'Back/Biceps',     // Classic pull split
   'Shoulders',       // Targeted muscle group
   'Arms',            // Popular aesthetic focus
-  'Yoga/Pilates',    // Mind-body connection
+  'Yoga',            // Mind-body connection - flexibility and mindfulness
+  'Pilates',         // Mind-body connection - core strength and stability
+  'Pre-natal',       // Pregnancy-safe fitness routines
+  'Post-natal',      // Postpartum recovery and strengthening
   'Functional',      // Movement-based training
   'Mobility',        // Recovery and flexibility
   'Plyometric',      // Athletic performance

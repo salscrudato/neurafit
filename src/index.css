@@ -87,6 +87,25 @@ textarea {
   font-family: inherit;
 }
 
+/* Fix iOS Safari dark screen issue on input focus */
+input,
+textarea {
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent iOS zoom on input focus while maintaining accessibility */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
 /* Enhanced loading states */
 @keyframes pulse-subtle {
   0%,
@@ -210,6 +229,46 @@ textarea {
 @supports not (backdrop-filter: blur(10px)) {
   .backdrop-blur-enhanced {
     background-color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* Landscape warning overlay for mobile devices */
+.landscape-warning {
+  position: relative;
+}
+
+.landscape-warning::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  display: none;
+}
+
+.landscape-warning::after {
+  content: 'Please rotate your device to portrait mode for the best experience';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 20px;
+  z-index: 10000;
+  display: none;
+  max-width: 80%;
+}
+
+@media screen and (orientation: landscape) and (max-width: 768px) {
+  .landscape-warning::before,
+  .landscape-warning::after {
+    display: block;
   }
 }
 
