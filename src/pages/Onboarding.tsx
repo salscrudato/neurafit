@@ -246,7 +246,7 @@ export default function Onboarding() {
   const header = useMemo(() => {
     switch (step) {
       case 1: return { title: 'What’s your training level?'}
-      case 2: return { title: 'What are you aiming for?'}
+      case 2: return { title: 'What are your fitness goals?'}
       case 3: return { title: 'What do you have access to?'}
       case 4: return { title: 'Tell us about you'}
       case 5: return { title: 'Any injuries or limitations?'}
@@ -484,8 +484,13 @@ export default function Onboarding() {
                 value={draft.injuries.notes}
                 onChange={(e) => setDraft((d) => ({ ...d, injuries: { ...d.injuries, notes: e.target.value } }))}
                 placeholder="e.g., mild runner’s knee on right leg; avoid deep flexion"
-                className="w-full rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                className="w-full rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 resize-none"
                 rows={4}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck="true"
+                data-gramm="false"
               />
             </div>
           </div>
