@@ -301,39 +301,19 @@ CRITICAL REQUIREMENTS:
 - Example rest periods: Squats=150s, Bicep Curls=75s, Jumping Jacks=60s, Arm Circles=30s
 `.trim();
 
-      // Try GPT-5 nano first, fallback to GPT-4o if not available
-      let completion;
-      try {
-        completion = await client.chat.completions.create({
-          model: 'gpt-5-nano',
-          temperature: 0.7,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a precise fitness coach that only outputs valid JSON.',
-            },
-            { role: 'user', content: prompt },
-          ],
-        });
-        console.log('✅ Using GPT-5 nano');
-      } catch (error: any) {
-        if (error?.code === 'model_not_found' || error?.status === 403) {
-          console.log('⚠️ GPT-5 nano not available, falling back to GPT-4o');
-          completion = await client.chat.completions.create({
-            model: 'gpt-4o',
-            temperature: 0.7,
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a precise fitness coach that only outputs valid JSON.',
-              },
-              { role: 'user', content: prompt },
-            ],
-          });
-        } else {
-          throw error;
-        }
-      }
+      // Use GPT-4o for now (GPT-5 nano requires special access)
+      console.log('🤖 Using GPT-4o for workout generation');
+      const completion = await client.chat.completions.create({
+        model: 'gpt-4o',
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a precise fitness coach that only outputs valid JSON.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      });
 
       const text = completion.choices?.[0]?.message?.content ?? '';
 
