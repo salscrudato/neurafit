@@ -190,17 +190,29 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Streamlined workout type context for faster processing
+      // Comprehensive workout type context for all 18 common types
       const getWorkoutTypeContext = (type: string) => {
         const contexts = {
-          'Yoga': 'Focus: Flexibility, mindfulness. Style: Static holds 30-90s, flowing sequences. Equipment: Bodyweight only.',
-          'Strength': 'Focus: Muscle building. Style: 3-12 reps, compound movements. Equipment: Weights, resistance tools.',
-          'HIIT': 'Focus: Fat burning. Style: 30s work/15s rest intervals, explosive movements. Equipment: Minimal.',
-          'Pilates': 'Focus: Core strength. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
-          'Cardio': 'Focus: Endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
-          'Endurance': 'Focus: Stamina. Style: 12+ reps, circuit-style. Equipment: Light weights or bodyweight.'
+          'Full Body': 'Focus: Total body conditioning. Style: 6-12 reps, compound movements. Equipment: Mixed.',
+          'Upper Body': 'Focus: Chest, back, shoulders, arms. Style: 6-15 reps, push/pull balance. Equipment: Weights preferred.',
+          'Lower Body': 'Focus: Legs, glutes, calves. Style: 8-15 reps, squats/lunges/deadlifts. Equipment: Weights preferred.',
+          'Cardio': 'Focus: Cardiovascular endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
+          'HIIT': 'Focus: Fat burning, conditioning. Style: 30s work/15s rest intervals, explosive movements. Equipment: Minimal.',
+          'Core Focus': 'Focus: Abdominals, obliques, stability. Style: 10-20 reps, isometric holds. Equipment: Bodyweight.',
+          'Strength': 'Focus: Maximum strength, power. Style: 3-8 reps, heavy compound movements. Equipment: Weights required.',
+          'Circuit': 'Focus: Conditioning, variety. Style: 8-15 reps, minimal rest between exercises. Equipment: Mixed.',
+          'Push': 'Focus: Chest, shoulders, triceps. Style: 6-12 reps, pressing movements. Equipment: Weights preferred.',
+          'Pull': 'Focus: Back, biceps, rear delts. Style: 6-12 reps, pulling movements. Equipment: Weights preferred.',
+          'Legs/Glutes': 'Focus: Lower body power, shape. Style: 8-15 reps, hip-dominant movements. Equipment: Weights preferred.',
+          'Chest/Triceps': 'Focus: Chest development, tricep strength. Style: 6-15 reps, pressing focus. Equipment: Weights preferred.',
+          'Back/Biceps': 'Focus: Back width/thickness, bicep size. Style: 6-15 reps, pulling focus. Equipment: Weights preferred.',
+          'Shoulders': 'Focus: Deltoid development, stability. Style: 8-15 reps, multi-angle pressing. Equipment: Weights preferred.',
+          'Arms': 'Focus: Biceps, triceps, forearms. Style: 8-15 reps, isolation movements. Equipment: Weights preferred.',
+          'Yoga': 'Focus: Flexibility, mindfulness, balance. Style: 30-90s holds, flowing sequences. Equipment: Bodyweight only.',
+          'Pilates': 'Focus: Core strength, stability, control. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
+          'Functional': 'Focus: Real-world movement patterns. Style: 8-15 reps, multi-plane movements. Equipment: Mixed.'
         };
-        return contexts[type as keyof typeof contexts] || contexts['Strength'];
+        return contexts[type as keyof typeof contexts] || contexts['Full Body'];
       };
 
       // Streamlined prompt for reliable workout generation

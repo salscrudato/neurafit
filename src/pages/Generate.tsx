@@ -15,7 +15,7 @@ import { SubscriptionManager } from '../components/SubscriptionManager'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 
-// Top 22 workout types organized by popularity (most to least common)
+// Top 18 most common workout types organized by popularity
 const TYPES = [
   'Full Body',        // Most popular - comprehensive workout
   'Upper Body',       // Very popular - convenient split
@@ -34,12 +34,7 @@ const TYPES = [
   'Arms',            // Popular aesthetic focus
   'Yoga',            // Mind-body connection - flexibility and mindfulness
   'Pilates',         // Mind-body connection - core strength and stability
-  'Pre-natal',       // Pregnancy-safe fitness routines
-  'Post-natal',      // Postpartum recovery and strengthening
-  'Functional',      // Movement-based training
-  'Mobility',        // Recovery and flexibility
-  'Plyometric',      // Athletic performance
-  'Rehabilitation'   // Injury recovery/prevention
+  'Functional'       // Movement-based training
 ] as const
 
 // Top 8 most common workout durations (optimized for user preferences)
