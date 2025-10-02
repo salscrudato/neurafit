@@ -1,9 +1,9 @@
 import { useEffect, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-import { CriticalErrorBoundary } from './components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary';
 import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
-import { SubscriptionMonitor } from './components/SubscriptionMonitor';
+import { SubscriptionManager } from './components/SubscriptionManager';
 
 
 // Eager-loaded critical pages
@@ -27,7 +27,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 import { AppProvider } from './providers/AppProvider';
 import { HomeGate } from './routes/guards';
 import { lockOrientation, preventZoom } from './utils/orientation';
-import { versionManager } from './utils/version';
+// Version management removed for simplicity
 import { usePageTracking } from './hooks/useAnalytics';
 import { trackSessionStart } from './lib/firebase-analytics';
 
@@ -43,16 +43,7 @@ function AppContent() {
     // Track session start with location context
     trackSessionStart();
 
-    // Manage version information
-    if (versionManager.isFirstRun()) {
-      console.log('First run or updated version detected');
-      versionManager.storeVersionInfo();
-    }
-
-    // Start periodic version checking in production
-    if (process.env.NODE_ENV === 'production') {
-      versionManager.startVersionChecking(300000); // 5 minutes
-    }
+    // Version management removed for simplicity
 
     // Event listener for version updates
     const handleVersionUpdate = () => {
@@ -65,13 +56,11 @@ function AppContent() {
     return () => {
       cleanupOrientation();
       cleanupZoom();
-      versionManager.stopVersionChecking();
-      window.removeEventListener('versionUpdate', handleVersionUpdate);
     };
   }, []);
 
   return (
-    <CriticalErrorBoundary>
+    <ErrorBoundary level="critical">
       <div className="min-h-screen">
         <Routes>
           {/* Public legal pages */}
@@ -100,10 +89,10 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
-        {/* Unified Subscription Monitor - Consolidated health monitoring and fixing */}
-        <SubscriptionMonitor />
+        {/* Unified Subscription Manager - Consolidated subscription functionality */}
+        <SubscriptionManager mode="status" />
       </div>
-    </CriticalErrorBoundary>
+    </ErrorBoundary>
   );
 }
 

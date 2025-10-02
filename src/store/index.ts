@@ -56,9 +56,6 @@ export interface AppState {
   
   // Error state
   errors: AppError[]
-  
-  // Performance state
-  performanceMetrics: PerformanceMetrics
 }
 
 export interface WorkoutState {
@@ -97,13 +94,7 @@ export interface AppError {
   resolved: boolean
 }
 
-export interface PerformanceMetrics {
-  bundleLoadTime: number
-  firstContentfulPaint: number
-  largestContentfulPaint: number
-  cumulativeLayoutShift: number
-  memoryUsage: number
-}
+
 
 // Actions interface
 export interface AppActions {
@@ -133,8 +124,7 @@ export interface AppActions {
   resolveError: (_errorId: string) => void
   clearErrors: () => void
 
-  // Performance actions
-  updatePerformanceMetrics: (_metrics: Partial<PerformanceMetrics>) => void
+
 
   // Utility actions
   setOnlineStatus: (_isOnline: boolean) => void
@@ -155,14 +145,7 @@ const initialState: AppState = {
   isOnline: navigator.onLine,
   lastSyncTime: null,
   pendingOperations: [],
-  errors: [],
-  performanceMetrics: {
-    bundleLoadTime: 0,
-    firstContentfulPaint: 0,
-    largestContentfulPaint: 0,
-    cumulativeLayoutShift: 0,
-    memoryUsage: 0
-  }
+  errors: []
 }
 
 // Create the store with middleware
@@ -299,11 +282,7 @@ export const useAppStore = create<AppState & AppActions>()(
             state.errors = []
           }),
           
-          // Performance actions
-          updatePerformanceMetrics: (metrics) => set((state) => {
-            Object.assign(state.performanceMetrics, metrics)
-          }),
-          
+
           // Utility actions
           setOnlineStatus: (isOnline) => set((state) => {
             state.isOnline = isOnline
@@ -322,7 +301,6 @@ export const useAppStore = create<AppState & AppActions>()(
             // Only persist essential data
             workoutHistory: state.workoutHistory,
             lastSyncTime: state.lastSyncTime,
-            performanceMetrics: state.performanceMetrics,
             // Don't persist sensitive or temporary data
             user: null,
             profile: null,
@@ -400,12 +378,7 @@ export const useErrors = () => useAppStore((state) => ({
   clearErrors: state.clearErrors
 }))
 
-export const usePerformance = () => useAppStore((state) => ({
-  metrics: state.performanceMetrics,
-  updateMetrics: state.updatePerformanceMetrics,
-  isOnline: state.isOnline,
-  setOnlineStatus: state.setOnlineStatus
-}))
+
 
 // Expose store globally for performance monitoring and other utilities
 if (typeof window !== 'undefined') {

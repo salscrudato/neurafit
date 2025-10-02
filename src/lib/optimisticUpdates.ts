@@ -155,20 +155,7 @@ export function createSetCompletionAction(
   }
 }
 
-/**
- * Debounced function utility for reducing API calls
- */
-export function useDebounce<T extends (..._args: unknown[]) => unknown>(
-  func: T,
-  delay: number
-): T {
-  const timeoutRef = useRef<number | null>(null)
-
-  return useCallback((...args: Parameters<T>) => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = window.setTimeout(() => func(...args), delay)
-  }, [func, delay]) as T
-}
+// Debounce functionality moved to a shared utility if needed
 
 /**
  * Cache utility for storing and retrieving data with expiration

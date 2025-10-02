@@ -37,6 +37,10 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/functions'],
+          ui: ['lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+          state: ['zustand', 'immer'],
+          stripe: ['@stripe/stripe-js', '@stripe/react-stripe-js'],
         },
       },
     },

@@ -8,7 +8,7 @@ import type { UserProfile } from '../session/types';
 import type { UserSubscription } from '../types/subscription';
 import { ensureUserDocument } from '../lib/user-utils';
 // Subscription service available but not used in this component
-import { ComponentErrorBoundary } from '../components/ErrorBoundary';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -169,29 +169,7 @@ export function AppProvider({ children }: AppProviderProps) {
     return () => clearInterval(syncInterval);
   }, [syncPendingOperations]);
 
-  // Memory pressure monitoring
-  useEffect(() => {
-    if ('memory' in performance) {
-      const checkMemoryPressure = () => {
-        const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
-        if (!memory) return;
 
-        const usedMB = Math.round(memory.usedJSHeapSize / 1024 / 1024);
-        const limitMB = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
-
-        if (usedMB > limitMB * 0.8) {
-          console.warn('High memory usage detected, triggering cleanup');
-          if ('gc' in window) {
-            (window as Window & { gc?: () => void }).gc?.();
-          }
-        }
-      };
-
-      const memoryInterval = setInterval(checkMemoryPressure, 60000); // Every minute
-
-      return () => clearInterval(memoryInterval);
-    }
-  }, []);
 
   // Global error recovery
   useEffect(() => {
@@ -230,9 +208,9 @@ export function AppProvider({ children }: AppProviderProps) {
   }, [setAuthStatus]);
 
   return (
-    <ComponentErrorBoundary>
+    <ErrorBoundary level="component">
       {children}
-    </ComponentErrorBoundary>
+    </ErrorBoundary>
   );
 }
 

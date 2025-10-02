@@ -212,24 +212,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
 
 
-// Specialized error boundary components
-export const CriticalErrorBoundary = ({ children }: { children: ReactNode }) => (
-  <ErrorBoundary level="critical">
-    {children}
-  </ErrorBoundary>
-)
-
-export const PageErrorBoundary = ({ children }: { children: ReactNode }) => (
-  <ErrorBoundary level="page">
-    {children}
-  </ErrorBoundary>
-)
-
-export const ComponentErrorBoundary = ({ children }: { children: ReactNode }) => (
-  <ErrorBoundary level="component">
-    {children}
-  </ErrorBoundary>
-)
+// Simplified error boundary - use the main ErrorBoundary with level prop instead
 
 
 

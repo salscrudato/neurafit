@@ -27,7 +27,6 @@ export const useApp = () => {
     // UI state
     isOnline: store.isOnline,
     errors: store.errors,
-    performanceMetrics: store.performanceMetrics,
 
     // Actions
     actions: {
@@ -107,54 +106,4 @@ export const appUtils = {
   }
 }
 
-// Theme utilities
-export const themeUtils = {
-  getThemeClass: (theme: string): string => {
-    return theme === 'dark' ? 'dark' : ''
-  },
 
-  toggleTheme: (currentTheme: string): string => {
-    return currentTheme === 'dark' ? 'light' : 'dark'
-  },
-
-  getSystemTheme: (): string => {
-    if (typeof window === 'undefined') return 'light'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
-}
-
-// Notification utilities
-export const notificationUtils = {
-  createNotification: (
-    type: 'success' | 'error' | 'warning' | 'info',
-    title: string,
-    message?: string,
-    duration?: number
-  ) => ({
-    id: Date.now().toString(),
-    type,
-    title,
-    message,
-    duration: duration || (type === 'error' ? 0 : 5000), // Errors persist until dismissed
-    timestamp: Date.now()
-  }),
-
-  filterNotificationsByType: (notifications: Array<{ type: string }>, type: string) => {
-    return notifications.filter(n => n.type === type)
-  },
-
-  getNotificationIcon: (type: string): string => {
-    switch (type) {
-      case 'success':
-        return '✅'
-      case 'error':
-        return '❌'
-      case 'warning':
-        return '⚠️'
-      case 'info':
-        return 'ℹ️'
-      default:
-        return '📢'
-    }
-  }
-}

@@ -1,37 +1,8 @@
 import React, { forwardRef } from 'react'
 import { cn } from '../../lib/utils'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, type CardProps } from './Card'
+import { Card, CardContent, type CardProps } from './Card'
 
-// Specialized card components
-export const DashboardCard = forwardRef<HTMLDivElement, CardProps & {
-  title?: string
-  description?: string
-  icon?: React.ReactNode
-  action?: React.ReactNode
-}>(({ title, description, icon, action, children, ...props }, ref) => (
-  <Card ref={ref} variant="elevated" rounded="xl" {...props}>
-    {(title || description || icon || action) && (
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {icon && (
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                {icon}
-              </div>
-            )}
-            <div>
-              {title && <CardTitle>{title}</CardTitle>}
-              {description && <CardDescription>{description}</CardDescription>}
-            </div>
-          </div>
-          {action && <div className="flex-shrink-0">{action}</div>}
-        </div>
-      </CardHeader>
-    )}
-    <CardContent>{children}</CardContent>
-  </Card>
-))
-
+// Simplified specialized card components
 export const StatsCard = forwardRef<HTMLDivElement, CardProps & {
   label: string
   value: string | number
@@ -72,5 +43,4 @@ export const StatsCard = forwardRef<HTMLDivElement, CardProps & {
   )
 })
 
-DashboardCard.displayName = 'DashboardCard'
 StatsCard.displayName = 'StatsCard'

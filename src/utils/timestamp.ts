@@ -26,28 +26,10 @@ export function convertToDate(timestamp: TimestampType): Date {
 }
 
 /**
- * Safely gets a date from a timestamp that might be undefined
- */
-export function safeConvertToDate(timestamp?: TimestampType): Date {
-  if (!timestamp) {
-    return new Date()
-  }
-  return convertToDate(timestamp)
-}
-
-/**
  * Formats a timestamp to a local date string
  */
 export function formatTimestamp(timestamp: TimestampType): string {
   return convertToDate(timestamp).toLocaleDateString()
-}
-
-/**
- * Safely formats a timestamp that might be undefined
- */
-export function safeFormatTimestamp(timestamp?: TimestampType): string | undefined {
-  if (!timestamp) return undefined
-  return formatTimestamp(timestamp)
 }
 
 /**

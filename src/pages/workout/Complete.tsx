@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../../components/AppHeader'
 import { isFeedbackUIEnabled } from '../../config/features'
-import { logAdaptiveFeedbackSubmitted, logAdaptivePersonalizationError } from '../../lib/telemetry'
+import { trackAdaptiveFeedback, trackCustomEvent } from '../../lib/firebase-analytics'
 import { Bed, ThumbsUp, Flame, CheckCircle } from 'lucide-react'
 import { trackWorkoutCompleted } from '../../lib/firebase-analytics'
 
@@ -144,7 +144,7 @@ export default function Complete() {
       })
 
       // Log telemetry event
-      logAdaptiveFeedbackSubmitted(uid, selectedFeedback, rpeValue, completionRate)
+      trackAdaptiveFeedback(selectedFeedback, rpeValue, completionRate)
 
       // For now, we'll update the adaptive state when generating the next workout
       // This ensures we have the most recent feedback and completion data
@@ -159,7 +159,7 @@ export default function Complete() {
       console.error('Error submitting feedback:', error)
       const uid = auth.currentUser?.uid
       if (uid) {
-        logAdaptivePersonalizationError(uid, String(error), 'feedback_submission')
+        trackCustomEvent('adaptive_personalization_error', { error: String(error), context: 'feedback_submission' })
       }
     } finally {
       setSubmittingFeedback(false)

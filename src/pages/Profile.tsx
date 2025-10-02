@@ -14,7 +14,7 @@ import {
   INJURY_OPTIONS
 } from '../config/onboarding'
 import AppHeader from '../components/AppHeader'
-import { ProfilePageSkeleton } from '../components/Loading'
+import { LoadingSpinner } from '../components/Loading'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -151,7 +151,7 @@ export default function Profile() {
 
 
   if (loading) {
-    return <ProfilePageSkeleton />
+    return <LoadingSpinner fullScreen text="Loading profile..." />
   }
 
   return (

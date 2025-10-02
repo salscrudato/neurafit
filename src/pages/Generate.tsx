@@ -6,13 +6,12 @@ import { auth, db } from '../lib/firebase'
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
-import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
+import { trackCustomEvent } from '../lib/firebase-analytics'
 import { Brain } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/Loading'
 import { useSubscription } from '../hooks/useSubscription'
 import { subscriptionService } from '../lib/subscriptionService'
-import SubscriptionErrorHandler, { SubscriptionStatusBanner } from '../components/SubscriptionErrorHandler'
-import { SimpleSubscription } from '../components/SimpleSubscription'
+import { SubscriptionManager } from '../components/SubscriptionManager'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 
 // Top 20 workout types organized by popularity (most to least common)
@@ -217,7 +216,7 @@ export default function Generate() {
 
     } catch (error) {
       console.error('Error fetching adaptive intensity:', error)
-      logAdaptivePersonalizationError(uid, String(error), 'adaptive_intensity_fetch')
+      trackCustomEvent('adaptive_personalization_error', { error: String(error), context: 'adaptive_intensity_fetch' })
       setTargetIntensity(1.0)
       setProgressionNote('')
     }
@@ -230,7 +229,7 @@ export default function Generate() {
 
     // Check subscription limits
     if (!canGenerateWorkout) {
-      trackFreeTrialLimitReached(subscription?.freeWorkoutsUsed || 0)
+      trackFreeTrialLimitReached()
       setShowUpgradePrompt(true)
       return
     }
@@ -274,17 +273,16 @@ export default function Generate() {
 
         // Log telemetry for workout generation with intensity
         if (uid && isAdaptivePersonalizationEnabled()) {
-          logWorkoutGeneratedWithIntensity(
-            uid,
-            targetIntensity,
-            type,
+          trackCustomEvent('workout_generated_with_intensity', {
+            target_intensity: targetIntensity,
+            workout_type: type,
             duration,
-            Boolean(progressionNote)
-          )
+            has_progression_note: Boolean(progressionNote)
+          })
         }
 
         // Track workout generation in Firebase Analytics
-        trackWorkoutGenerated(hasUnlimitedWorkouts, subscription?.workoutCount || 0)
+        trackWorkoutGenerated(String(hasUnlimitedWorkouts), subscription?.workoutCount || 0)
 
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
 
@@ -382,8 +380,8 @@ export default function Generate() {
           </div>
         </section>
 
-        {/* Subscription Status Banner */}
-        <SubscriptionStatusBanner className="mt-6" />
+        {/* Subscription Status - using unified SubscriptionManager */}
+        <SubscriptionManager mode="status" className="mt-6" />
 
         {/* Legacy Subscription Status - keeping for users with more than 1 workout remaining */}
         {!hasUnlimitedWorkouts && remainingFreeWorkouts > 1 && (
@@ -414,9 +412,10 @@ export default function Generate() {
           </section>
         )}
 
-        {/* Simple Subscription Modal */}
+        {/* Subscription Upgrade Modal */}
         {showUpgradePrompt && (
-          <SimpleSubscription
+          <SubscriptionManager
+            mode="plans"
             onClose={() => setShowUpgradePrompt(false)}
             onSuccess={() => {
               // Subscription successful, user can now generate workouts
@@ -537,13 +536,14 @@ export default function Generate() {
         {/* Error */}
         {error && (
           <div className="mt-6">
-            <SubscriptionErrorHandler
+            <SubscriptionManager
+              mode="error"
               error={error}
               onRetry={() => {
                 setError(null)
                 generate()
               }}
-              onUpgrade={() => setShowUpgradePrompt(true)}
+              onClose={() => setShowUpgradePrompt(true)}
               showUpgradeOption={!hasUnlimitedWorkouts}
             />
           </div>
@@ -578,7 +578,7 @@ export default function Generate() {
           // Loading bar animation completed
           console.log('Loading animation complete')
         }}
-        duration={4000} // 4 seconds for a smooth experience
+        text="Generating your personalized workout..."
       />
     </div>
   )

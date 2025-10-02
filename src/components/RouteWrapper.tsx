@@ -5,7 +5,7 @@
 
 import { Suspense, type ReactNode } from 'react'
 import { LoadingSpinner } from './Loading'
-import { PageErrorBoundary } from './ErrorBoundary'
+import ErrorBoundary from './ErrorBoundary'
 import { RequireAuth, RequireProfile } from '../routes/guards'
 
 interface RouteWrapperProps {
@@ -39,11 +39,11 @@ export function RouteWrapper({
     )
   }
 
-  // Wrap with PageErrorBoundary
+  // Wrap with ErrorBoundary
   content = (
-    <PageErrorBoundary>
+    <ErrorBoundary level="page">
       {content}
-    </PageErrorBoundary>
+    </ErrorBoundary>
   )
 
   // Wrap with profile guard if required

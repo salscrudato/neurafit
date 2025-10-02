@@ -1,50 +1,32 @@
 import React, { forwardRef, type HTMLAttributes } from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
-import { useRipple } from '../../hooks/useMicroInteractions.tsx'
 import { cardVariants } from '../variants/cardVariants'
-
-
 
 export interface CardProps
   extends HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {
   interactive?: boolean
-  ripple?: boolean
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ 
-    className, 
-    variant, 
-    size, 
-    rounded, 
-    backdrop,
+  ({
+    className,
+    variant,
+    size,
+    rounded,
     interactive,
-    ripple = false,
-    onClick,
     children,
-    ...props 
+    ...props
   }, ref) => {
-    const { addRipple, rippleElements } = useRipple()
-    
-    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (ripple) {
-        addRipple(e)
-      }
-      onClick?.(e)
-    }
-
     const cardVariant = interactive ? 'interactive' : variant
 
     return (
       <div
         ref={ref}
-        className={cn(cardVariants({ variant: cardVariant, size, rounded, backdrop }), className)}
-        onClick={handleClick}
+        className={cn(cardVariants({ variant: cardVariant, size, rounded }), className)}
         {...props}
       >
-        {ripple && rippleElements}
         {children}
       </div>
     )

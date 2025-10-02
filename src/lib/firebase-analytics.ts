@@ -1,74 +1,175 @@
 /**
- * Firebase Analytics utility functions for NeuraFit
- * Stubbed version to prevent Firebase bundling issues
- * All analytics functions are disabled to avoid Firebase imports
+ * Simplified Analytics Service for NeuraFit
+ * Unified analytics, telemetry, and tracking system
  */
 
-// Stub function - all analytics calls are no-ops to prevent bundling issues
-const stub = (..._args: unknown[]): void => {
-  // No-op to prevent Firebase bundling issues
-};
+// Simple analytics configuration
+interface AnalyticsConfig {
+  enabled: boolean
+  debug: boolean
+  maxEvents: number
+}
 
-// User Authentication Events
-export const trackUserSignUp = (method: string): void => stub('sign_up', { method });
-export const trackUserLogin = (method: string): void => stub('login', { method });
-export const trackUserLogout = (): void => stub('logout');
+// Analytics event structure
+interface AnalyticsEvent {
+  event: string
+  timestamp: number
+  data: Record<string, unknown>
+}
 
-// User Profile Events
-export const trackProfileComplete = (experience: string, goals: string[], equipment: string[]): void => 
-  stub('profile_complete', { experience, goals: goals.length, equipment: equipment.length });
-export const trackProfileUpdate = (field: string): void => stub('profile_update', { field });
+class SimpleAnalytics {
+  private config: AnalyticsConfig
+  private events: AnalyticsEvent[] = []
 
-// Workout Generation Events
-export const trackWorkoutGenerated = (isSubscribed: boolean, workoutCount: number): void => 
-  stub('workout_generated', { isSubscribed, workoutCount });
-export const trackWorkoutStarted = (workoutId: string, exerciseCount: number): void => 
-  stub('workout_started', { workoutId, exerciseCount });
-export const trackWorkoutCompleted = (workoutId: string, duration: number, completionRate: number): void => 
-  stub('workout_completed', { workoutId, duration, completionRate });
-export const trackWorkoutAbandoned = (workoutId: string, exerciseIndex: number, reason: string): void => 
-  stub('workout_abandoned', { workoutId, exerciseIndex, reason });
+  constructor() {
+    this.config = {
+      enabled: true,
+      debug: import.meta.env.DEV,
+      maxEvents: 100
+    }
+  }
 
-// Exercise Events
-export const trackExerciseCompleted = (exerciseName: string, sets: number, reps: number): void => 
-  stub('exercise_completed', { exerciseName, sets, reps });
-export const trackExerciseSkipped = (exerciseName: string, reason: string): void => 
-  stub('exercise_skipped', { exerciseName, reason });
-export const trackRestCompleted = (duration: number): void => stub('rest_completed', { duration });
-export const trackRestSkipped = (): void => stub('rest_skipped');
+  private track(event: string, data: Record<string, unknown> = {}): void {
+    if (!this.config.enabled) return
 
-// Subscription Events
-export const trackSubscriptionStarted = (plan?: string, price?: number): void =>
-  stub('subscription_started', { plan, price });
-export const trackSubscriptionCompleted = (plan?: string, price?: number): void =>
-  stub('subscription_completed', { plan, price });
-export const trackSubscriptionCancelled = (plan: string, reason?: string): void =>
-  stub('subscription_cancelled', { plan, reason });
-export const trackSubscriptionReactivated = (plan: string): void =>
-  stub('subscription_reactivated', { plan });
-export const trackPaymentFailed = (plan: string, error: string): void => 
-  stub('payment_failed', { plan, error });
-export const trackFreeTrialStarted = (): void => stub('free_trial_started');
-export const trackFreeTrialEnded = (converted: boolean): void => 
-  stub('free_trial_ended', { converted });
-export const trackFreeTrialLimitReached = (workoutCount: number): void => 
-  stub('free_trial_limit_reached', { workoutCount });
+    const analyticsEvent: AnalyticsEvent = {
+      event,
+      timestamp: Date.now(),
+      data: {
+        ...data,
+        url: window.location.href,
+        userAgent: navigator.userAgent.substring(0, 50)
+      }
+    }
 
-// Navigation Events
-export const trackPageView = (pageName: string, pageTitle?: string): void => 
-  stub('page_view', { pageName, pageTitle });
-export const trackButtonClick = (buttonName: string, location: string): void => 
-  stub('button_click', { buttonName, location });
+    // Store event locally
+    this.events.push(analyticsEvent)
 
-// User Properties
-export const setUserAnalyticsProperties = (userId: string, properties: Record<string, unknown>): void =>
-  stub('set_user_properties', { userId, properties });
-export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>): void =>
-  stub('set_enhanced_user_properties', { userId, userProfile });
+    // Keep only recent events
+    if (this.events.length > this.config.maxEvents) {
+      this.events = this.events.slice(-this.config.maxEvents)
+    }
 
-// Custom Events
-export const trackCustomEvent = (eventName: string, parameters: Record<string, unknown>): void => 
-  stub('custom_event', { eventName, parameters });
-export const trackSessionStart = (): void => stub('session_start');
-export const trackError = (error: string, context?: string): void => 
-  stub('error', { error, context });
+    // Debug logging
+    if (this.config.debug) {
+      console.log('Analytics:', event, data)
+    }
+
+    // Store in localStorage for debugging
+    try {
+      localStorage.setItem('nf_analytics_events', JSON.stringify(this.events.slice(-20)))
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  // User Authentication Events
+  trackUserSignUp = (method: string): void => this.track('sign_up', { method })
+  trackUserLogin = (method: string): void => this.track('login', { method })
+  trackUserLogout = (): void => this.track('logout')
+
+  // User Profile Events
+  trackProfileComplete = (experience: string, goals: string[], equipment: string[]): void =>
+    this.track('profile_complete', { experience, goals: goals.length, equipment: equipment.length })
+  trackProfileUpdate = (field: string): void => this.track('profile_update', { field })
+
+  // Page View Events
+  trackPageView = (pageName: string, title?: string): void =>
+    this.track('page_view', { page_title: title, page_name: pageName })
+
+  // Workout Events (unified interface)
+  trackWorkoutGenerated = (workoutType: string, duration?: number, exerciseCount?: number): void =>
+    this.track('workout_generated', { workout_type: workoutType, duration, exercise_count: exerciseCount })
+  trackWorkoutStarted = (workoutType: string): void => this.track('workout_started', { workout_type: workoutType })
+  trackWorkoutCompleted = (workoutType: string, duration: number, completionRate: number): void =>
+    this.track('workout_completed', { workout_type: workoutType, duration, completion_rate: completionRate })
+  trackWorkoutAbandoned = (workoutType: string, progress: number): void =>
+    this.track('workout_abandoned', { workout_type: workoutType, progress })
+
+  // Exercise Events
+  trackExerciseCompleted = (exerciseName: string, sets: number, reps: number): void =>
+    this.track('exercise_completed', { exerciseName, sets, reps })
+  trackExerciseSkipped = (exerciseName: string, reason: string): void =>
+    this.track('exercise_skipped', { exerciseName, reason })
+  trackRestCompleted = (duration: number): void => this.track('rest_completed', { duration })
+  trackRestSkipped = (): void => this.track('rest_skipped')
+
+  // Subscription Events
+  trackSubscriptionStarted = (plan?: string, price?: number): void =>
+    this.track('subscription_started', { plan, price })
+  trackSubscriptionCompleted = (plan?: string, price?: number): void =>
+    this.track('subscription_completed', { plan, price })
+  trackSubscriptionCancelled = (plan: string, reason?: string): void =>
+    this.track('subscription_cancelled', { plan, reason })
+  trackSubscriptionReactivated = (plan: string): void =>
+    this.track('subscription_reactivated', { plan })
+  trackPaymentFailed = (plan: string, error: string): void =>
+    this.track('payment_failed', { plan, error })
+  trackFreeTrialStarted = (): void => this.track('free_trial_started')
+
+  // Feature Usage Events
+  trackFeatureUsed = (feature: string, context?: string): void =>
+    this.track('feature_used', { feature, context })
+  trackButtonClicked = (buttonName: string, location: string): void =>
+    this.track('button_clicked', { button_name: buttonName, location })
+  trackFormSubmitted = (formName: string, success: boolean): void =>
+    this.track('form_submitted', { form_name: formName, success })
+
+  // Custom Events
+  trackCustomEvent = (eventName: string, parameters: Record<string, unknown>): void =>
+    this.track(eventName, parameters)
+  trackError = (error: string, context?: string): void =>
+    this.track('error', { error, context })
+
+  // Telemetry Events (simplified from telemetry.ts)
+  trackAdaptiveFeedback = (feedback: 'easy' | 'right' | 'hard', rpe: number | null, completionRate: number): void =>
+    this.track('adaptive_feedback', { feedback, rpe, completion_rate: completionRate })
+
+  // Utility methods
+  getEvents = (): AnalyticsEvent[] => [...this.events]
+  clearEvents = (): void => { this.events = [] }
+  setConfig = (config: Partial<AnalyticsConfig>): void => { this.config = { ...this.config, ...config } }
+}
+
+// Create singleton instance
+const analytics = new SimpleAnalytics()
+
+// Export all tracking functions
+export const {
+  trackUserSignUp,
+  trackUserLogin,
+  trackUserLogout,
+  trackProfileComplete,
+  trackProfileUpdate,
+  trackPageView,
+  trackWorkoutGenerated,
+  trackWorkoutStarted,
+  trackWorkoutCompleted,
+  trackWorkoutAbandoned,
+  trackExerciseCompleted,
+  trackExerciseSkipped,
+  trackRestCompleted,
+  trackRestSkipped,
+  trackSubscriptionStarted,
+  trackSubscriptionCompleted,
+  trackSubscriptionCancelled,
+  trackSubscriptionReactivated,
+  trackPaymentFailed,
+  trackFreeTrialStarted,
+  trackFeatureUsed,
+  trackButtonClicked,
+  trackFormSubmitted,
+  trackCustomEvent,
+  trackError,
+  trackAdaptiveFeedback
+} = analytics
+
+// Legacy compatibility exports
+export const setUserAnalyticsProperties = (_userId: string, _properties: Record<string, unknown>): void => {}
+export const setEnhancedUserProperties = (_userId: string, _userProfile: Record<string, unknown>): void => {}
+export const trackSessionStart = (): void => analytics.trackCustomEvent('session_start', {})
+export const trackFreeTrialLimitReached = (): void =>
+  analytics.trackCustomEvent('free_trial_limit_reached', {})
+
+// Export analytics instance
+export { analytics }

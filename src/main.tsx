@@ -4,34 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
-
-import { cacheBustingManager } from './utils/cacheBusting';
-import { showUpdateNotification } from './utils/updateNotification';
-
-
-
-// Initialize cache busting in production
-if (process.env.NODE_ENV === 'production') {
-  console.log('🚀 Initializing cache busting system...');
-  const deploymentInfo = cacheBustingManager.getDeploymentInfo();
-  console.log('📦 Deployment ID:', deploymentInfo.id);
-}
-
-// Clear all caches on startup to ensure fresh content
-if ('caches' in window) {
-  caches
-    .keys()
-    .then((cacheNames) => {
-      cacheNames.forEach((cacheName) => {
-        console.log('Clearing cache:', cacheName);
-        caches.delete(cacheName);
-      });
-    })
-    .catch((error) => {
-      console.error('Error clearing caches:', error);
-    });
-}
-
 // In development, clear specific version-related localStorage keys
 if (process.env.NODE_ENV === 'development') {
   const versionKeys = ['current-deployment-version', 'page-etag', 'page-last-modified', 'manifest-version'];
@@ -87,7 +59,6 @@ if ('serviceWorker' in navigator) {
                 if (process.env.NODE_ENV === 'development') {
                   console.log('New version available!');
                 }
-                showUpdateNotification();
               }
             });
           }

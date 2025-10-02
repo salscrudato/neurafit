@@ -103,7 +103,7 @@ export default function Preview() {
 
               // Track workout started
               const workoutId = `workout_${Date.now()}`
-              trackWorkoutStarted(workoutId, exercises.length)
+              trackWorkoutStarted(workoutId)
 
               nav('/workout/run')
             }}

@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
-import { SubscriptionPlans } from '../components/SubscriptionPlans'
+import { SubscriptionManager } from '../components/SubscriptionManager'
 import { PaymentForm } from '../components/PaymentForm'
-import { SubscriptionManagement } from '../components/SubscriptionManagement'
 import { useSubscription } from '../hooks/useSubscription'
 
 import { getSubscriptionPlanByPriceId } from '../lib/stripe-config'
@@ -19,12 +18,7 @@ export default function Subscription() {
     hasUnlimitedWorkouts ? 'manage' : 'plans'
   )
   const [selectedPriceId, setSelectedPriceId] = useState<string>('')
-  const [loading] = useState(false)
-
-  const handleSelectPlan = (priceId: string) => {
-    setSelectedPriceId(priceId)
-    setCurrentView('payment')
-  }
+  // Removed unused variables for cleaner code
 
   const handlePaymentSuccess = () => {
     setCurrentView('success')
@@ -45,9 +39,7 @@ export default function Subscription() {
     setSelectedPriceId('')
   }
 
-  const handleUpgrade = () => {
-    setCurrentView('plans')
-  }
+  // Removed unused handleUpgrade function
 
   const selectedPlan = getSubscriptionPlanByPriceId(selectedPriceId)
 
@@ -89,10 +81,10 @@ export default function Subscription() {
         {/* Content */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-lg p-6 md:p-8">
           {currentView === 'plans' && (
-            <SubscriptionPlans
-              onSelectPlan={handleSelectPlan}
-              loading={loading}
-              selectedPriceId={selectedPriceId}
+            <SubscriptionManager
+              mode="plans"
+              onClose={() => navigate('/dashboard')}
+              onSuccess={() => setCurrentView('success')}
             />
           )}
 
@@ -155,7 +147,7 @@ export default function Subscription() {
           )}
 
           {currentView === 'manage' && (
-            <SubscriptionManagement onUpgrade={handleUpgrade} />
+            <SubscriptionManager mode="management" />
           )}
         </div>
       </main>
