@@ -13,6 +13,7 @@ import { useSubscription } from '../hooks/useSubscription'
 import { subscriptionService } from '../lib/subscriptionService'
 import { SubscriptionManager } from '../components/SubscriptionManager'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
+import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 
 // Top 22 workout types organized by popularity (most to least common)
 const TYPES = [
@@ -57,178 +58,49 @@ export default function Generate() {
   const [type, setType] = useState<string>()
   const [duration, setDuration] = useState<number>()
   const [equipment, setEquipment] = useState<string[]>([])
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(false)
   const [showProgressiveLoading, setShowProgressiveLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [targetIntensity, setTargetIntensity] = useState<number>(1.0)
-  const [progressionNote, setProgressionNote] = useState<string>('')
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+
+  // Use pre-loaded data hook
+  const { preloadedData, refreshPreloadedData } = useWorkoutPreload()
 
   // Subscription hooks
   const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts, subscription } = useSubscription()
 
-  // Fetch profile on mount
+  // Handle preloaded data and navigation
   useEffect(() => {
-    const fetchProfile = async () => {
-      const uid = auth.currentUser?.uid
-      if (!uid) {
-        nav('/')
-        return
-      }
-      try {
-        const userDocRef = doc(db, 'users', uid)
-        const snap = await getDoc(userDocRef)
-        if (!snap.exists()) {
-          nav('/onboarding')
-          return
-        }
-        const p = snap.data() as Profile
-        // Basic completeness check (align with your SessionProvider rule)
-        const complete = !!(p.experience && p.goals?.length && p.personal?.height && p.personal?.weight)
-        if (!complete) {
-          nav('/onboarding')
-          return
-        }
-        setProfile(p)
-        // Initialize equipment from profile
-        setEquipment(p.equipment || [])
-
-        // Fetch recent workout feedback to determine intensity adjustment
-        if (isAdaptivePersonalizationEnabled()) {
-          await fetchAdaptiveIntensity(uid)
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error)
-        // If there's a permission error, redirect to auth
-        nav('/')
-      }
+    const uid = auth.currentUser?.uid
+    if (!uid) {
+      nav('/')
+      return
     }
 
-    fetchProfile()
-  }, [nav])
-
-  // Fetch adaptive intensity based on recent workout feedback
-  const fetchAdaptiveIntensity = async (uid: string) => {
-    try {
-      // Get recent workouts with feedback
-      const workoutsRef = collection(db, 'users', uid, 'workouts')
-      const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'), limit(5))
-      const snapshot = await getDocs(workoutsQuery)
-
-      if (snapshot.empty) {
-        setTargetIntensity(1.0)
-        setProgressionNote('')
-        return
-      }
-
-      // Find the most recent workout with feedback
-      let lastFeedback: 'easy' | 'right' | 'hard' | null = null
-      let recentCompletionRate = 0.8 // default
-      let totalSets = 0
-      let completedSets = 0
-
-      snapshot.docs.forEach(doc => {
-        const workout = doc.data()
-
-        // Get the most recent feedback
-        if (!lastFeedback && workout.feedback) {
-          lastFeedback = workout.feedback
-        }
-
-        // Calculate completion rate from all recent workouts
-        if (workout.exercises && Array.isArray(workout.exercises)) {
-          workout.exercises.forEach((exercise: { sets?: number; weights?: Record<string, number | null> }) => {
-            if (exercise.weights && typeof exercise.weights === 'object') {
-              const setCount = exercise.sets || Object.keys(exercise.weights).length
-              totalSets += setCount
-
-              Object.values(exercise.weights).forEach((weight: number | null) => {
-                if (weight !== null) {
-                  completedSets++
-                }
-              })
-            } else {
-              totalSets += exercise.sets || 0
-              completedSets += exercise.sets || 0
-            }
-          })
-        }
-      })
-
-      if (totalSets > 0) {
-        recentCompletionRate = completedSets / totalSets
-      }
-
-      // Compute target intensity using the same logic as backend
-      let newIntensity = 1.0 // baseline
-
-      if (lastFeedback) {
-        switch (lastFeedback) {
-          case 'easy':
-            newIntensity += 0.1
-            break
-          case 'hard':
-            newIntensity -= 0.1
-            break
-          case 'right':
-            newIntensity += 0.02
-            break
-        }
-      }
-
-      // Apply completion rate bias
-      if (recentCompletionRate < 0.6) {
-        newIntensity -= 0.05
-      } else if (recentCompletionRate > 0.9) {
-        newIntensity += 0.05
-      }
-
-      // Clamp to safe bounds
-      newIntensity = Math.max(0.6, Math.min(1.4, newIntensity))
-
-      setTargetIntensity(newIntensity)
-
-      // Generate progression note
-      const intensityChange = (newIntensity - 1.0) * 100
-      if (lastFeedback) {
-        const feedbackText = {
-          easy: 'user rated last workout too easy',
-          hard: 'user rated last workout too hard',
-          right: 'user rated last workout just right'
-        }[lastFeedback]
-
-        if (Math.abs(intensityChange) < 1) {
-          setProgressionNote(`${feedbackText}; maintain current difficulty level`)
+    // Handle preloaded data results
+    if (!preloadedData.isLoading) {
+      if (preloadedData.error) {
+        if (preloadedData.error.includes('not found') || preloadedData.error.includes('incomplete')) {
+          nav('/onboarding')
+          return
         } else {
-          setProgressionNote(
-            intensityChange > 0
-              ? `${feedbackText}; increase difficulty ~${Math.round(Math.abs(intensityChange))}% safely`
-              : `${feedbackText}; decrease difficulty ~${Math.round(Math.abs(intensityChange))}% safely`
-          )
+          console.error('Error with preloaded data:', preloadedData.error)
+          nav('/')
+          return
         }
-      } else {
-        setProgressionNote(
-          newIntensity > 1.0
-            ? `Increase difficulty ~${Math.round((newIntensity - 1.0) * 100)}% safely`
-            : newIntensity < 1.0
-              ? `Decrease difficulty ~${Math.round((1.0 - newIntensity) * 100)}% safely`
-              : 'Maintain baseline difficulty'
-        )
       }
 
-    } catch (error) {
-      console.error('Error fetching adaptive intensity:', error)
-      trackCustomEvent('adaptive_personalization_error', { error: String(error), context: 'adaptive_intensity_fetch' })
-      setTargetIntensity(1.0)
-      setProgressionNote('')
+      if (preloadedData.profile) {
+        // Initialize equipment from profile
+        setEquipment(preloadedData.profile.equipment || [])
+      }
     }
-  }
+  }, [nav, preloadedData])
 
-  const disabled = !type || !duration || loading || showProgressiveLoading
+  const disabled = !type || !duration || loading || showProgressiveLoading || preloadedData.isLoading || !preloadedData.profile
 
   async function generate() {
-    if (disabled || !profile) return
+    if (disabled || !preloadedData.profile) return
 
     // Check subscription limits
     if (!canGenerateWorkout) {
@@ -244,16 +116,16 @@ export default function Generate() {
     const uid = auth.currentUser?.uid
 
     const payload = {
-      experience: profile.experience,
-      goals: profile.goals,
+      experience: preloadedData.profile.experience,
+      goals: preloadedData.profile.goals,
       equipment: equipment,
-      personalInfo: profile.personal,
-      injuries: profile.injuries,
+      personalInfo: preloadedData.profile.personal,
+      injuries: preloadedData.profile.injuries,
       workoutType: type,
       duration,
       uid,
-      targetIntensity,
-      progressionNote
+      targetIntensity: preloadedData.targetIntensity,
+      progressionNote: preloadedData.progressionNote
     }
 
     const url = import.meta.env.VITE_WORKOUT_FN_URL as string
@@ -277,10 +149,10 @@ export default function Generate() {
         // Log telemetry for workout generation with intensity
         if (uid && isAdaptivePersonalizationEnabled()) {
           trackCustomEvent('workout_generated_with_intensity', {
-            target_intensity: targetIntensity,
+            target_intensity: preloadedData.targetIntensity,
             workout_type: type,
             duration,
-            has_progression_note: Boolean(progressionNote)
+            has_progression_note: Boolean(preloadedData.progressionNote)
           })
         }
 
@@ -289,16 +161,10 @@ export default function Generate() {
 
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
 
-        // Wait for loading animation to complete before navigating
-        setTimeout(() => {
-          // Clear loading states just before navigation to prevent flash
-          setLoading(false)
-          setShowProgressiveLoading(false)
-          // Small delay to ensure loading states are cleared before navigation
-          setTimeout(() => {
-            nav('/workout/preview')
-          }, 50)
-        }, 1200) // Reduced timeout for faster transition
+        // Navigate immediately when workout is ready
+        setLoading(false)
+        setShowProgressiveLoading(false)
+        nav('/workout/preview')
       } finally {
         clearTimeout(t)
       }
@@ -307,12 +173,12 @@ export default function Generate() {
     // small retry (2 attempts total) for transient failures
     try {
       await fetchOnce()
-      // Success - loading states will be cleared in the navigation timeout
+      // Success - loading states cleared in fetchOnce
     } catch {
       try {
-        await new Promise(r => setTimeout(r, 1200))
+        await new Promise(r => setTimeout(r, 1000)) // Brief delay before retry
         await fetchOnce()
-        // Success on retry - loading states will be cleared in the navigation timeout
+        // Success on retry - loading states cleared in fetchOnce
       } catch (e2) {
         // Clear loading states on error
         setLoading(false)
@@ -458,7 +324,7 @@ export default function Generate() {
         )}
 
         {/* Enhanced Intensity Calibration Indicator */}
-        {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
+        {preloadedData.targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
           <section className="mt-8 sm:mt-10">
             <div className="group relative rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-indigo-200/30 hover:shadow-2xl hover:shadow-indigo-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
               <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-indigo-400/20 to-purple-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
@@ -469,11 +335,11 @@ export default function Generate() {
                 </div>
                 <div className="flex-1 space-y-2">
                   <div className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
-                    Intensity: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
+                    Intensity: {preloadedData.targetIntensity > 1.0 ? '+' : ''}{Math.round((preloadedData.targetIntensity - 1.0) * 100)}%
                   </div>
-                  {progressionNote && (
+                  {preloadedData.progressionNote && (
                     <div className="text-sm sm:text-base text-gray-600/90 font-medium capitalize leading-relaxed">
-                      {progressionNote}
+                      {preloadedData.progressionNote}
                     </div>
                   )}
                   <div className="text-xs sm:text-sm text-indigo-600/80 font-medium">
@@ -606,6 +472,13 @@ export default function Generate() {
                   <div className="absolute inset-0 w-5 h-5 border border-white/20 rounded-full animate-pulse"></div>
                 </div>
                 <span className="font-semibold">Generating AI Workout…</span>
+              </div>
+            ) : preloadedData.isLoading ? (
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                </div>
+                <span className="font-semibold">Loading Profile…</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">

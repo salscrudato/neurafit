@@ -88,75 +88,95 @@ export const generateWorkout = onRequest(
         progressionNote?: string;
       } || {};
 
-      // Check subscription limits if uid is provided
+      // Run subscription check and adaptive personalization in parallel if uid is provided
+      let finalTargetIntensity = targetIntensity || 1.0;
+      let finalProgressionNote = progressionNote || '';
+
       if (uid) {
         try {
           const { getFirestore } = await import('firebase-admin/firestore');
           const db = getFirestore();
 
-          const userDoc = await db.collection('users').doc(uid).get();
-          const userData = userDoc.data();
-          const subscription = userData?.subscription as { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number } | undefined;
+          // Run subscription check and adaptive state fetch in parallel
+          const [subscriptionResult, adaptiveResult] = await Promise.allSettled([
+            // Subscription check
+            (async () => {
+              const userDoc = await db.collection('users').doc(uid).get();
+              const userData = userDoc.data();
+              const subscription = userData?.subscription as { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number } | undefined;
 
-          // Initialize subscription data for new users
-          if (!subscription) {
-            const initialSubscriptionData = {
-              status: 'incomplete',
-              workoutCount: 0,
-              freeWorkoutsUsed: 0,
-              freeWorkoutLimit: 5,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            };
+              // Initialize subscription data for new users
+              if (!subscription) {
+                const initialSubscriptionData = {
+                  status: 'incomplete',
+                  workoutCount: 0,
+                  freeWorkoutsUsed: 0,
+                  freeWorkoutLimit: 5,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                };
 
-            await db.collection('users').doc(uid).set(
-              { subscription: initialSubscriptionData },
-              { merge: true }
-            );
+                await db.collection('users').doc(uid).set(
+                  { subscription: initialSubscriptionData },
+                  { merge: true }
+                );
 
-            console.log('Initialized subscription data for new user:', uid);
-          } else {
-            const isActive = subscription.status === 'active' || subscription.status === 'trialing';
-            const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0;
-            const freeWorkoutLimit = subscription.freeWorkoutLimit || 5;
+                console.log('Initialized subscription data for new user:', uid);
+                return null; // New user, no limits
+              } else {
+                const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+                const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0;
+                const freeWorkoutLimit = subscription.freeWorkoutLimit || 5;
 
-            // Check if user can generate workout
-            if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {
-              res.status(402).json({
-                error: 'Subscription required',
-                message: 'You\'ve used all your free workouts. Please subscribe to continue.',
-                freeWorkoutsUsed,
-                freeWorkoutLimit,
-              });
-              return;
-            }
+                // Check if user can generate workout
+                if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {
+                  return {
+                    error: 'Subscription required',
+                    message: 'You\'ve used all your free workouts. Please subscribe to continue.',
+                    freeWorkoutsUsed,
+                    freeWorkoutLimit,
+                  };
+                }
+                return null; // User can generate workout
+              }
+            })(),
+            // Adaptive personalization (only if no targetIntensity provided)
+            !targetIntensity ? (async () => {
+              const adaptiveState = await getAdaptiveState(uid);
+              let recentCompletion = adaptiveState.recentCompletionRate;
+              if (recentCompletion === undefined) {
+                recentCompletion = await calculateRecentCompletionRate(uid);
+              }
+              return {
+                difficultyScalar: adaptiveState.difficultyScalar,
+                lastFeedback: adaptiveState.lastFeedback,
+                recentCompletion,
+              };
+            })() : Promise.resolve(null)
+          ]);
+
+          // Handle subscription check result
+          if (subscriptionResult.status === 'fulfilled' && subscriptionResult.value) {
+            res.status(402).json(subscriptionResult.value);
+            return;
           }
-        } catch (error) {
-          console.error('Error checking subscription:', error);
-          // Continue with workout generation if subscription check fails
-        }
-      }
-
-      // Handle adaptive personalization
-      let finalTargetIntensity = targetIntensity || 1.0;
-      let finalProgressionNote = progressionNote || '';
-
-      // If uid provided but no targetIntensity, fetch from adaptive state
-      if (uid && !targetIntensity) {
-        try {
-          const adaptiveState = await getAdaptiveState(uid);
-          finalTargetIntensity = adaptiveState.difficultyScalar;
-
-          // Calculate recent completion rate if not available
-          let recentCompletion = adaptiveState.recentCompletionRate;
-          if (recentCompletion === undefined) {
-            recentCompletion = await calculateRecentCompletionRate(uid);
+          if (subscriptionResult.status === 'rejected') {
+            console.error('Error checking subscription:', subscriptionResult.reason);
+            // Continue with workout generation if subscription check fails
           }
 
-          finalProgressionNote = generateProgressionNote(1.0, finalTargetIntensity, adaptiveState.lastFeedback);
+          // Handle adaptive personalization result
+          if (adaptiveResult.status === 'fulfilled' && adaptiveResult.value) {
+            finalTargetIntensity = adaptiveResult.value.difficultyScalar;
+            finalProgressionNote = generateProgressionNote(1.0, finalTargetIntensity, adaptiveResult.value.lastFeedback);
+          } else if (adaptiveResult.status === 'rejected') {
+            console.error('Error fetching adaptive state:', adaptiveResult.reason);
+            // Continue with defaults
+          }
+
         } catch (error) {
-          console.error('Error fetching adaptive state:', error);
-          // Continue with defaults
+          console.error('Error in parallel database operations:', error);
+          // Continue with workout generation if database operations fail
         }
       }
 
@@ -195,9 +215,9 @@ export const generateWorkout = onRequest(
       const programmingGuidelines = getProgrammingRecommendations(filteredGoals, experience || 'Beginner');
       const professionalEnhancements = generateProfessionalPromptEnhancement(contextForEnhancements);
 
-      // Build a structured prompt for GPT with professional fitness programming principles
+      // Ultra-concise prompt for maximum speed
       const prompt = `
-You are a NASM-certified personal trainer with 10+ years of experience. Create a ${duration}-minute ${workoutType} workout following evidence-based fitness programming principles.
+Create ${duration}min ${workoutType} workout for ${experience} level. Equipment: ${filteredEquipment.join(', ') || 'bodyweight'}. Goals: ${filteredGoals.join(', ')}.
 
 CLIENT PROFILE:
 - Experience: ${experience || '—'}
@@ -301,15 +321,16 @@ CRITICAL REQUIREMENTS:
 - Example rest periods: Squats=150s, Bicep Curls=75s, Jumping Jacks=60s, Arm Circles=30s
 `.trim();
 
-      // Use GPT-4o for now (GPT-5 nano requires special access)
-      console.log('🤖 Using GPT-4o for workout generation');
+      // Use GPT-3.5-turbo - fastest model for structured generation
+      console.log('⚡ Using GPT-3.5-turbo for ultra-fast workout generation');
       const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
-        temperature: 0.7,
+        model: 'gpt-3.5-turbo',
+        temperature: 0.3, // Lower temperature for faster, more focused responses
+        max_tokens: 1500, // Limit tokens for speed
         messages: [
           {
             role: 'system',
-            content: 'You are a precise fitness coach that only outputs valid JSON.',
+            content: 'Output only valid JSON. Be concise.',
           },
           { role: 'user', content: prompt },
         ],
