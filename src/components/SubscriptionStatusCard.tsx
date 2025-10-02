@@ -11,7 +11,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { useSubscription, useSubscriptionStatus } from '../hooks/useSubscription'
-import { getCustomerPortalUrl } from '../lib/subscription'
+import { subscriptionService } from '../lib/subscriptionService'
 import { Button } from '../design-system/components/Button'
 
 interface SubscriptionStatusCardProps {
@@ -39,8 +39,8 @@ export function SubscriptionStatusCard({ className }: SubscriptionStatusCardProp
     setError('')
     
     try {
-      const { url } = await getCustomerPortalUrl(subscription.customerId)
-      window.open(url, '_blank')
+      const url = await subscriptionService.getCustomerPortalUrl()
+      if (url) window.open(url, '_blank')
     } catch (err) {
       console.error('Error opening billing portal:', err)
       setError('Failed to open billing portal')

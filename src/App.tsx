@@ -1,12 +1,10 @@
-import { useEffect, Suspense, lazy } from 'react';
+import { useEffect, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-import { CriticalErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
-import LoadingSpinner from './components/LoadingSpinner';
-import SubscriptionPersistenceGuard from './components/SubscriptionPersistenceGuard';
-import SubscriptionHealthMonitor from './components/SubscriptionHealthMonitor';
-import SubscriptionFixIntegration from './components/SubscriptionFixIntegration';
-import { FirebaseInitializer } from './components/FirebaseInitializer';
+import { CriticalErrorBoundary } from './components/ErrorBoundary';
+import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
+import { SubscriptionMonitor } from './components/SubscriptionMonitor';
+
 
 // Eager-loaded critical pages
 import Auth from './pages/Auth';
@@ -27,7 +25,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 
 import { AppProvider } from './providers/AppProvider';
-import { HomeGate, RequireAuth, RequireProfile } from './routes/guards';
+import { HomeGate } from './routes/guards';
 import { lockOrientation, preventZoom } from './utils/orientation';
 import { versionManager } from './utils/version';
 import { usePageTracking } from './hooks/useAnalytics';
@@ -77,172 +75,33 @@ function AppContent() {
       <div className="min-h-screen">
         <Routes>
           {/* Public legal pages */}
-          <Route
-            path="/terms"
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Terms />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/privacy"
-            element={
-              <Suspense fallback={<LoadingSpinner />}>
-                <Privacy />
-              </Suspense>
-            }
-          />
+          <Route path="/terms" element={<PublicRoute lazy><Terms /></PublicRoute>} />
+          <Route path="/privacy" element={<PublicRoute lazy><Privacy /></PublicRoute>} />
 
           {/* Landing route: determines user redirection */}
           <Route path="/" element={<HomeGate authPage={<Auth />} />} />
 
           {/* Onboarding: requires authentication but not a complete profile */}
-          <Route
-            path="/onboarding"
-            element={
-              <RequireAuth>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Onboarding />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireAuth>
-            }
-          />
+          <Route path="/onboarding" element={<AuthRoute lazy><Onboarding /></AuthRoute>} />
 
           {/* Protected routes: require completed profile */}
-          <Route
-            path="/dashboard"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Dashboard />
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/generate"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Generate />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/workout/preview"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Preview />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/workout/run"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Exercise />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/workout/rest"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Rest />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/workout/complete"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Complete />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <History />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/workout/:workoutId"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <WorkoutDetail />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Profile />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
-          <Route
-            path="/subscription"
-            element={
-              <RequireProfile>
-                <PageErrorBoundary>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Subscription />
-                  </Suspense>
-                </PageErrorBoundary>
-              </RequireProfile>
-            }
-          />
+          <Route path="/dashboard" element={<ProfileRoute><Dashboard /></ProfileRoute>} />
+          <Route path="/generate" element={<ProfileRoute lazy><Generate /></ProfileRoute>} />
+          <Route path="/workout/preview" element={<ProfileRoute lazy><Preview /></ProfileRoute>} />
+          <Route path="/workout/run" element={<ProfileRoute lazy><Exercise /></ProfileRoute>} />
+          <Route path="/workout/rest" element={<ProfileRoute lazy><Rest /></ProfileRoute>} />
+          <Route path="/workout/complete" element={<ProfileRoute lazy><Complete /></ProfileRoute>} />
+          <Route path="/history" element={<ProfileRoute lazy><History /></ProfileRoute>} />
+          <Route path="/workout/:workoutId" element={<ProfileRoute lazy><WorkoutDetail /></ProfileRoute>} />
+          <Route path="/profile" element={<ProfileRoute lazy><Profile /></ProfileRoute>} />
+          <Route path="/subscription" element={<ProfileRoute lazy><Subscription /></ProfileRoute>} />
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
 
-        {/* Final Subscription Fix Integration - Simple and reliable */}
-        <SubscriptionFixIntegration />
-
-        {/* Subscription Health Monitoring - Robust auto-detection and fixing */}
-        <SubscriptionHealthMonitor />
-
-        {/* Legacy Subscription Persistence Guard - Backup system */}
-        <SubscriptionPersistenceGuard />
+        {/* Unified Subscription Monitor - Consolidated health monitoring and fixing */}
+        <SubscriptionMonitor />
       </div>
     </CriticalErrorBoundary>
   );
@@ -250,10 +109,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <FirebaseInitializer>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
-    </FirebaseInitializer>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }

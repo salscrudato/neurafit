@@ -14,7 +14,7 @@ import {
   INJURY_OPTIONS
 } from '../config/onboarding'
 import AppHeader from '../components/AppHeader'
-import { ProfilePageSkeleton } from '../components/SkeletonLoaders'
+import { ProfilePageSkeleton } from '../components/Loading'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -27,7 +27,7 @@ type ProfileData = {
   injuries?: Injuries
 }
 
-// Constants are now imported from ../config/onboarding.ts
+
 
 /* -------------------- Small UI primitives -------------------- */
 function Section({ title, desc, children }: {title:string; desc?:string; children:React.ReactNode}) {

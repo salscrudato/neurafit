@@ -1,12 +1,14 @@
 import { useEffect, type ReactNode } from 'react';
-import { getAuthInstance, getFirestoreInstance } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useAppStore } from '../store';
 import { isProfileComplete } from '../session/types';
 import type { UserProfile } from '../session/types';
 import type { UserSubscription } from '../types/subscription';
 import { ensureUserDocument } from '../lib/user-utils';
-import { robustSubscriptionManager } from '../lib/robust-subscription-manager';
-import SubscriptionErrorBoundary from '../components/SubscriptionErrorBoundary';
+// Subscription service available but not used in this component
+import { ComponentErrorBoundary } from '../components/ErrorBoundary';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -30,14 +32,8 @@ export function AppProvider({ children }: AppProviderProps) {
     let unsubSubscription: (() => void) | null = null;
     let unsubAuth: (() => void) | null = null;
 
-    const setupAuthListener = async () => {
-      const auth = await getAuthInstance();
-      if (!auth) {
-        console.error('❌ Auth instance not available');
-        return;
-      }
-
-      unsubAuth = auth.onAuthStateChanged(async (user: any) => {
+    const setupAuthListener = () => {
+      unsubAuth = onAuthStateChanged(auth, async (user: User | null) => {
       try {
         if (process.env.NODE_ENV === 'development') {
           console.log('🔐 Auth state changed:', user?.email || 'signed out');
@@ -66,16 +62,10 @@ export function AppProvider({ children }: AppProviderProps) {
           try {
             await ensureUserDocument(user);
 
-            const db = await getFirestoreInstance();
-            if (!db) {
-              console.error('❌ Firestore instance not available');
-              return;
-            }
-
-            const profileRef = db.collection('users').doc(user.uid);
-            unsubDoc = profileRef.onSnapshot(
+            const profileRef = doc(db, 'users', user.uid);
+            unsubDoc = onSnapshot(profileRef,
               (snapshot) => {
-                if (!snapshot.exists) {
+                if (!snapshot.exists()) {
                   setProfile(null);
                   setAuthStatus('needsOnboarding');
                   return;
@@ -89,35 +79,17 @@ export function AppProvider({ children }: AppProviderProps) {
                 if (profileData.subscription) {
                   setSubscription(profileData.subscription);
                 } else {
-                  // Use robust subscription manager to get subscription
-                  robustSubscriptionManager.refreshSubscription().then(subscription => {
-                    if (subscription) {
-                      setSubscription(subscription);
-                    } else {
-                      const defaultSubscription: UserSubscription = {
-                        customerId: '',
-                        status: 'incomplete',
-                        workoutCount: 0,
-                        freeWorkoutsUsed: 0,
-                        freeWorkoutLimit: 5,
-                        createdAt: Date.now(),
-                        updatedAt: Date.now(),
-                      };
-                      setSubscription(defaultSubscription);
-                    }
-                  }).catch(error => {
-                    console.error('Failed to get robust subscription:', error);
-                    const defaultSubscription: UserSubscription = {
-                      customerId: '',
-                      status: 'incomplete',
-                      workoutCount: 0,
-                      freeWorkoutsUsed: 0,
-                      freeWorkoutLimit: 5,
-                      createdAt: Date.now(),
-                      updatedAt: Date.now(),
-                    };
-                    setSubscription(defaultSubscription);
-                  });
+                  // Set default subscription if none exists
+                  const defaultSubscription: UserSubscription = {
+                    customerId: '',
+                    status: 'incomplete',
+                    workoutCount: 0,
+                    freeWorkoutsUsed: 0,
+                    freeWorkoutLimit: 5,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                  };
+                  setSubscription(defaultSubscription);
                 }
                 setSubscriptionLoading(false);
               },
@@ -258,9 +230,9 @@ export function AppProvider({ children }: AppProviderProps) {
   }, [setAuthStatus]);
 
   return (
-    <SubscriptionErrorBoundary>
+    <ComponentErrorBoundary>
       {children}
-    </SubscriptionErrorBoundary>
+    </ComponentErrorBoundary>
   );
 }
 

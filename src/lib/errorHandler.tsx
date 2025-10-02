@@ -403,8 +403,9 @@ export class ErrorHandler {
   }
 }
 
-// Note: errorHandler instance and convenience functions have been moved to error-handler-utils.ts
-// to fix Fast Refresh warnings. Import them from there instead.
+// Singleton instance moved to errorHandlerHooks.ts to fix Fast Refresh warnings
 
-// Note: withErrorHandler HOC and useErrorHandler hook have been moved to error-handler-utils.ts
-// to fix Fast Refresh warnings. Import them from there instead.
+// Convenience functions for common error types - moved to separate file to fix Fast Refresh warnings
+// Import from errorHandlerUtils.ts instead
+
+// Hooks and utilities moved to errorHandlerHooks.ts to fix Fast Refresh warnings

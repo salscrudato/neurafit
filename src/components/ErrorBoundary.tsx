@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
+import React, { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react'
 
 interface Props {
@@ -224,5 +224,13 @@ export const PageErrorBoundary = ({ children }: { children: ReactNode }) => (
     {children}
   </ErrorBoundary>
 )
+
+export const ComponentErrorBoundary = ({ children }: { children: ReactNode }) => (
+  <ErrorBoundary level="component">
+    {children}
+  </ErrorBoundary>
+)
+
+
 
 export default ErrorBoundary

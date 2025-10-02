@@ -5,7 +5,7 @@
  */
 
 // Stub function - all analytics calls are no-ops to prevent bundling issues
-const stub = (..._args: any[]): void => {
+const stub = (..._args: unknown[]): void => {
   // No-op to prevent Firebase bundling issues
 };
 
@@ -61,9 +61,9 @@ export const trackButtonClick = (buttonName: string, location: string): void =>
   stub('button_click', { buttonName, location });
 
 // User Properties
-export const setUserAnalyticsProperties = (userId: string, properties: Record<string, any>): void => 
+export const setUserAnalyticsProperties = (userId: string, properties: Record<string, unknown>): void =>
   stub('set_user_properties', { userId, properties });
-export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, any>): void => 
+export const setEnhancedUserProperties = (userId: string, userProfile: Record<string, unknown>): void =>
   stub('set_enhanced_user_properties', { userId, userProfile });
 
 // Custom Events

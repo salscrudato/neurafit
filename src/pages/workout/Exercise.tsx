@@ -220,10 +220,10 @@ export default function Exercise() {
     weightState.executeOptimisticUpdate(action)
   }
 
-  // Removed personalization engine initialization - using AI rest periods directly
 
 
-  // goRest function moved above to be available for callbacks
+
+
 
   const completeSet = () => {
     // RULE 1: If a set is complete regardless of whether or not a weight is entered,

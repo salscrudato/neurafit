@@ -1,4 +1,5 @@
-import { getFirestoreInstance } from './firebase';
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 
 /**
@@ -9,30 +10,15 @@ export async function ensureUserDocument(user: User): Promise<void> {
   try {
     console.log('🔍 Ensuring user document for:', user.uid);
 
-    // Wait a bit longer for Firebase to be ready
-    let retries = 0;
-    let db = null;
-
-    while (!db && retries < 10) {
-      db = await getFirestoreInstance();
-      if (!db) {
-        console.log(`⏳ Waiting for Firestore (attempt ${retries + 1}/10)...`);
-        await new Promise(resolve => setTimeout(resolve, 500));
-        retries++;
-      }
-    }
-
-    if (!db) {
-      throw new Error('Firestore not available after retries');
-    }
+    // Firestore is now available synchronously
 
     console.log('✅ Firestore instance ready, creating user document...');
-    const userDocRef = db.collection('users').doc(user.uid);
-    const userDoc = await userDocRef.get();
+    const userDocRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userDocRef);
 
-    if (!userDoc.exists) {
+    if (!userDoc.exists()) {
       console.log('Creating user document for:', user.uid);
-      await userDocRef.set(
+      await setDoc(userDocRef,
         {
           uid: user.uid,
           email: user.email,
@@ -46,7 +32,7 @@ export async function ensureUserDocument(user: User): Promise<void> {
       console.log('User document created successfully');
     } else {
       // Optional: Update updated_at if document exists
-      await userDocRef.set(
+      await setDoc(userDocRef,
         {
           updated_at: new Date().toISOString(),
         },
@@ -64,21 +50,17 @@ export async function ensureUserDocument(user: User): Promise<void> {
  */
 export async function createDefaultSubscription(uid: string): Promise<void> {
   try {
-    const db = await getFirestoreInstance();
-    if (!db) {
-      throw new Error('Firestore not available');
-    }
 
-    const userDocRef = db.collection('users').doc(uid);
-    const userDoc = await userDocRef.get();
+    const userDocRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userDocRef);
 
-    if (!userDoc.exists) {
+    if (!userDoc.exists()) {
       throw new Error('User document does not exist');
     }
 
     const userData = userDoc.data();
     if (!userData?.subscription) {
-      await userDocRef.set(
+      await setDoc(userDocRef,
         {
           subscription: {
             customerId: '',

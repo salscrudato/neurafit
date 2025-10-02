@@ -1,111 +1,46 @@
-// Firebase service instances - will be populated from external loader
-interface FirebaseServices {
-  app: any;
-  auth: any;
-  firestore: any;
-  functions: any;
-  analytics: any;
+// Simplified Firebase configuration using standard Firebase v9+ modular SDK
+import { initializeApp, type FirebaseApp } from 'firebase/app'
+import { getAuth, type Auth } from 'firebase/auth'
+import { getFirestore, type Firestore } from 'firebase/firestore'
+import { getFunctions, type Functions } from 'firebase/functions'
+import { getAnalytics, type Analytics, isSupported } from 'firebase/analytics'
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: 'AIzaSyAKo_Bf8aPCWSPM9Nigcnga1t6_Psi70T8',
+  authDomain: 'neurafit-ai-2025.firebaseapp.com',
+  projectId: 'neurafit-ai-2025',
+  storageBucket: 'neurafit-ai-2025.firebasestorage.app',
+  messagingSenderId: '226392212811',
+  appId: '1:226392212811:web:4e41b01723ca5ecec8d4ce',
+  measurementId: 'G-5LHTKTWX0M',
 }
 
-let initializationPromise: Promise<FirebaseServices> | null = null;
+// Initialize Firebase
+console.log('🔥 Initializing Firebase...')
+const app: FirebaseApp = initializeApp(firebaseConfig)
 
-// Declare global Firebase loader interface
-declare global {
-  interface Window {
-    NeuraFitFirebase?: {
-      initialized: boolean;
-      services: any;
-      init: () => Promise<any>;
-      getServices: () => Promise<any>;
-    };
+// Initialize services
+export const auth: Auth = getAuth(app)
+export const db: Firestore = getFirestore(app)
+export const fns: Functions = getFunctions(app)
+
+// Initialize analytics conditionally
+let analytics: Analytics | null = null
+isSupported().then((supported) => {
+  if (supported) {
+    analytics = getAnalytics(app)
+    console.log('✅ Firebase Analytics initialized')
   }
-}
+}).catch((error) => {
+  console.warn('⚠️ Analytics initialization failed:', error)
+})
 
-// Initialize Firebase using external loader (completely outside main bundle)
-export const initializeFirebase = async (): Promise<FirebaseServices> => {
-  if (initializationPromise) return initializationPromise;
+console.log('✅ Firebase initialization complete!')
 
-  initializationPromise = new Promise(async (resolve, reject) => {
-    try {
-      console.log('🔥 Starting Firebase initialization via external loader...');
+// Simplified service getters (now synchronous)
+export const getAuthInstance = (): Auth => auth
+export const getFirestoreInstance = (): Firestore => db
+export const getFunctionsInstance = (): Functions => fns
+export const getAnalyticsInstance = (): Analytics | null => analytics
 
-      // Wait for external Firebase loader to be available
-      let attempts = 0;
-      const maxAttempts = 50; // 5 seconds max wait
-
-      while (!window.NeuraFitFirebase && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-
-      if (!window.NeuraFitFirebase) {
-        throw new Error('Firebase loader not available after 5 seconds');
-      }
-
-      console.log('✅ Firebase loader found, initializing services...');
-
-      // Initialize Firebase via external loader
-      const services = await window.NeuraFitFirebase.getServices();
-
-      if (!services || !services.auth || !services.firestore || !services.functions) {
-        throw new Error('Firebase services not properly initialized');
-      }
-
-      // Map services to our interface
-      const mappedServices = {
-        app: services.app,
-        auth: services.auth,
-        firestore: services.firestore,
-        functions: services.functions,
-        analytics: services.analytics
-      };
-
-      console.log('🎉 Firebase initialization complete via external loader!');
-      resolve(mappedServices);
-
-    } catch (error) {
-      console.error('❌ Firebase initialization failed:', error);
-      reject(error);
-    }
-  });
-
-  return initializationPromise;
-};
-
-// Async getters that ensure Firebase is initialized
-export const getAuthInstance = async () => {
-  const services = await initializeFirebase();
-  return services.auth;
-};
-
-export const getFirestoreInstance = async () => {
-  const services = await initializeFirebase();
-  return services.firestore;
-};
-
-export const getFunctionsInstance = async () => {
-  const services = await initializeFirebase();
-  return services.functions;
-};
-
-export const getAnalyticsInstance = async () => {
-  const services = await initializeFirebase();
-  return services.analytics;
-};
-
-// Synchronous exports - these will be null until Firebase is initialized
-export let auth: any = null;
-export let db: any = null;
-export let fns: any = null;
-export let analytics: any = null;
-
-// Initialize Firebase and populate exports
-initializeFirebase().then(services => {
-  auth = services.auth;
-  db = services.firestore;
-  fns = services.functions;
-  analytics = services.analytics;
-  console.log('✅ Firebase services ready for synchronous access');
-}).catch(error => {
-  console.error('❌ Failed to initialize Firebase services:', error);
-});

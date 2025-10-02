@@ -7,7 +7,7 @@ declare global {
   
   // Global functions for update management
   interface Window {
-    applyUpdate: () => void
+    applyUpdate?: () => void
   }
 }
 

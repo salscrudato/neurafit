@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { convertToDate } from '../utils/timestamp'
 import { ArrowLeft, Clock, Calendar, CheckCircle, XCircle, Weight } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
-import { WorkoutDetailSkeleton } from '../components/SkeletonLoaders'
+import { WorkoutDetailSkeleton } from '../components/Loading'
 
 type Exercise = {
   name: string

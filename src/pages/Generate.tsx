@@ -2,14 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
-import { getAuthInstance, getFirestoreInstance } from '../lib/firebase'
+import { auth, db } from '../lib/firebase'
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
 import { logWorkoutGeneratedWithIntensity, logAdaptivePersonalizationError } from '../lib/telemetry'
 import { Brain } from 'lucide-react'
-import { ProgressiveLoadingBar } from '../components/ProgressiveLoadingBar'
+import { ProgressiveLoadingBar } from '../components/Loading'
 import { useSubscription } from '../hooks/useSubscription'
-import { refreshSubscriptionData } from '../lib/subscription-sync'
+import { subscriptionService } from '../lib/subscriptionService'
 import SubscriptionErrorHandler, { SubscriptionStatusBanner } from '../components/SubscriptionErrorHandler'
 import { SimpleSubscription } from '../components/SimpleSubscription'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
@@ -68,22 +69,15 @@ export default function Generate() {
   // Fetch profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
-      const auth = await getAuthInstance()
-      const uid = auth?.currentUser?.uid
+      const uid = auth.currentUser?.uid
       if (!uid) {
         nav('/')
         return
       }
       try {
-        const db = await getFirestoreInstance()
-        if (!db) {
-          console.error('Firestore not available')
-          return
-        }
-
-        const userDocRef = db.collection('users').doc(uid)
-        const snap = await userDocRef.get()
-        if (!snap.exists) {
+        const userDocRef = doc(db, 'users', uid)
+        const snap = await getDoc(userDocRef)
+        if (!snap.exists()) {
           nav('/onboarding')
           return
         }
@@ -115,17 +109,10 @@ export default function Generate() {
   // Fetch adaptive intensity based on recent workout feedback
   const fetchAdaptiveIntensity = async (uid: string) => {
     try {
-      const db = await getFirestoreInstance()
-      if (!db) {
-        console.error('Firestore not available')
-        setTargetIntensity(1.0)
-        setProgressionNote('')
-        return
-      }
-
       // Get recent workouts with feedback
-      const workoutsRef = db.collection('users').doc(uid).collection('workouts')
-      const snapshot = await workoutsRef.orderBy('timestamp', 'desc').limit(5).get()
+      const workoutsRef = collection(db, 'users', uid, 'workouts')
+      const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'), limit(5))
+      const snapshot = await getDocs(workoutsQuery)
 
       if (snapshot.empty) {
         setTargetIntensity(1.0)
@@ -252,8 +239,7 @@ export default function Generate() {
     setLoading(true)
     setShowProgressiveLoading(true)
 
-    const auth = await getAuthInstance()
-    const uid = auth?.currentUser?.uid
+    const uid = auth.currentUser?.uid
 
     const payload = {
       experience: profile.experience,
@@ -326,7 +312,7 @@ export default function Generate() {
           // This handles cases where payment was completed but subscription status hasn't synced yet
           try {
             console.log('🔄 Payment required error - checking for recent subscription updates...')
-            const freshSubscription = await refreshSubscriptionData()
+            const freshSubscription = await subscriptionService.getSubscription()
 
             if (freshSubscription && (freshSubscription.status === 'active' || freshSubscription.status === 'trialing')) {
               console.log('✅ Found active subscription after refresh, retrying workout generation...')

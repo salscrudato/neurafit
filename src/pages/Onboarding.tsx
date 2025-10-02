@@ -50,7 +50,7 @@ type Profile = {
   injuries?: Injuries
 }
 
-// Constants are now imported from ../config/onboarding.ts
+
 
 type Draft = {
   experience: string | null

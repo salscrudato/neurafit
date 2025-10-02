@@ -9,12 +9,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { useSubscription, useSubscriptionStatus } from '../hooks/useSubscription'
-import {
-  cancelSubscription,
-  reactivateSubscription,
-  getCustomerPortalUrl,
-  formatDate
-} from '../lib/subscription'
+import { subscriptionService, formatDate } from '../lib/subscriptionService'
 
 interface SubscriptionManagementProps {
   onUpgrade?: () => void
@@ -43,7 +38,7 @@ export function SubscriptionManagement({ onUpgrade }: SubscriptionManagementProp
     setSuccess('')
     
     try {
-      await cancelSubscription(subscription.subscriptionId)
+      await subscriptionService.cancelSubscription()
       setSuccess('Subscription canceled. You\'ll retain access until the end of your billing period.')
       refreshSubscription()
     } catch (err) {
@@ -61,7 +56,7 @@ export function SubscriptionManagement({ onUpgrade }: SubscriptionManagementProp
     setSuccess('')
     
     try {
-      await reactivateSubscription(subscription.subscriptionId)
+      await subscriptionService.reactivateSubscription()
       setSuccess('Subscription reactivated successfully!')
       refreshSubscription()
     } catch (err) {
@@ -78,8 +73,8 @@ export function SubscriptionManagement({ onUpgrade }: SubscriptionManagementProp
     setError('')
     
     try {
-      const result = await getCustomerPortalUrl(subscription.customerId)
-      window.open(result.url, '_blank')
+      const url = await subscriptionService.getCustomerPortalUrl()
+      if (url) window.open(url, '_blank')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to open billing portal')
     } finally {

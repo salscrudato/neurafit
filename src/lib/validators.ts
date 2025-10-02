@@ -1,7 +1,7 @@
 // Common validation utilities
 // Extracts repeated validation logic into reusable functions
 
-import { handleValidationError } from './error-handler-utils'
+import { handleValidationError } from './errorHandlerUtils'
 
 // Validation result interface
 export interface ValidationResult {
@@ -366,10 +366,7 @@ export const withValidation = <T extends (..._args: unknown[]) => unknown>(
     
     if (!validation.isValid) {
       const errorMessage = validation.errors.join(', ')
-      handleValidationError(errorMessage, undefined, {
-        action: fn.name,
-        metadata: { validationErrors: validation.errors, validationWarnings: validation.warnings }
-      })
+      handleValidationError(new Error(errorMessage))
       throw new Error(errorMessage)
     }
     

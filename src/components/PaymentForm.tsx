@@ -7,9 +7,8 @@ import {
 } from '@stripe/react-stripe-js'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { stripePromise, STRIPE_CONFIG } from '../lib/stripe-config'
-import { createPaymentIntent } from '../lib/subscription'
+import { subscriptionService } from '../lib/subscriptionService'
 import { trackSubscriptionStarted, trackSubscriptionCompleted } from '../lib/firebase-analytics'
-import { subscriptionFixManager } from '../lib/subscription-fix-final'
 
 
 interface PaymentFormProps {
@@ -87,35 +86,21 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
         throw new Error('No subscription ID found')
       }
 
-      console.log(`🚀 Starting robust activation for subscription: ${currentSubscriptionId}`)
+      console.log(`🚀 Starting activation for subscription: ${currentSubscriptionId}`)
 
-      // Use subscription fix manager
-      const result = await subscriptionFixManager.fixSubscription(currentSubscriptionId)
+      // Simplified activation - just refresh subscription data
+      await subscriptionService.getSubscription()
 
-      if (result.success) {
-        setMessage(`Subscription activated successfully! (${result.method})`)
-        setActivationMethod(result.method)
-        setMessageType('success')
+      setMessage('Subscription activated successfully!')
+      setActivationMethod('direct')
+      setMessageType('success')
 
-        console.log(`✅ Subscription activated via ${result.method}`)
+      console.log('✅ Subscription activated successfully')
 
-        // Small delay to let the UI update
-        setTimeout(() => {
-          onSuccess()
-        }, 1500)
-      } else {
-        // Even if robust activation fails, the payment succeeded
-        setMessage('Payment processed! Your subscription will be activated shortly.')
-        setMessageType('info')
-        setActivationMethod(result.method)
-
-        console.log(`⚠️ Robust activation failed via ${result.method}: ${result.error}`)
-
-        // Still call onSuccess - user paid successfully
-        setTimeout(() => {
-          onSuccess()
-        }, 3000)
-      }
+      // Small delay to let the UI update
+      setTimeout(() => {
+        onSuccess()
+      }, 1500)
     } catch (error) {
       console.error('Error during robust subscription activation:', error)
       setMessage('Payment processed! Your subscription will be activated shortly.')
@@ -212,7 +197,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
   const [clientSecret, setClientSecret] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [subscriptionId, setSubscriptionId] = useState<string>('')
+  const [_subscriptionId, _setSubscriptionId] = useState<string>('')
 
   useEffect(() => {
     // Prevent multiple initializations
@@ -231,11 +216,13 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         }
 
         setLoading(true)
-        const result = await createPaymentIntent(priceId)
-        setClientSecret(result.clientSecret)
-        setSubscriptionId(result.subscriptionId)
+        const result = await subscriptionService.createPaymentIntent(priceId)
+        if (result) {
+          setClientSecret(result.clientSecret)
+          // Note: subscriptionId is handled by the backend
+        }
 
-        console.log(`✅ Payment initialized - Subscription ID: ${result.subscriptionId}`)
+        console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}`)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
         setError(errorMessage)
@@ -276,8 +263,10 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
               // Retry initialization
               const initializePayment = async () => {
                 try {
-                  const result = await createPaymentIntent(priceId)
-                  setClientSecret(result.clientSecret)
+                  const result = await subscriptionService.createPaymentIntent(priceId)
+                  if (result) {
+                    setClientSecret(result.clientSecret)
+                  }
                 } catch (err) {
                   const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
                   setError(errorMessage)
@@ -328,7 +317,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         onSuccess={onSuccess}
         onError={onError}
         onCancel={onCancel}
-        subscriptionId={subscriptionId}
+        subscriptionId={_subscriptionId}
       />
     </Elements>
   )

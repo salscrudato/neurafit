@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AlertTriangle, RefreshCw, CreditCard, Clock } from 'lucide-react'
 import { useSubscription } from '../hooks/useSubscription'
-import { refreshSubscriptionData } from '../lib/subscription-sync'
+import { subscriptionService } from '../lib/subscriptionService'
 
 interface SubscriptionErrorHandlerProps {
   error: string
@@ -22,7 +22,7 @@ export function SubscriptionErrorHandler({
   const handleRefreshSubscription = async () => {
     setRefreshing(true)
     try {
-      const freshSubscription = await refreshSubscriptionData()
+      const freshSubscription = await subscriptionService.getSubscription()
       if (freshSubscription && (freshSubscription.status === 'active' || freshSubscription.status === 'trialing')) {
         // Subscription is now active, retry the original action
         onRetry?.()

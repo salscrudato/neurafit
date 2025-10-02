@@ -6,7 +6,7 @@ import { SubscriptionPlans } from '../components/SubscriptionPlans'
 import { PaymentForm } from '../components/PaymentForm'
 import { SubscriptionManagement } from '../components/SubscriptionManagement'
 import { useSubscription } from '../hooks/useSubscription'
-// import { useSession } from '../hooks/useSession'
+
 import { getSubscriptionPlanByPriceId } from '../lib/stripe-config'
 
 type ViewState = 'plans' | 'payment' | 'success' | 'manage'
@@ -14,8 +14,7 @@ type ViewState = 'plans' | 'payment' | 'success' | 'manage'
 export default function Subscription() {
   const navigate = useNavigate()
   const { hasUnlimitedWorkouts } = useSubscription()
-  // Session hook available if needed for future features
-  // const { user, status } = useSession()
+
   const [currentView, setCurrentView] = useState<ViewState>(
     hasUnlimitedWorkouts ? 'manage' : 'plans'
   )

@@ -1,21 +1,11 @@
 // src/pages/Auth.tsx
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAuthInstance } from '../lib/firebase'
+import { auth } from '../lib/firebase'
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { Zap, Brain, Target, Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
-
-// Declare global Firebase for compat API
-declare global {
-  interface Window {
-    firebase?: {
-      auth: {
-        GoogleAuthProvider: new () => any;
-      };
-    };
-  }
-}
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -41,21 +31,15 @@ export default function Auth() {
     setLoading(true)
 
     try {
-      // Wait for Firebase auth to be ready
-      const auth = await getAuthInstance()
-      if (!auth || !window.firebase) {
-        throw new Error('Firebase Auth not available')
-      }
-
-      // Use Firebase compat API for Google Auth
-      const provider = new window.firebase.auth.GoogleAuthProvider()
+      // Use Firebase modular API for Google Auth
+      const provider = new GoogleAuthProvider()
       provider.setCustomParameters({
         prompt: 'select_account'
       })
 
       try {
         // Attempt popup authentication first
-        const result = await auth.signInWithPopup(provider)
+        const result = await signInWithPopup(auth, provider)
         const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
         if (isNewUser) {
           trackUserSignUp('google')
@@ -76,7 +60,7 @@ export default function Auth() {
             (error as Error)?.message?.includes('Cross-Origin-Opener-Policy') ||
             (error as Error)?.message?.includes('window.closed')) {
           try {
-            await auth.signInWithRedirect(provider)
+            await signInWithRedirect(auth, provider)
             // Redirect initiated, no need to reset loading
             return
           } catch (redirectError) {
@@ -137,17 +121,13 @@ export default function Auth() {
     setLoading(true)
 
     try {
-      // Wait for Firebase auth to be ready
-      const auth = await getAuthInstance()
-      if (!auth) {
-        throw new Error('Firebase Auth not available')
-      }
+      // Firebase auth is ready synchronously
 
       if (authMode === 'signup') {
-        await auth.createUserWithEmailAndPassword(email, password)
+        await createUserWithEmailAndPassword(auth, email, password)
         trackUserSignUp('email')
       } else {
-        await auth.signInWithEmailAndPassword(email, password)
+        await signInWithEmailAndPassword(auth, email, password)
         trackUserLogin('email')
       }
       // Success - AppProvider will handle navigation

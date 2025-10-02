@@ -1,12 +1,14 @@
 // src/pages/Dashboard.tsx
 import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAuthInstance, getFirestoreInstance } from '../lib/firebase'
+import { auth, db } from '../lib/firebase'
+import { collection, query, orderBy, getDocs } from 'firebase/firestore'
+import type { User } from 'firebase/auth'
 import { convertToDate } from '../utils/timestamp'
 import {
   Zap,
   History,
-  User,
+  User as UserIcon,
   Activity
 } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
@@ -40,18 +42,14 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const nav = useNavigate()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Get current user
   useEffect(() => {
-    const getCurrentUser = async () => {
-      const auth = await getAuthInstance()
-      setUser(auth?.currentUser)
-    }
-    getCurrentUser()
+    setUser(auth.currentUser)
   }, [])
 
   const firstName = useMemo(() => {
@@ -63,22 +61,16 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const auth = await getAuthInstance()
-        const uid = auth?.currentUser?.uid
+        const uid = auth.currentUser?.uid
         if (!uid) {
           setError('Not authenticated')
           return
         }
 
-        const db = await getFirestoreInstance()
-        if (!db) {
-          setError('Firestore not available')
-          return
-        }
-
         // Fetch all workouts (assuming reasonable number per user)
-        const workoutsRef = db.collection('users').doc(uid).collection('workouts')
-        const workoutsSnap = await workoutsRef.orderBy('timestamp', 'desc').get()
+        const workoutsRef = collection(db, 'users', uid, 'workouts')
+        const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'))
+        const workoutsSnap = await getDocs(workoutsQuery)
         const workouts = workoutsSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -282,7 +274,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                  <User className="h-5 w-5 text-slate-600" />
+                  <UserIcon className="h-5 w-5 text-slate-600" />
                 </div>
                 <div>
                   <h3 className="font-medium text-slate-900">Profile Settings</h3>
