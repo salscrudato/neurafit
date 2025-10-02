@@ -265,39 +265,8 @@ interface StatusDisplayProps {
 }
 
 function StatusDisplay({ hasUnlimitedWorkouts, remainingFreeWorkouts, loading, className }: StatusDisplayProps) {
-  if (loading || hasUnlimitedWorkouts) {
-    return null
-  }
-
-  const isLowOnWorkouts = remainingFreeWorkouts <= 1
-  const isOutOfWorkouts = remainingFreeWorkouts <= 0
-
-  if (!isLowOnWorkouts) {
-    return null
-  }
-
-  return (
-    <div className={`group relative rounded-3xl border border-yellow-200/60 bg-gradient-to-br from-yellow-50/80 via-amber-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-yellow-200/30 hover:shadow-2xl hover:shadow-yellow-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5 ${className}`}>
-      <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-yellow-400/20 to-amber-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
-
-      <div className="relative flex items-center gap-5">
-        <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 via-yellow-600 to-amber-600 rounded-2xl flex items-center justify-center shadow-xl shadow-yellow-500/30 group-hover:shadow-yellow-500/50 group-hover:scale-110 transition-all duration-500">
-          <AlertTriangle className="w-7 h-7 text-white" />
-        </div>
-        <div className="flex-1 space-y-2">
-          <p className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
-            {isOutOfWorkouts ? 'No free workouts remaining' : `${remainingFreeWorkouts} free workout${remainingFreeWorkouts === 1 ? '' : 's'} remaining`}
-          </p>
-          <p className="text-sm sm:text-base text-gray-600/90 font-medium leading-relaxed">
-            {isOutOfWorkouts
-              ? 'Upgrade to Pro for unlimited AI-powered workouts'
-              : 'Upgrade to Pro to continue generating unlimited workouts'
-            }
-          </p>
-        </div>
-      </div>
-    </div>
-  )
+  // Always return null to hide the subscription status cards
+  return null
 }
 
 // Plans Display Component

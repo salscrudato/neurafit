@@ -1,7 +1,7 @@
 // src/pages/workout/Rest.tsx
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import AppHeader from '../../components/AppHeader'
+import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { EnhancedRestTimer } from '../../components/EnhancedRestTimer'
 
 export default function Rest() {
@@ -51,7 +51,11 @@ export default function Rest() {
 
   return (
     <>
-      <AppHeader />
+      <WorkoutFlowHeader
+        title="Rest Period"
+        showBackButton={true}
+        onBack={() => nav('/workout/run')}
+      />
       <EnhancedRestTimer
         initialSeconds={initial}
         onComplete={handleComplete}

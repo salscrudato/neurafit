@@ -3,7 +3,7 @@ import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/fi
 import { auth, db } from '../../lib/firebase'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import AppHeader from '../../components/AppHeader'
+import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { isFeedbackUIEnabled } from '../../config/features'
 import { trackAdaptiveFeedback, trackCustomEvent } from '../../lib/firebase-analytics'
 import { Bed, ThumbsUp, Flame, CheckCircle } from 'lucide-react'
@@ -174,7 +174,10 @@ export default function Complete() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
       </div>
 
-      <AppHeader />
+      <WorkoutFlowHeader
+        title="Workout Complete"
+        showBackButton={false}
+      />
 
       <div className="relative flex items-center justify-center min-h-[80vh] px-4">
         <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-3xl p-8 text-center max-w-lg mx-auto shadow-lg">

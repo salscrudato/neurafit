@@ -288,8 +288,14 @@ export default function Generate() {
 
         // Wait for loading animation to complete before navigating
         setTimeout(() => {
-          nav('/workout/preview')
-        }, 1500) // Give time for loading animation to feel complete
+          // Clear loading states just before navigation to prevent flash
+          setLoading(false)
+          setShowProgressiveLoading(false)
+          // Small delay to ensure loading states are cleared before navigation
+          setTimeout(() => {
+            nav('/workout/preview')
+          }, 50)
+        }, 1200) // Reduced timeout for faster transition
       } finally {
         clearTimeout(t)
       }
@@ -298,11 +304,17 @@ export default function Generate() {
     // small retry (2 attempts total) for transient failures
     try {
       await fetchOnce()
+      // Success - loading states will be cleared in the navigation timeout
     } catch {
       try {
         await new Promise(r => setTimeout(r, 1200))
         await fetchOnce()
+        // Success on retry - loading states will be cleared in the navigation timeout
       } catch (e2) {
+        // Clear loading states on error
+        setLoading(false)
+        setShowProgressiveLoading(false)
+
         const error = e2 as { message?: string; status?: number; name?: string }
         // Check if it's a subscription error (402 Payment Required)
         if (error?.message?.includes('Subscription required') || error?.status === 402) {
@@ -334,9 +346,6 @@ export default function Generate() {
             : ((e2 as Error)?.message || 'Failed to generate. Please try again.')
         )
       }
-    } finally {
-      setLoading(false)
-      setShowProgressiveLoading(false)
     }
   }
 
@@ -588,11 +597,19 @@ export default function Generate() {
             ].join(' ')}
           >
             {loading || showProgressiveLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Generating…
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 w-5 h-5 border border-white/20 rounded-full animate-pulse"></div>
+                </div>
+                <span className="font-semibold">Generating AI Workout…</span>
               </div>
-            ) : 'Generate workout'}
+            ) : (
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                <span className="font-semibold">Generate Workout</span>
+              </div>
+            )}
           </button>
         </div>
       </main>
