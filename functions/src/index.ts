@@ -190,112 +190,145 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Streamlined for professional trainer prompt
+      // Function to provide workout type context without prescribing exercises
+      const getWorkoutTypeContext = (type: string) => {
+        const contexts = {
+          'Yoga': `
+- Focus: Flexibility, balance, mindfulness, stress relief
+- Movement style: Flowing sequences, static holds, breathing coordination
+- Equipment: Bodyweight only, optional yoga mat
+- Intensity: Low to moderate, emphasis on form and breath
+- Rep format: Time-based holds (30-90 seconds)
+- Rest: Brief transitions between poses (15-30s)
+- Structure: Sun salutations, standing poses, seated poses, relaxation`,
 
-      // Professional trainer-optimized prompt for high-quality workouts
-      const prompt = `You are a NASM-certified personal trainer. Create a professional ${duration}-minute ${workoutType} workout for ${experience} level.
+          'Strength': `
+- Focus: Muscle building, power development, progressive overload
+- Movement style: Controlled lifting, compound movements, heavy resistance
+- Equipment: Weights, barbells, dumbbells, resistance tools
+- Intensity: High load, lower reps for strength adaptation
+- Rep format: 3-6 reps for strength, 6-12 for hypertrophy
+- Rest: Longer periods (120-180s) for full recovery
+- Structure: Compound movements first, isolation second`,
 
-WORKOUT REQUIREMENTS:
+          'HIIT': `
+- Focus: Cardiovascular fitness, fat burning, metabolic conditioning
+- Movement style: High-intensity bursts, explosive movements
+- Equipment: Minimal equipment, bodyweight or light weights
+- Intensity: Maximum effort intervals with active recovery
+- Rep format: Time-based work/rest ratios (30s work/15s rest)
+- Rest: Short active recovery between intervals
+- Structure: Warm-up, interval rounds, cool-down`,
+
+          'Pilates': `
+- Focus: Core strength, stability, posture, controlled movement
+- Movement style: Precise, controlled, mind-body connection
+- Equipment: Bodyweight, optional resistance bands or balls
+- Intensity: Moderate, emphasis on quality over quantity
+- Rep format: 8-15 controlled repetitions
+- Rest: Minimal rest, flowing between exercises
+- Structure: Core activation, full-body integration, stretching`,
+
+          'Cardio': `
+- Focus: Cardiovascular endurance, heart rate elevation
+- Movement style: Continuous movement, rhythmic patterns
+- Equipment: Bodyweight preferred, minimal equipment
+- Intensity: Sustained moderate to high heart rate
+- Rep format: Time-based or high repetitions
+- Rest: Active recovery or brief pauses
+- Structure: Warm-up, sustained activity, cool-down`,
+
+          'Endurance': `
+- Focus: Muscular endurance, stamina, work capacity
+- Movement style: Higher volume, sustained effort
+- Equipment: Light weights or bodyweight
+- Intensity: Moderate, sustainable over longer duration
+- Rep format: 12+ repetitions or time-based
+- Rest: Short rest periods (30-60s)
+- Structure: Circuit-style, multiple rounds`
+        };
+
+        return contexts[type as keyof typeof contexts] || contexts['Strength'];
+      };
+
+      // Streamlined prompt for reliable workout generation
+      const prompt = `Create a ${duration}-minute ${workoutType || 'Strength'} workout for ${experience || 'Beginner'} level.
+
+REQUIREMENTS:
 - Equipment: ${filteredEquipment.join(', ') || 'bodyweight only'}
 - Goals: ${filteredGoals.join(', ')}
-- Duration: MUST fill ${duration} minutes including warm-up and cool-down
-- Experience: ${experience} - scale complexity and intensity appropriately
-- Injuries/Limitations: ${(injuries?.list?.length ? injuries.list.join(', ') : 'None')} ${injuries?.notes ? '(' + injuries.notes + ')' : ''}
+- Duration: ${duration} minutes total
+- Type: ${workoutType || 'Strength'} exercises ONLY
 
-MANDATORY STRUCTURE - FOLLOW EXACTLY:
-1. WARM-UP (FIRST 2-3 exercises): Dynamic movements, joint mobility, 30s rest
-2. MAIN WORK (4-5 exercises): Progressive difficulty, balanced patterns
-3. COOL-DOWN (LAST 1-2 exercises): Static stretches, breathing, 60s rest
+${getWorkoutTypeContext(workoutType || 'Strength')}
 
-WORKOUT TYPE REQUIREMENTS - MUST MATCH TYPE:
-- Strength: 3-6 reps, 3-5 sets, 150-180s rest, compound movements (squats, deadlifts, presses)
-- HIIT: 30s work/15s rest intervals, metabolic exercises (burpees, mountain climbers, thrusters)
-- Hypertrophy: 6-12 reps, 3-4 sets, 60-90s rest, muscle isolation (curls, extensions, flyes)
-- Endurance: 12+ reps, 2-3 sets, 30-60s rest, circuit style (bodyweight, light weights)
-- Yoga: Hold poses 30-60s, 1-2 sets, 15-30s transitions (asanas, flows, stretches)
-- Pilates: 8-15 reps, 2-3 sets, 30-45s rest, core focus (planks, bridges, rolls)
-- Cardio: Time-based intervals, bodyweight movements (jumping jacks, high knees, step-ups)
+STRUCTURE:
+1. Warm-up (2-3 exercises)
+2. Main exercises (4-5 exercises)
+3. Cool-down (1-2 exercises)
 
-CRITICAL: YOGA workouts must ONLY contain yoga poses (Downward Dog, Warrior, Tree Pose, etc.)
-NEVER include weights, barbells, or HIIT exercises in Yoga workouts!
+Generate 6-8 exercises that match the ${workoutType || 'Strength'} workout type.
 
-EXERCISE DESCRIPTIONS MUST INCLUDE:
-- Equipment setup and starting position
-- Step-by-step movement execution
-- Breathing pattern (when to inhale/exhale)
-- Key muscle activation cues
-- Safety considerations
-
-DURATION COMPLIANCE:
-- ${duration} minutes TOTAL including warm-up and cool-down
-- Calculate: Warm-up (4min) + Main work + Cool-down (3min) = ${duration}min
-- Add more exercises or sets to reach target duration
-
-CRITICAL REST PERIODS (use exact values):
-- Compound movements: 120-180s (squats=150s, deadlifts=180s, presses=120s)
-- Isolation exercises: 60-90s (curls=75s, extensions=60s)
-- Cardio/HIIT: 30-60s (burpees=45s, mountain climbers=30s)
-- Warm-up: 20-30s (arm circles=30s, leg swings=25s)
-- Cool-down: 45-60s (stretches=60s)
-
-INJURY CONSIDERATIONS:
-${(injuries?.list?.length ? injuries.list.join(', ') : 'None')} ${injuries?.notes ? '(' + injuries.notes + ')' : ''}
-- Provide modifications and alternatives for any limitations
-- Never include contraindicated exercises
-
-JSON OUTPUT (EXACT FORMAT):
+JSON format:
 {
   "exercises": [
     {
-      "name": "Specific Exercise Name",
-      "description": "Complete setup, execution, breathing, and cues (4-6 sentences)",
+      "name": "Exercise Name",
+      "description": "Instructions with breathing",
       "sets": number,
-      "reps": "range or time",
-      "formTips": ["3 critical technique points"],
-      "safetyTips": ["2-3 injury prevention tips"],
-      "restSeconds": exact_number,
+      "reps": "range",
+      "formTips": ["tips"],
+      "safetyTips": ["safety"],
+      "restSeconds": number,
       "usesWeight": boolean,
-      "muscleGroups": ["primary", "secondary"],
+      "muscleGroups": ["muscles"],
       "difficulty": "${(experience || 'beginner').toLowerCase()}"
     }
   ],
   "workoutSummary": {
-    "totalVolume": "detailed volume breakdown",
-    "primaryFocus": "specific training adaptation",
-    "expectedRPE": "appropriate intensity range"
+    "totalVolume": "volume",
+    "primaryFocus": "focus",
+    "expectedRPE": "intensity"
   }
 }
-
-CRITICAL REQUIREMENTS - NON-NEGOTIABLE:
-- WORKOUT TYPE MUST MATCH: ${workoutType} workouts must contain ONLY ${workoutType} exercises
-- YOGA = yoga poses only (NO weights, NO HIIT, NO strength exercises)
-- STRENGTH = compound movements with weights/resistance
-- HIIT = high-intensity intervals with metabolic exercises
-- FIRST 2-3 exercises MUST be warm-up (dynamic movements, joint prep)
-- LAST 1-2 exercises MUST be cool-down (stretches, breathing)
-- MIDDLE exercises are main work matching the workout type
-- MUST reach exactly ${duration} minutes total duration
-- Use ONLY: ${filteredEquipment.join(', ') || 'bodyweight only'}
-- Scale for ${experience || 'beginner'}: Beginner=simple, Intermediate=moderate, Advanced=complex
-- Include 7-8 total exercises to properly fill ${duration} minutes
 `.trim();
 
-      // Use GPT-3.5-turbo - reliable model for workout generation
-      console.log('⚡ Using GPT-3.5-turbo with enhanced workout type matching');
-      const completion = await client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        temperature: 0.3, // Lower temperature for consistent responses
-        max_tokens: 1500, // Limit tokens for speed
-        messages: [
-          {
-            role: 'system',
-            content: 'Output only valid JSON. Be concise.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      });
+      // Use GPT-4o-mini as primary model for reliability and speed
+      let completion;
+      let text = '';
 
-      const text = completion.choices?.[0]?.message?.content ?? '';
+      try {
+        console.log('🚀 Using GPT-4o-mini for professional workout generation');
+        completion = await client.chat.completions.create({
+          model: 'gpt-4o-mini',
+          temperature: 0.3,
+          max_tokens: 1500,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a certified personal trainer. Output only valid JSON with no markdown formatting.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        });
+        text = completion.choices?.[0]?.message?.content ?? '';
+      } catch (error: any) {
+        // Fallback to GPT-3.5-turbo if GPT-4o-mini fails
+        console.log('⚠️ GPT-4o-mini failed, falling back to GPT-3.5-turbo');
+        completion = await client.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          temperature: 0.3,
+          max_tokens: 1500,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a certified personal trainer. Output only valid JSON with no markdown formatting.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        });
+        text = completion.choices?.[0]?.message?.content ?? '';
+      }
 
       // Clean JSON text by removing markdown code blocks if present
       const cleanedText = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
