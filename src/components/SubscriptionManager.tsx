@@ -179,69 +179,77 @@ function ErrorDisplay({
   const isRecentSubscriber = (subscription as { updatedAt?: number })?.updatedAt && (Date.now() - (subscription as { updatedAt: number }).updatedAt) < 300000
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-4">
-        <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
-        <h3 className="font-semibold text-red-900">
-          {isPaymentError ? 'Subscription Required' : 'Error'}
-        </h3>
-      </div>
+    <div className="group relative rounded-3xl border border-red-200/60 bg-gradient-to-br from-red-50/80 via-red-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-red-200/30 hover:shadow-2xl hover:shadow-red-200/40 transition-all duration-500 max-w-2xl mx-auto">
+      <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-red-400/20 to-pink-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
 
-      <div className="space-y-4">
-        <p className="text-red-700 text-sm leading-relaxed">
-          {isPaymentError ? (
-            hasUnlimitedWorkouts ? (
-              'There seems to be an issue with your subscription status. This might be a temporary sync issue.'
-            ) : (
-              'You need an active subscription to generate unlimited workouts.'
-            )
-          ) : (
-            error
-          )}
-        </p>
-
-        {isRecentSubscriber && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <Clock className="w-4 h-4" />
-              <span className="text-sm font-medium">Recent Payment Detected</span>
-            </div>
-            <p className="text-yellow-700 text-xs mt-1">
-              Your payment may still be processing. Try refreshing your subscription status.
-            </p>
+      <div className="relative">
+        <div className="flex items-center gap-5 mb-6">
+          <div className="w-14 h-14 bg-gradient-to-br from-red-500 via-red-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-xl shadow-red-500/30 group-hover:shadow-red-500/50 group-hover:scale-110 transition-all duration-500">
+            <AlertTriangle className="w-7 h-7 text-white" />
           </div>
-        )}
+          <h3 className="font-bold text-xl sm:text-2xl text-red-900 leading-tight">
+            {isPaymentError ? 'Subscription Required' : 'Error'}
+          </h3>
+        </div>
 
-        <div className="flex flex-col gap-3">
-          {(isPaymentError || isRecentSubscriber) && (
-            <button
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Checking...' : 'Refresh Subscription'}
-            </button>
+        <div className="space-y-6">
+          <p className="text-red-700/90 text-base sm:text-lg leading-relaxed font-medium">
+            {isPaymentError ? (
+              hasUnlimitedWorkouts ? (
+                'There seems to be an issue with your subscription status. This might be a temporary sync issue.'
+              ) : (
+                'You need an active subscription to generate unlimited workouts.'
+              )
+            ) : (
+              error
+            )}
+          </p>
+
+          {isRecentSubscriber && (
+            <div className="bg-gradient-to-r from-yellow-50/80 to-amber-50/60 border border-yellow-200/60 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
+              <div className="flex items-center gap-3 text-yellow-800">
+                <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+                  <Clock className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-sm sm:text-base font-semibold">Recent Payment Detected</span>
+              </div>
+              <p className="text-yellow-700/90 text-sm sm:text-base mt-2 leading-relaxed font-medium">
+                Your payment may still be processing. Try refreshing your subscription status.
+              </p>
+            </div>
           )}
 
-          {onRetry && !isPaymentError && (
-            <button
-              onClick={onRetry}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Try Again
-            </button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {(isPaymentError || isRecentSubscriber) && (
+              <button
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Checking...' : 'Refresh Subscription'}
+              </button>
+            )}
 
-          {showUpgradeOption && isPaymentError && !hasUnlimitedWorkouts && (
-            <button
-              onClick={onUpgrade}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all"
-            >
-              <CreditCard className="w-4 h-4" />
-              Upgrade to Pro
-            </button>
-          )}
+            {onRetry && !isPaymentError && (
+              <button
+                onClick={onRetry}
+                className="px-6 py-3 bg-gradient-to-r from-slate-600 to-gray-600 text-white rounded-xl hover:from-slate-700 hover:to-gray-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+              >
+                Try Again
+              </button>
+            )}
+
+            {showUpgradeOption && isPaymentError && !hasUnlimitedWorkouts && (
+              <button
+                onClick={onUpgrade}
+                className="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+              >
+                <CreditCard className="w-5 h-5" />
+                Upgrade to Pro
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -269,14 +277,18 @@ function StatusDisplay({ hasUnlimitedWorkouts, remainingFreeWorkouts, loading, c
   }
 
   return (
-    <div className={`bg-yellow-50 border border-yellow-200 rounded-lg p-4 ${className}`}>
-      <div className="flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-        <div className="flex-1">
-          <p className="text-yellow-800 font-medium">
+    <div className={`group relative rounded-3xl border border-yellow-200/60 bg-gradient-to-br from-yellow-50/80 via-amber-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-yellow-200/30 hover:shadow-2xl hover:shadow-yellow-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5 ${className}`}>
+      <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-yellow-400/20 to-amber-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
+
+      <div className="relative flex items-center gap-5">
+        <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 via-yellow-600 to-amber-600 rounded-2xl flex items-center justify-center shadow-xl shadow-yellow-500/30 group-hover:shadow-yellow-500/50 group-hover:scale-110 transition-all duration-500">
+          <AlertTriangle className="w-7 h-7 text-white" />
+        </div>
+        <div className="flex-1 space-y-2">
+          <p className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
             {isOutOfWorkouts ? 'No free workouts remaining' : `${remainingFreeWorkouts} free workout${remainingFreeWorkouts === 1 ? '' : 's'} remaining`}
           </p>
-          <p className="text-yellow-700 text-sm mt-1">
+          <p className="text-sm sm:text-base text-gray-600/90 font-medium leading-relaxed">
             {isOutOfWorkouts
               ? 'Upgrade to Pro for unlimited AI-powered workouts'
               : 'Upgrade to Pro to continue generating unlimited workouts'

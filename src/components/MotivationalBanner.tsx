@@ -68,19 +68,20 @@ export function MotivationalBanner({
   const Icon = motivation.icon
 
   return (
-    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${motivation.bgColor} border border-white/60 shadow-xl shadow-slate-200/30 hover:shadow-2xl hover:shadow-slate-300/20 transition-all duration-500`}>
-      <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-white/20 to-transparent" />
-      <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-white/20 blur-2xl group-hover:blur-3xl transition-all duration-500" />
-      <div className="relative p-8">
-        <div className="flex items-center gap-6">
-          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-xl shadow-current/25 group-hover:shadow-current/40 transition-shadow duration-300`}>
-            <Icon className="h-8 w-8 text-white" />
+    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${motivation.bgColor} border border-white/70 shadow-2xl shadow-slate-200/40 hover:shadow-3xl hover:shadow-slate-300/30 transition-all duration-700 hover:scale-[1.005] hover:-translate-y-1`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/25 to-transparent" />
+      <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-white/25 blur-3xl group-hover:blur-2xl group-hover:scale-110 transition-all duration-700" />
+      <div className="absolute -left-16 -bottom-16 h-32 w-32 rounded-full bg-white/15 blur-2xl group-hover:blur-3xl transition-all duration-700" />
+      <div className="relative p-6 sm:p-8 lg:p-10">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+          <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-2xl shadow-current/30 group-hover:shadow-current/50 group-hover:scale-110 transition-all duration-500`}>
+            <Icon className="h-9 w-9 sm:h-10 sm:w-10 text-white" />
           </div>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+          <div className="flex-1 space-y-3">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300 leading-tight tracking-tight">
               {motivation.title}
             </h3>
-            <p className="text-gray-700 leading-relaxed">
+            <p className="text-gray-700/90 text-base sm:text-lg lg:text-xl leading-relaxed font-medium max-w-2xl">
               {motivation.message}
             </p>
           </div>

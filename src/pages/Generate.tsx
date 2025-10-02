@@ -341,69 +341,90 @@ export default function Generate() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative safe-area-inset-bottom">
-      {/* Background decoration */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-blue-50/20 relative safe-area-inset-bottom">
+      {/* Enhanced background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-100/30 via-indigo-100/20 to-purple-100/10 rounded-full blur-3xl animate-pulse-subtle" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-slate-100/25 via-gray-100/15 to-blue-100/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-blue-50/20 via-transparent to-transparent rounded-full blur-2xl" />
       </div>
 
       <AppHeader />
 
-      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-16 pt-6">
-        {/* SEO-Optimized Hero Section */}
-        <section className="rounded-3xl border border-blue-100/50 bg-white/70 backdrop-blur-sm p-6 md:p-8 relative overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
-          <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400 to-indigo-400 opacity-10 blur-3xl" />
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
-            AI Workout Generator - Create Custom Fitness Plans
-          </h1>
-          <p className="mt-3 text-gray-600 text-lg leading-relaxed max-w-3xl">
-            Generate <strong>personalized workout plans</strong> instantly with advanced AI technology.
-            Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by GPT-4o-mini.
-            <span className="text-blue-600 font-semibold">Get your custom training plan in 30 seconds!</span>
-          </p>
+      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-16 pt-6 sm:pt-8">
+        {/* Enhanced Hero Section */}
+        <section className="group relative rounded-3xl border border-white/70 bg-gradient-to-br from-white/98 via-white/95 to-white/90 backdrop-blur-xl p-6 sm:p-8 md:p-12 overflow-hidden shadow-2xl shadow-slate-200/50 hover:shadow-3xl hover:shadow-slate-300/30 transition-all duration-700 hover:scale-[1.005] hover:-translate-y-1">
+          {/* Enhanced background elements */}
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-3xl group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
+          <div className="absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-slate-400/10 via-gray-400/5 to-blue-400/5 opacity-40 blur-2xl group-hover:opacity-60 transition-all duration-700" />
 
-          {/* SEO benefit highlights */}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Personalized for your goals</span>
+          {/* Subtle inner glow */}
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" />
+
+          <div className="relative space-y-6 sm:space-y-8">
+            <div className="space-y-4 sm:space-y-6">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-[1.1] sm:leading-tight">
+                AI Workout Generator
+              </h1>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700/90 leading-tight tracking-tight">
+                Create Custom Fitness Plans
+              </h2>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-              <span>Equipment-based customization</span>
+
+            <p className="text-slate-600/90 text-base sm:text-lg lg:text-xl leading-relaxed font-medium max-w-4xl">
+              Generate <strong className="text-slate-800 font-semibold">personalized workout plans</strong> instantly with advanced AI technology.
+              Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by GPT-4o-mini.
+            </p>
+
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-2xl border border-blue-200/30 backdrop-blur-sm">
+              <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
+              <span className="text-blue-700 font-semibold text-sm sm:text-base">Get your custom training plan in 30 seconds!</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span>Injury-safe modifications</span>
+
+            {/* Enhanced benefit highlights */}
+            <div className="flex flex-wrap gap-4 sm:gap-6">
+              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/30"></div>
+                <span>Personalized for your goals</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30"></div>
+                <span>Equipment-based customization</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/30"></div>
+                <span>Injury-safe modifications</span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Subscription Status - using unified SubscriptionManager */}
-        <SubscriptionManager mode="status" className="mt-6" />
+        {/* Enhanced Subscription Status */}
+        <SubscriptionManager mode="status" className="mt-8 sm:mt-10" />
 
-        {/* Legacy Subscription Status - keeping for users with more than 1 workout remaining */}
+        {/* Enhanced Legacy Subscription Status - keeping for users with more than 1 workout remaining */}
         {!hasUnlimitedWorkouts && remainingFreeWorkouts > 1 && (
-          <section className="mt-6">
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 backdrop-blur-sm p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{remainingFreeWorkouts}</span>
+          <section className="mt-8 sm:mt-10">
+            <div className="group relative rounded-3xl border border-blue-200/60 bg-gradient-to-br from-blue-50/80 via-blue-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-blue-200/30 hover:shadow-2xl hover:shadow-blue-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
+              <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-blue-400/20 to-indigo-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
+
+              <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 group-hover:shadow-blue-500/50 group-hover:scale-110 transition-all duration-500">
+                    <span className="text-white font-bold text-lg">{remainingFreeWorkouts}</span>
                   </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">
+                  <div className="space-y-2">
+                    <div className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
                       {remainingFreeWorkouts} free workout{remainingFreeWorkouts === 1 ? '' : 's'} remaining
                     </div>
-                    <div className="text-sm text-gray-600">
-                      Upgrade to Pro for $10/month
+                    <div className="text-sm sm:text-base text-gray-600/90 font-medium">
+                      Upgrade to Pro for unlimited AI-powered workouts
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowUpgradePrompt(true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors text-sm"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 text-sm sm:text-base self-start sm:self-center"
                 >
                   $10/month
                 </button>
@@ -424,23 +445,28 @@ export default function Generate() {
           />
         )}
 
-        {/* Intensity Calibration Indicator */}
+        {/* Enhanced Intensity Calibration Indicator */}
         {targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
-          <section className="mt-6">
-            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 backdrop-blur-sm p-4 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center">
-                  <Brain className="h-4 w-4 text-white" />
+          <section className="mt-8 sm:mt-10">
+            <div className="group relative rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-indigo-200/30 hover:shadow-2xl hover:shadow-indigo-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
+              <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-indigo-400/20 to-purple-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
+
+              <div className="relative flex items-center gap-5">
+                <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-110 transition-all duration-500">
+                  <Brain className="h-7 w-7 text-white" />
                 </div>
-                <div className="flex-1">
-                  <div className="font-semibold text-gray-900">
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
                     Intensity: {targetIntensity > 1.0 ? '+' : ''}{Math.round((targetIntensity - 1.0) * 100)}%
                   </div>
                   {progressionNote && (
-                    <div className="text-sm text-gray-600 mt-1 capitalize">
+                    <div className="text-sm sm:text-base text-gray-600/90 font-medium capitalize leading-relaxed">
                       {progressionNote}
                     </div>
                   )}
+                  <div className="text-xs sm:text-sm text-indigo-600/80 font-medium">
+                    AI-adjusted based on your recent workout feedback
+                  </div>
                 </div>
               </div>
             </div>
