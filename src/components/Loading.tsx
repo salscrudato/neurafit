@@ -122,14 +122,30 @@ export function EnhancedWorkoutLoader({
     'Finalizing your training plan...'
   ]
 
-  // Cycle through messages every 2 seconds
+  // Cycle through messages every 3.5 seconds to match ~17.5s average API response time
+  // This ensures the animation completes one full cycle (5 messages × 3.5s = 17.5s)
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMessage((prev) => (prev + 1) % messages.length)
-    }, 2000)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[LOADING] Animation started at:', new Date().toISOString())
+    }
 
-    return () => clearInterval(interval)
-  }, [messages.length])
+    const interval = setInterval(() => {
+      setCurrentMessage((prev) => {
+        const next = (prev + 1) % messages.length
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[LOADING] Message ${next + 1}/${messages.length}: ${messages[next]}`)
+        }
+        return next
+      })
+    }, 3500)
+
+    return () => {
+      clearInterval(interval)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[LOADING] Animation ended at:', new Date().toISOString())
+      }
+    }
+  }, [messages])
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
       {/* Background animated elements */}
@@ -171,50 +187,47 @@ export function EnhancedWorkoutLoader({
             </div>
           </div>
 
-          {/* Animated progress indicators */}
-          <div className="space-y-4">
-            {/* Dynamic progress bar */}
-            <div className="w-full bg-gray-200/60 rounded-full h-3 overflow-hidden shadow-inner">
+          {/* Futuristic Loading Spinner */}
+          <div className="flex justify-center items-center py-6">
+            <div className="relative w-24 h-24">
+              {/* Outer rotating ring */}
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-indigo-500 animate-spin" style={{ animationDuration: '1.5s' }} />
+
+              {/* Middle rotating ring - opposite direction */}
+              <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-purple-500 border-l-pink-500 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} />
+
+              {/* Inner pulsing core */}
+              <div className="absolute inset-6 rounded-full bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-600 animate-pulse shadow-lg shadow-blue-500/50" />
+
+              {/* Center dot */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-3 h-3 rounded-full bg-white shadow-lg animate-pulse" />
+              </div>
+
+              {/* Orbiting particles */}
+              <div className="absolute inset-0">
+                <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-400 rounded-full -translate-x-1/2 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-indigo-400 rounded-full -translate-x-1/2 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+                <div className="absolute left-0 top-1/2 w-2 h-2 bg-purple-400 rounded-full -translate-y-1/2 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }} />
+                <div className="absolute right-0 top-1/2 w-2 h-2 bg-pink-400 rounded-full -translate-y-1/2 animate-ping" style={{ animationDuration: '2s', animationDelay: '1.5s' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Step indicator dots */}
+          <div className="flex justify-center items-center space-x-2">
+            {messages.map((_, index) => (
               <div
-                className="h-full bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-2000 ease-out shadow-sm"
-                style={{
-                  width: `${((currentMessage + 1) / messages.length) * 100}%`
-                }}
+                key={index}
+                className={`transition-all duration-500 rounded-full ${
+                  index === currentMessage
+                    ? 'w-8 h-2 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 shadow-md shadow-blue-500/30'
+                    : index < currentMessage
+                    ? 'w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-500'
+                    : 'w-2 h-2 bg-gray-300'
+                }`}
               />
-            </div>
-
-            {/* Step indicator */}
-            <div className="flex justify-center items-center space-x-2 text-xs text-gray-500">
-              <span className="font-medium">Step {currentMessage + 1} of {messages.length}</span>
-              <div className="flex space-x-1">
-                {messages.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index <= currentMessage
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-sm'
-                        : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* AI processing indicators */}
-            <div className="flex justify-center space-x-4 text-xs text-gray-400">
-              <div className="flex items-center space-x-1">
-                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                <span>Neural Network</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-200" />
-                <span>AI Engine</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse delay-500" />
-                <span>Optimization</span>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Motivational message */}
