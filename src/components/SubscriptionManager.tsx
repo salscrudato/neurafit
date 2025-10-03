@@ -103,7 +103,10 @@ export function SubscriptionManager({
   }
 
   async function handleCancelSubscription() {
-    if (!subscription?.subscriptionId) return
+    if (!subscription?.subscriptionId) {
+      setLocalError('Unable to cancel: subscription information not found. Please refresh the page and try again.')
+      return
+    }
 
     setActionLoading('cancel')
     setLocalError('')
@@ -116,10 +119,55 @@ export function SubscriptionManager({
         // Refresh subscription data
         await handleRefreshSubscription()
       } else {
-        setLocalError('Failed to cancel subscription. Please try again.')
+        setLocalError('Failed to cancel subscription. Please try again or contact support if the issue persists.')
       }
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to cancel subscription')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel subscription'
+      console.error('Cancellation error:', err)
+
+      // Provide more helpful error messages
+      if (errorMessage.includes('not found')) {
+        setLocalError('Unable to find your subscription. Please refresh the page and try again.')
+      } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
+        setLocalError('Network error. Please check your connection and try again.')
+      } else {
+        setLocalError(`${errorMessage}. If this problem continues, please contact support.`)
+      }
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handleReactivateSubscription() {
+    if (!subscription?.subscriptionId) {
+      setLocalError('Unable to reactivate: subscription information not found. Please refresh the page and try again.')
+      return
+    }
+
+    setActionLoading('reactivate')
+    setLocalError('')
+
+    try {
+      const success = await subscriptionService.reactivateSubscription()
+      if (success) {
+        setSuccess('Your subscription has been reactivated! You\'ll continue to have unlimited access.')
+        // Refresh subscription data
+        await handleRefreshSubscription()
+      } else {
+        setLocalError('Failed to reactivate subscription. Please try again or contact support if the issue persists.')
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reactivate subscription'
+      console.error('Reactivation error:', err)
+
+      // Provide more helpful error messages
+      if (errorMessage.includes('not found')) {
+        setLocalError('Unable to find your subscription. Please refresh the page and try again.')
+      } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
+        setLocalError('Network error. Please check your connection and try again.')
+      } else {
+        setLocalError(`${errorMessage}. If this problem continues, please contact support.`)
+      }
     } finally {
       setActionLoading(null)
     }
@@ -166,6 +214,7 @@ export function SubscriptionManager({
       success={success}
       onManageBilling={handleManageBilling}
       onCancelSubscription={() => setShowCancelConfirm(true)}
+      onReactivateSubscription={handleReactivateSubscription}
       onRefresh={handleRefreshSubscription}
       refreshing={refreshing}
       showCancelConfirm={showCancelConfirm}
@@ -319,8 +368,8 @@ function PlansDisplay({ showPayment, onSelectPlan, onPaymentSuccess, onPaymentEr
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Complete Payment</h2>
-              <button onClick={onBack} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
+              <button onClick={onBack} className="text-gray-400 hover:text-gray-600" aria-label="Go back to plan selection">
+                <X className="w-6 h-6" aria-hidden="true" />
               </button>
             </div>
 
@@ -353,8 +402,8 @@ function PlansDisplay({ showPayment, onSelectPlan, onPaymentSuccess, onPaymentEr
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Upgrade to Pro</h2>
           {onClose && (
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-6 h-6" />
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close upgrade dialog">
+              <X className="w-6 h-6" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -409,6 +458,7 @@ interface ManagementDisplayProps {
   success: string
   onManageBilling: () => void
   onCancelSubscription: () => void
+  onReactivateSubscription: () => void
   onRefresh: () => void
   refreshing: boolean
   showCancelConfirm: boolean
@@ -429,6 +479,7 @@ function ManagementDisplay({
   success,
   onManageBilling,
   onCancelSubscription,
+  onReactivateSubscription,
   onRefresh,
   refreshing,
   showCancelConfirm,
@@ -548,7 +599,7 @@ function ManagementDisplay({
           )}
 
           {/* Cancel Subscription Button - only show for active subscriptions */}
-          {hasUnlimitedWorkouts && !isInGracePeriod && (
+          {hasUnlimitedWorkouts && !isInGracePeriod && !(subscription as { cancelAtPeriodEnd?: boolean })?.cancelAtPeriodEnd && (
             <button
               onClick={onCancelSubscription}
               disabled={actionLoading === 'cancel'}
@@ -565,6 +616,28 @@ function ManagementDisplay({
                 <Loader2 className="w-5 h-5 animate-spin text-red-400" />
               ) : (
                 <XCircle className="w-5 h-5 text-red-400" />
+              )}
+            </button>
+          )}
+
+          {/* Reactivate Subscription Button - only show for cancelled subscriptions */}
+          {(subscription as { cancelAtPeriodEnd?: boolean })?.cancelAtPeriodEnd && (
+            <button
+              onClick={onReactivateSubscription}
+              disabled={actionLoading === 'reactivate'}
+              className="w-full flex items-center justify-between p-4 border border-green-200 rounded-xl hover:bg-green-50 transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <div className="text-left">
+                  <p className="font-medium text-green-900">Reactivate Subscription</p>
+                  <p className="text-sm text-green-600">Resume unlimited access</p>
+                </div>
+              </div>
+              {actionLoading === 'reactivate' ? (
+                <Loader2 className="w-5 h-5 animate-spin text-green-400" />
+              ) : (
+                <CheckCircle className="w-5 h-5 text-green-400" />
               )}
             </button>
           )}

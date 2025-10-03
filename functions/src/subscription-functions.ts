@@ -91,7 +91,8 @@ export const createPaymentIntent = onCall(
       };
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      throw new functions.https.HttpsError('internal', 'Failed to create payment intent');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new functions.https.HttpsError('internal', `Failed to create payment intent: ${errorMessage}`);
     }
   }
 );

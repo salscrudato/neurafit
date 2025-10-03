@@ -157,6 +157,9 @@ export default function Generate() {
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
 
         // Navigate immediately when workout is ready
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[GENERATE] Workout generated successfully, navigating to preview')
+        }
         setLoading(false)
         setShowProgressiveLoading(false)
         nav('/workout/preview')
@@ -185,11 +188,15 @@ export default function Generate() {
           // Before showing upgrade prompt, try refreshing subscription status
           // This handles cases where payment was completed but subscription status hasn't synced yet
           try {
-            console.log('🔄 Payment required error - checking for recent subscription updates...')
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔄 Payment required error - checking for recent subscription updates...')
+            }
             const freshSubscription = await subscriptionService.getSubscription()
 
             if (freshSubscription && (freshSubscription.status === 'active' || freshSubscription.status === 'trialing')) {
-              console.log('✅ Found active subscription after refresh, retrying workout generation...')
+              if (process.env.NODE_ENV === 'development') {
+                console.log('✅ Found active subscription after refresh, retrying workout generation...')
+              }
               // Retry the workout generation with fresh subscription data
               setTimeout(() => {
                 generate()
@@ -246,7 +253,7 @@ export default function Generate() {
 
             <p className="text-slate-600/90 text-base sm:text-lg lg:text-xl leading-relaxed font-medium max-w-4xl">
               Generate <strong className="text-slate-800 font-semibold">personalized workout plans</strong> instantly with advanced AI technology.
-              Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by GPT-4o-mini.
+              Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by OpenAI's GPT-4.1-nano for ultra-fast generation.
             </p>
 
             <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-2xl border border-blue-200/30 backdrop-blur-sm">
@@ -500,7 +507,9 @@ export default function Generate() {
         isVisible={showProgressiveLoading}
         onComplete={() => {
           // Loading bar animation completed
-          console.log('Loading animation complete')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Loading animation complete')
+          }
         }}
         text="Generating your personalized workout..."
       />

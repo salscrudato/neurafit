@@ -136,8 +136,15 @@ export async function createSubscription(
         console.log('Canceling incomplete subscription:', sub.id);
         try {
           await stripeInstance.subscriptions.cancel(sub.id);
+          console.log('Successfully canceled incomplete subscription:', sub.id);
         } catch (cancelError) {
-          console.warn('Failed to cancel incomplete subscription:', sub.id, cancelError);
+          // This is expected if the subscription was already deleted by Stripe (e.g., expired)
+          const errorMessage = cancelError instanceof Error ? cancelError.message : 'Unknown error';
+          if (errorMessage.includes('No such subscription') || errorMessage.includes('resource_missing')) {
+            console.log('Subscription already deleted (expected):', sub.id);
+          } else {
+            console.warn('Failed to cancel incomplete subscription:', sub.id, errorMessage);
+          }
         }
       }
     }

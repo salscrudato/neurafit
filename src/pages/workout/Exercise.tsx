@@ -84,7 +84,9 @@ export default function Exercise() {
     const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
     if (!hasWorkoutStartTime) {
       sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
-      console.log('[TIME] Workout start time set (fallback)')
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[TIME] Workout start time set (fallback)')
+      }
     }
   }, [])
 
@@ -195,7 +197,10 @@ export default function Exercise() {
           }
         }
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-        console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
+        }
       }
     )
 
@@ -230,7 +235,11 @@ export default function Exercise() {
           }
         }
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-        console.log(`[COMPLETE] Set ${setNo} of ${ex.name} marked as COMPLETE:`, finalWeight)
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[COMPLETE] Set ${setNo} of ${ex.name} marked as COMPLETE:`, finalWeight)
+        }
+
         return updated
       }
     }
@@ -264,7 +273,11 @@ export default function Exercise() {
           }
         }
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-        console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
+        }
+
         return updated
       }
     }
@@ -429,26 +442,27 @@ export default function Exercise() {
       </main>
 
       {/* Sticky controls */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
         <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-between gap-3">
           <button
             onClick={skipExercise}
-            className="rounded-xl border border-gray-300 bg-white/70 px-3 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 text-sm"
+            className="rounded-xl border border-gray-300 bg-white/70 px-3 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 text-sm touch-manipulation min-h-[44px]"
+            aria-label="Skip this exercise and move to next"
           >
             Skip Exercise
           </button>
 
-
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2">
             <button
               onClick={skipSet}
-              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200 active:scale-95"
+              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200 active:scale-95 touch-manipulation min-h-[44px]"
+              aria-label={`Skip set ${setNo} of ${ex.sets}`}
             >
               Skip Set
             </button>
             <button
               onClick={completeSet}
-              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 touch-manipulation min-h-[44px]"
               aria-label={`Complete set ${setNo} of ${ex.sets} for ${ex.name}`}
             >
               Complete Set

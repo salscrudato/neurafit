@@ -76,17 +76,23 @@ export default function History() {
           return
         }
 
-        console.log('📚 Loading workout history for user:', uid)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📚 Loading workout history for user:', uid)
+        }
         const q = query(collection(db, 'users', uid, 'workouts'), orderBy('timestamp', 'desc'))
         const snap = await getDocs(q)
 
         const workouts = snap.docs.map(d => {
           const data = d.data()
-          console.log('📋 Raw workout data:', { id: d.id, ...data })
+          if (process.env.NODE_ENV === 'development') {
+            console.log('📋 Raw workout data:', { id: d.id, ...data })
+          }
           return { id: d.id, ...data } as WorkoutItem
         })
 
-        console.log(`Loaded ${workouts.length} workouts`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Loaded ${workouts.length} workouts`)
+        }
         setItems(workouts)
       } catch (err) {
         const error = err as { message?: string }
@@ -289,16 +295,18 @@ export default function History() {
               const completionRate = setCompletionRate
 
               // Debug logging for workout stats
-              console.log(`Workout "${workout.workoutType}" stats:`, {
-                totalExercises: stats.totalExercises,
-                completedExercises: stats.completedExercises,
-                fullyCompletedExercises: stats.fullyCompletedExercises,
-                totalSets: stats.totalSets,
-                completedSets: stats.completedSets,
-                setCompletionRate: setCompletionRate,
-                exerciseCompletionRate: exerciseCompletionRate,
-                finalCompletionRate: completionRate
-              })
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`Workout "${workout.workoutType}" stats:`, {
+                  totalExercises: stats.totalExercises,
+                  completedExercises: stats.completedExercises,
+                  fullyCompletedExercises: stats.fullyCompletedExercises,
+                  totalSets: stats.totalSets,
+                  completedSets: stats.completedSets,
+                  setCompletionRate: setCompletionRate,
+                  exerciseCompletionRate: exerciseCompletionRate,
+                  finalCompletionRate: completionRate
+                })
+              }
 
               return (
                 <button

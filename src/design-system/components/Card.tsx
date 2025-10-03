@@ -1,4 +1,4 @@
-import React, { forwardRef, type HTMLAttributes } from 'react'
+import React, { forwardRef, memo, type HTMLAttributes } from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 import { cardVariants } from '../variants/cardVariants'
@@ -9,7 +9,7 @@ export interface CardProps
   interactive?: boolean
 }
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
+const CardBase = forwardRef<HTMLDivElement, CardProps>(
   ({
     className,
     variant,
@@ -35,10 +35,12 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
   }
 )
 
-Card.displayName = 'Card'
+CardBase.displayName = 'Card'
+
+const Card = memo(CardBase)
 
 // Card sub-components
-const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+const CardHeaderBase = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
@@ -47,8 +49,10 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     />
   )
 )
+CardHeaderBase.displayName = 'CardHeader'
+const CardHeader = memo(CardHeaderBase)
 
-const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }>(
+const CardTitleBase = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }>(
   ({ className, level = 3, ...props }, ref) => {
     const Component = level === 1 ? 'h1' : level === 2 ? 'h2' : level === 3 ? 'h3' : level === 4 ? 'h4' : level === 5 ? 'h5' : 'h6'
     return React.createElement(
@@ -61,8 +65,10 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
     )
   }
 )
+CardTitleBase.displayName = 'CardTitle'
+const CardTitle = memo(CardTitleBase)
 
-const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
+const CardDescriptionBase = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
@@ -71,8 +77,10 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
     />
   )
 )
+CardDescriptionBase.displayName = 'CardDescription'
+const CardDescription = memo(CardDescriptionBase)
 
-const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+const CardContentBase = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
@@ -81,8 +89,10 @@ const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     />
   )
 )
+CardContentBase.displayName = 'CardContent'
+const CardContent = memo(CardContentBase)
 
-const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+const CardFooterBase = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
@@ -91,12 +101,8 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     />
   )
 )
-
-CardHeader.displayName = 'CardHeader'
-CardTitle.displayName = 'CardTitle'
-CardDescription.displayName = 'CardDescription'
-CardContent.displayName = 'CardContent'
-CardFooter.displayName = 'CardFooter'
+CardFooterBase.displayName = 'CardFooter'
+const CardFooter = memo(CardFooterBase)
 
 
 

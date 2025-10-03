@@ -215,58 +215,67 @@ export const generateWorkout = onRequest(
         return contexts[type as keyof typeof contexts] || contexts['Full Body'];
       };
 
-      // Streamlined prompt for reliable workout generation
-      const prompt = `Create a ${duration}-minute ${workoutType || 'Strength'} workout for ${experience || 'Beginner'} level.
+      // Build injury context if injuries are present
+      const injuryContext = injuries?.list && injuries.list.length > 0
+        ? `\n\nIMPORTANT - INJURY CONSIDERATIONS:
+- User has reported injuries: ${injuries.list.join(', ')}
+${injuries.notes ? `- Additional notes: ${injuries.notes}` : ''}
+- Avoid exercises that stress these areas
+- Provide modifications when appropriate
+- Prioritize safety over intensity`
+        : '';
 
-REQUIREMENTS:
-- Equipment: ${filteredEquipment.join(', ') || 'bodyweight only'}
-- Goals: ${filteredGoals.join(', ')}
-- Duration: ${duration} minutes total
-- Type: ${workoutType || 'Strength'} exercises ONLY
+      // Build intensity context if provided
+      const intensityContext = finalTargetIntensity !== 1.0 || finalProgressionNote
+        ? `\n\nINTENSITY GUIDANCE:
+- Target intensity scalar: ${finalTargetIntensity.toFixed(2)}x baseline
+${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
+- Adjust sets, reps, or rest periods accordingly`
+        : '';
 
-${getWorkoutTypeContext(workoutType || 'Strength')}
+      // Streamlined prompt optimized for speed while maintaining quality
+      const prompt = `Create a ${duration}-min ${workoutType || 'Strength'} workout for ${experience || 'Beginner'} level.
 
-STRUCTURE:
-1. Warm-up (2-3 exercises)
-2. Main exercises (4-5 exercises)
-3. Cool-down (1-2 exercises)
+SPECS: Equipment: ${filteredEquipment.join(', ') || 'bodyweight'} | Goals: ${filteredGoals.join(', ') || 'fitness'} | Type: ${workoutType || 'Strength'}
+${getWorkoutTypeContext(workoutType || 'Strength')}${injuryContext}${intensityContext}
 
-Generate 6-8 exercises that match the ${workoutType || 'Strength'} workout type.
+RULES:
+1. CREATE new exercises dynamically (no preset lists)
+2. Match ${workoutType || 'Strength'} workout type exactly
+3. Include 7-8 exercises: 2 warm-up, 4-5 main, 1-2 cool-down
+4. Descriptions: 100+ chars with form cues and breathing
 
-JSON format:
+JSON OUTPUT (no markdown):
 {
-  "exercises": [
-    {
-      "name": "Exercise Name",
-      "description": "Instructions with breathing",
-      "sets": number,
-      "reps": "range",
-      "formTips": ["tips"],
-      "safetyTips": ["safety"],
-      "restSeconds": number,
-      "usesWeight": boolean,
-      "muscleGroups": ["muscles"],
-      "difficulty": "${(experience || 'beginner').toLowerCase()}"
-    }
-  ],
+  "exercises": [{
+    "name": "Exercise Name",
+    "description": "Step-by-step with breathing cues",
+    "sets": 3,
+    "reps": "8-12",
+    "formTips": ["tip1", "tip2", "tip3"],
+    "safetyTips": ["safety1", "safety2"],
+    "restSeconds": 60,
+    "usesWeight": true,
+    "muscleGroups": ["muscle1", "muscle2"],
+    "difficulty": "${(experience || 'beginner').toLowerCase()}"
+  }],
   "workoutSummary": {
-    "totalVolume": "volume",
-    "primaryFocus": "focus",
+    "totalVolume": "volume estimate",
+    "primaryFocus": "focus areas",
     "expectedRPE": "intensity"
   }
-}
-`.trim();
+}`.trim();
 
-      // Use GPT-3.5-turbo as primary model for maximum speed and reliability
-      console.log('⚡ Using GPT-3.5-turbo for ultra-fast workout generation');
+      // Use GPT-4.1-nano for ultra-fast generation (<10s target) with low latency
+      console.log('⚡ Using GPT-4.1-nano for ultra-fast workout generation');
       const completion = await client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        temperature: 0.3,
-        max_tokens: 1200, // Reduced for faster response
+        model: 'gpt-4.1-nano',
+        temperature: 0.4, // Slightly higher for more creative exercise selection
+        max_tokens: 1500, // Optimized for speed while maintaining quality
         messages: [
           {
             role: 'system',
-            content: 'You are a certified personal trainer. Output only valid JSON with no markdown formatting.',
+            content: 'You are an expert certified personal trainer (NASM-CPT, CSCS) with 10+ years of experience. Create dynamic, varied workouts tailored to each request. Generate exercises creatively based on the workout type - never use a preset list. Output only valid JSON with no markdown formatting or code blocks.',
           },
           { role: 'user', content: prompt },
         ],

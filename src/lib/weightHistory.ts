@@ -27,8 +27,10 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    console.log(`Fetching weight history for ${exerciseName}`)
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Fetching weight history for ${exerciseName}`)
+    }
+
     const q = query(
       collection(db, 'users', uid, 'workouts'),
       orderBy('timestamp', 'desc'),
@@ -64,8 +66,10 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
 
     // Sort by timestamp descending (most recent first)
     weightHistory.sort((a, b) => b.timestamp - a.timestamp)
-    
-    console.log(`📈 Found ${weightHistory.length} weight entries for ${exerciseName}`)
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📈 Found ${weightHistory.length} weight entries for ${exerciseName}`)
+    }
     return weightHistory
 
   } catch (error) {
@@ -82,8 +86,10 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    console.log('Fetching recent workout sessions')
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Fetching recent workout sessions')
+    }
+
     const q = query(
       collection(db, 'users', uid, 'workouts'),
       orderBy('timestamp', 'desc'),
@@ -127,7 +133,9 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
       })
     })
 
-    console.log(`📈 Found ${sessions.length} recent sessions`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📈 Found ${sessions.length} recent sessions`)
+    }
     return sessions
 
   } catch (error) {

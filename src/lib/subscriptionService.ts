@@ -177,18 +177,32 @@ class SubscriptionService {
   async cancelSubscription(): Promise<boolean> {
     let lastError: Error | null = null
 
+    // First, get the subscription data to retrieve the subscriptionId
+    const subscription = await this.getSubscription()
+    if (!subscription) {
+      throw new Error('No subscription found. Please refresh and try again.')
+    }
+
+    if (!subscription.subscriptionId) {
+      throw new Error('Subscription ID not found. Unable to cancel subscription.')
+    }
+
+    const subscriptionId = subscription.subscriptionId
+
     for (let attempt = 1; attempt <= this.options.maxRetries; attempt++) {
       try {
-        console.log(`Canceling subscription (attempt ${attempt}/${this.options.maxRetries})`)
+        console.log(`Canceling subscription ${subscriptionId} (attempt ${attempt}/${this.options.maxRetries})`)
 
         const cancelFn = httpsCallable(fns, 'cancelUserSubscription')
-        const result = await cancelFn()
+        const result = await cancelFn({ subscriptionId })
 
         const data = result.data as { success?: boolean; error?: string }
         if (data.error) throw new Error(data.error)
 
         if (data.success) {
           console.log('Subscription cancelled successfully')
+          // Clear cache to force refresh
+          this.clearCache()
           return true
         }
 
@@ -214,14 +228,35 @@ class SubscriptionService {
    */
   async reactivateSubscription(): Promise<boolean> {
     try {
+      // First, get the subscription data to retrieve the subscriptionId
+      const subscription = await this.getSubscription()
+      if (!subscription) {
+        throw new Error('No subscription found. Please refresh and try again.')
+      }
+
+      if (!subscription.subscriptionId) {
+        throw new Error('Subscription ID not found. Unable to reactivate subscription.')
+      }
+
+      const subscriptionId = subscription.subscriptionId
+      console.log(`Reactivating subscription ${subscriptionId}`)
+
       const reactivateFn = httpsCallable(fns, 'reactivateUserSubscription')
-      const result = await reactivateFn()
-      
+      const result = await reactivateFn({ subscriptionId })
+
       const data = result.data as { success?: boolean }
-      return data.success || false
+
+      if (data.success) {
+        console.log('Subscription reactivated successfully')
+        // Clear cache to force refresh
+        this.clearCache()
+        return true
+      }
+
+      return false
     } catch (error) {
       console.error('Error reactivating subscription:', error)
-      return false
+      throw error instanceof Error ? error : new Error('Failed to reactivate subscription')
     }
   }
 

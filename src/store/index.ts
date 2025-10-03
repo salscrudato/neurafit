@@ -253,7 +253,9 @@ export const useAppStore = create<AppState & AppActions>()(
           syncPendingOperations: async () => {
             const { pendingOperations } = get()
             // Implementation will be added in the data persistence section
-            console.log('Syncing pending operations:', pendingOperations.length)
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Syncing pending operations:', pendingOperations.length)
+            }
           },
           
           // Error handling actions

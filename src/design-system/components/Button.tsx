@@ -1,4 +1,4 @@
-import React, { forwardRef, type ButtonHTMLAttributes } from 'react'
+import React, { forwardRef, memo, type ButtonHTMLAttributes } from 'react'
 import { type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 import { buttonVariants } from '../variants/buttonVariants'
@@ -15,18 +15,18 @@ export interface ButtonProps
   fullWidth?: boolean
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ 
-    className, 
-    variant, 
-    size, 
-    fullWidth, 
-    loading, 
-    leftIcon, 
-    rightIcon, 
-    children, 
+const ButtonBase = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({
+    className,
+    variant,
+    size,
+    fullWidth,
+    loading,
+    leftIcon,
+    rightIcon,
+    children,
     disabled,
-    ...props 
+    ...props
   }, ref) => {
     const isDisabled = disabled || loading
 
@@ -53,7 +53,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   }
 )
 
-Button.displayName = 'Button'
+ButtonBase.displayName = 'Button'
+
+const Button = memo(ButtonBase)
 
 export { Button }
 

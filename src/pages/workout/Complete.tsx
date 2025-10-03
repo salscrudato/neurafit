@@ -49,19 +49,21 @@ export default function Complete() {
           weights: workoutWeights[exerciseIndex] || null
         }))
 
-        // Debug: Log the workout data being saved
-        console.log('[SAVE] Saving workout with the following completion data:')
-        exercisesWithWeights.forEach((exercise: Record<string, unknown>, index: number) => {
-          console.log(`Exercise ${index}: ${exercise.name}`)
-          if (exercise.weights) {
-            Object.entries(exercise.weights).forEach(([setNum, weight]) => {
-              const status = weight === null ? 'SKIPPED' : weight === 0 ? 'COMPLETED (no weight)' : `COMPLETED (${weight}lbs)`
-              console.log(`  Set ${setNum}: ${status}`)
-            })
-          } else {
-            console.log('  No weight data (should not happen with new system)')
-          }
-        })
+        // Development-only logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[SAVE] Saving workout with the following completion data:')
+          exercisesWithWeights.forEach((exercise: Record<string, unknown>, index: number) => {
+            console.log(`Exercise ${index}: ${exercise.name}`)
+            if (exercise.weights) {
+              Object.entries(exercise.weights).forEach(([setNum, weight]) => {
+                const status = weight === null ? 'SKIPPED' : weight === 0 ? 'COMPLETED (no weight)' : `COMPLETED (${weight}lbs)`
+                console.log(`  Set ${setNum}: ${status}`)
+              })
+            } else {
+              console.log('  No weight data (should not happen with new system)')
+            }
+          })
+        }
 
         const workoutDoc = {
           timestamp: serverTimestamp(),
@@ -83,7 +85,10 @@ export default function Complete() {
         setWorkoutData({ ...workoutDoc, exercises: exercisesWithWeights })
         setWorkoutId(docRef.id)
         setWorkoutSaved(true)
-        console.log('[FEEDBACK] Workout saved, should show feedback UI now')
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[FEEDBACK] Workout saved, should show feedback UI now')
+        }
 
         // Clear the session storage after successful save
         sessionStorage.removeItem('nf_workout_plan')
@@ -148,11 +153,13 @@ export default function Complete() {
 
       // For now, we'll update the adaptive state when generating the next workout
       // This ensures we have the most recent feedback and completion data
-      console.log('Feedback submitted:', {
-        feedback: selectedFeedback,
-        rpe: rpeValue,
-        completionRate
-      })
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Feedback submitted:', {
+          feedback: selectedFeedback,
+          rpe: rpeValue,
+          completionRate
+        })
+      }
 
       setFeedbackSubmitted(true)
     } catch (error) {
@@ -186,12 +193,6 @@ export default function Complete() {
           </div>
           <h1 className="text-3xl font-bold mb-4 text-gray-900">Workout Complete!</h1>
           <p className="mb-6 text-gray-600">Great job! Your workout has been saved to your history.</p>
-
-          {/* Debug info */}
-          {(() => {
-            console.log('[FEEDBACK] Render check - workoutSaved:', workoutSaved, 'feedbackSubmitted:', feedbackSubmitted, 'isFeedbackUIEnabled:', isFeedbackUIEnabled());
-            return null;
-          })()}
 
           {/* Feedback Section */}
           {workoutSaved && !feedbackSubmitted && (

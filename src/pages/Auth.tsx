@@ -50,7 +50,7 @@ export default function Auth() {
       } catch (error) {
         const firebaseError = error as { code?: string; message?: string }
         // Suppress expected COOP errors in development
-        if (!firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
+        if (process.env.NODE_ENV === 'development' && !firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
           console.log('Popup failed, trying redirect:', firebaseError.code)
         }
 
