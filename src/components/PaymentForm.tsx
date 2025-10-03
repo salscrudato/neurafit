@@ -265,7 +265,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
     }
 
     initializePayment()
-  }, [priceId, onError]) // Remove clientSecret and error from dependencies to prevent re-initialization
+  }, [priceId, onError, clientSecret, error]) // Include all dependencies
 
   if (loading) {
     return (

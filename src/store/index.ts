@@ -352,7 +352,7 @@ export const useAuth = () => useAppStore((state) => ({
   setAuthStatus: state.setAuthStatus
 }))
 
-export const useSubscription = () => useAppStore((state) => ({
+export const useSubscriptionStore = () => useAppStore((state) => ({
   subscription: state.subscription,
   loading: state.subscriptionLoading,
   setSubscription: state.setSubscription,

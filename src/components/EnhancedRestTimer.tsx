@@ -150,32 +150,35 @@ export function EnhancedRestTimer({
           <div className="flex items-center justify-center gap-4 mb-8">
             <button
               onClick={() => adjustTime(-15)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               disabled={isComplete}
+              aria-label="Decrease rest time by 15 seconds"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-4 w-4" aria-hidden="true" />
               <span className="text-sm font-medium">15s</span>
             </button>
 
             <button
               onClick={togglePause}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                 isPaused
                   ? 'bg-green-500 hover:bg-green-600 text-white'
                   : 'bg-yellow-500 hover:bg-yellow-600 text-white'
               }`}
               disabled={isComplete}
+              aria-label={isPaused ? 'Resume rest timer' : 'Pause rest timer'}
             >
-              {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+              {isPaused ? <Play className="h-5 w-5" aria-hidden="true" /> : <Pause className="h-5 w-5" aria-hidden="true" />}
               <span>{isPaused ? 'Resume' : 'Pause'}</span>
             </button>
 
             <button
               onClick={() => adjustTime(15)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               disabled={isComplete}
+              aria-label="Increase rest time by 15 seconds"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               <span className="text-sm font-medium">15s</span>
             </button>
           </div>
@@ -183,10 +186,11 @@ export function EnhancedRestTimer({
           {/* Skip Button */}
           <button
             onClick={skip}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors mx-auto mb-8"
+            className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors mx-auto mb-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             disabled={isComplete}
+            aria-label="Skip rest period and continue to next exercise"
           >
-            <SkipForward className="h-5 w-5" />
+            <SkipForward className="h-5 w-5" aria-hidden="true" />
             <span>Skip Rest</span>
           </button>
 

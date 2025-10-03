@@ -5,7 +5,7 @@ import { useSubscription } from './useSubscription'
 import { isAdaptivePersonalizationEnabled } from '../config/features'
 
 export interface PreloadedData {
-  profile: any | null
+  profile: Record<string, unknown> | null
   targetIntensity: number
   progressionNote: string
   isLoading: boolean

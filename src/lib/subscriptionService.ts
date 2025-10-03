@@ -7,7 +7,7 @@ import { httpsCallable } from 'firebase/functions'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { auth, db, fns } from './firebase'
 import type { UserSubscription } from '../types/subscription'
-import { validateSubscriptionDuration, SUBSCRIPTION_DURATION } from './stripe-config'
+import { validateSubscriptionDuration } from './stripe-config'
 
 export interface SubscriptionServiceOptions {
   enableCache?: boolean

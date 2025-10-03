@@ -2,8 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
-import { auth, db } from '../lib/firebase'
-import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
+import { auth } from '../lib/firebase'
 import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
 import { trackCustomEvent } from '../lib/firebase-analytics'
@@ -40,13 +39,14 @@ const TYPES = [
 // Top 8 most common workout durations (optimized for user preferences)
 const DUR = [15, 20, 30, 45, 60, 75, 90, 120] as const
 
-type Profile = {
-  experience?: string
-  goals?: string[]
-  equipment?: string[]
-  personal?: { sex?: string; height?: string; weight?: string }
-  injuries?: { list?: string[]; notes?: string }
-}
+// Profile type moved to types file for better organization
+// type Profile = {
+//   experience?: string
+//   goals?: string[]
+//   equipment?: string[]
+//   personal?: { sex?: string; height?: string; weight?: string }
+//   injuries?: { list?: string[]; notes?: string }
+// }
 
 export default function Generate() {
   const nav = useNavigate()
@@ -59,7 +59,7 @@ export default function Generate() {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
 
   // Use pre-loaded data hook
-  const { preloadedData, refreshPreloadedData } = useWorkoutPreload()
+  const { preloadedData } = useWorkoutPreload()
 
   // Subscription hooks
   const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts, subscription } = useSubscription()
@@ -87,7 +87,7 @@ export default function Generate() {
 
       if (preloadedData.profile) {
         // Initialize equipment from profile
-        setEquipment(preloadedData.profile.equipment || [])
+        setEquipment((preloadedData.profile.equipment as string[]) || [])
       }
     }
   }, [nav, preloadedData])

@@ -188,7 +188,7 @@ interface MotivationalMessageProps {
 }
 
 export function MotivationalMessage({
-  progress,
+  progress: _progress,
   completedSets,
   totalSets,
   exerciseName

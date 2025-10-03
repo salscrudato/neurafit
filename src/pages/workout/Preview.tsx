@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Crown } from 'lucide-react'
-import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
+import AppHeader from '../../components/AppHeader'
 import { useSubscription } from '../../hooks/useSubscription'
 import { trackWorkoutStarted } from '../../lib/firebase-analytics'
 
@@ -56,11 +56,7 @@ export default function Preview() {
         <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-gradient-to-r from-slate-300/10 to-gray-300/10 rounded-full blur-3xl" />
       </div>
 
-      <WorkoutFlowHeader
-        title="Workout Preview"
-        showBackButton={true}
-        onBack={() => nav('/generate')}
-      />
+      <AppHeader />
 
       {/* Compact Hero Section */}
       <section className="relative mx-auto max-w-4xl px-4 pt-4">
@@ -227,11 +223,7 @@ function EmptyState() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-400/15 to-blue-400/20 rounded-full blur-3xl" />
       </div>
 
-      <WorkoutFlowHeader
-        title="Workout Preview"
-        showBackButton={true}
-        onBack={() => nav('/generate')}
-      />
+      <AppHeader />
       <div className="relative grid place-items-center pt-16 px-4">
         <div className="max-w-sm text-center p-6 rounded-2xl border border-white/60 bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30">
           <h2 className="text-xl font-bold mb-3 bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">No plan found</h2>
@@ -269,7 +261,7 @@ function CompactBadge({
   )
 }
 
-function EnhancedBadge({
+function _EnhancedBadge({
   children,
   variant = 'primary'
 }: {
@@ -291,7 +283,7 @@ function EnhancedBadge({
 }
 
 // Keep the old Badge component for backward compatibility
-function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
+function _Badge({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <span className={className || "inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700"}>
       {children}

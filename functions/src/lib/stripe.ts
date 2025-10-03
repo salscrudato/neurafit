@@ -368,7 +368,7 @@ export async function getUserByCustomerId(customerId: string): Promise<string | 
     }
 
     // If not found, try to get customer from Stripe and match by email
-    console.log(`🔍 Customer ID not found in profiles, checking Stripe for email...`);
+    console.log('🔍 Customer ID not found in profiles, checking Stripe for email...');
 
     try {
       const stripeInstance = getStripeClient(process.env.STRIPE_SECRET_KEY!);
@@ -387,7 +387,7 @@ export async function getUserByCustomerId(customerId: string): Promise<string | 
 
           // Update the user's profile with the customer ID for future lookups
           await updateUserSubscription(userId, { customerId });
-          console.log(`📝 Updated user profile with customer ID`);
+          console.log('📝 Updated user profile with customer ID');
 
           return userId;
         }

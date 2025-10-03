@@ -201,43 +201,55 @@ export default function History() {
 
         {/* Tab Navigation */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-white rounded-2xl p-1 border border-gray-200 shadow-sm">
+          <div className="inline-flex bg-white rounded-2xl p-1 border border-gray-200 shadow-sm" role="tablist" aria-label="Fitness dashboard tabs">
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`px-6 py-3 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                 activeTab === 'history'
                   ? 'bg-blue-500 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              role="tab"
+              aria-selected={activeTab === 'history'}
+              aria-controls="history-panel"
+              id="history-tab"
             >
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
+                <Activity className="h-4 w-4" aria-hidden="true" />
                 History
               </div>
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`px-6 py-3 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                 activeTab === 'analytics'
                   ? 'bg-blue-500 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              role="tab"
+              aria-selected={activeTab === 'analytics'}
+              aria-controls="analytics-panel"
+              id="analytics-tab"
             >
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
+                <BarChart3 className="h-4 w-4" aria-hidden="true" />
                 Analytics
               </div>
             </button>
             <button
               onClick={() => setActiveTab('achievements')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`px-6 py-3 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                 activeTab === 'achievements'
                   ? 'bg-blue-500 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              role="tab"
+              aria-selected={activeTab === 'achievements'}
+              aria-controls="achievements-panel"
+              id="achievements-tab"
             >
               <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
+                <Trophy className="h-4 w-4" aria-hidden="true" />
                 Achievements
               </div>
             </button>
@@ -246,6 +258,7 @@ export default function History() {
 
         {/* Tab Content */}
         {activeTab === 'history' && (
+          <div role="tabpanel" id="history-panel" aria-labelledby="history-tab">
           <>
             {/* Workout List */}
             {items.length === 0 ? (
@@ -375,11 +388,12 @@ export default function History() {
           </div>
         )}
           </>
+          </div>
         )}
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" id="analytics-panel" aria-labelledby="analytics-tab">
             {performanceMetrics ? (
               <div>
                 {/* Performance Overview */}
@@ -549,7 +563,7 @@ export default function History() {
 
         {/* Achievements Tab */}
         {activeTab === 'achievements' && (
-          <div className="bg-white rounded-xl p-6 border border-gray-100 text-center">
+          <div className="bg-white rounded-xl p-6 border border-gray-100 text-center" role="tabpanel" id="achievements-panel" aria-labelledby="achievements-tab">
             <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Achievements Coming Soon</h3>
             <p className="text-gray-600">Achievement system will be available in a future update.</p>

@@ -2,8 +2,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { Lightbulb, Shield } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
-import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
-import WorkoutActionFooter from '../../components/WorkoutActionFooter'
 import { useOptimisticUpdate, createWeightUpdateAction } from '../../lib/optimisticUpdates'
 import {
   WorkoutProgressHeader,
@@ -322,12 +320,6 @@ export default function Exercise() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
       </div>
 
-      <WorkoutFlowHeader
-        title="Workout"
-        showBackButton={true}
-        onBack={() => nav('/dashboard')}
-      />
-
       {/* Enhanced Progress Header */}
       <WorkoutProgressHeader
         currentExercise={i + 1}
@@ -436,11 +428,34 @@ export default function Exercise() {
         </div>
       </main>
 
-      <WorkoutActionFooter
-        onCompleteSet={completeSet}
-        onSkipSet={skipSet}
-        onSkipExercise={skipExercise}
-      />
+      {/* Sticky controls */}
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur">
+        <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-between gap-3">
+          <button
+            onClick={skipExercise}
+            className="rounded-xl border border-gray-300 bg-white/70 px-3 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 text-sm"
+          >
+            Skip Exercise
+          </button>
+
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={skipSet}
+              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200 active:scale-95"
+            >
+              Skip Set
+            </button>
+            <button
+              onClick={completeSet}
+              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              aria-label={`Complete set ${setNo} of ${ex.sets} for ${ex.name}`}
+            >
+              Complete Set
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -467,7 +482,8 @@ function EmptyState() {
           <p className="text-gray-600 mb-4">Generate a workout to start your session.</p>
           <button
             onClick={() => nav('/generate')}
-            className="px-6 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:scale-[1.02] transition-all duration-200 shadow-md"
+            className="px-6 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:scale-[1.02] transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            aria-label="Generate a new workout plan"
           >
             Generate Workout
           </button>

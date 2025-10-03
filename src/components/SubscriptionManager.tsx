@@ -294,7 +294,7 @@ interface StatusDisplayProps {
   className: string
 }
 
-function StatusDisplay({ hasUnlimitedWorkouts, remainingFreeWorkouts, loading, className }: StatusDisplayProps) {
+function StatusDisplay({ hasUnlimitedWorkouts: _hasUnlimitedWorkouts, remainingFreeWorkouts: _remainingFreeWorkouts, loading: _loading, className: _className }: StatusDisplayProps) {
   // Always return null to hide the subscription status cards
   return null
 }

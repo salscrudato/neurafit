@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { SubscriptionManager } from '../components/SubscriptionManager'
 import { PaymentForm } from '../components/PaymentForm'

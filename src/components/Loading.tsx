@@ -26,16 +26,17 @@ export const LoadingSpinner = memo(({
   }
 
   const spinner = (
-    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`} role="status" aria-live="polite">
       <Loader2
         className={`${sizeClasses[size]} animate-spin text-blue-600`}
         aria-hidden="true"
       />
       {text && (
-        <p className="text-gray-600 font-medium">
+        <p className="text-gray-600 font-medium" aria-label={text}>
           {text}
         </p>
       )}
+      <span className="sr-only">Loading...</span>
     </div>
   )
 
@@ -109,7 +110,7 @@ interface EnhancedWorkoutLoaderProps {
 }
 
 export function EnhancedWorkoutLoader({
-  text = 'Generating your personalized workout...'
+  text: _text = 'Generating your personalized workout...'
 }: EnhancedWorkoutLoaderProps) {
   const [currentMessage, setCurrentMessage] = React.useState(0)
 

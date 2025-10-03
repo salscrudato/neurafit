@@ -189,10 +189,11 @@ export function SmartWeightInput({
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => adjustWeight(-2.5)}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           disabled={isSubmitting}
+          aria-label="Decrease weight by 2.5 lbs"
         >
-          <Minus className="h-4 w-4" />
+          <Minus className="h-4 w-4" aria-hidden="true" />
         </button>
 
         <div className="flex-1 relative">
@@ -208,6 +209,8 @@ export function SmartWeightInput({
             step="0.5"
             className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-center text-lg font-semibold text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
             disabled={isSubmitting}
+            aria-label={`Weight for set ${setNumber} of ${exerciseName} in pounds`}
+            aria-describedby={`weight-help-${setNumber}`}
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
             lbs
@@ -216,19 +219,20 @@ export function SmartWeightInput({
 
         <button
           onClick={() => adjustWeight(2.5)}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           disabled={isSubmitting}
+          aria-label="Increase weight by 2.5 lbs"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
 
         <button
           onClick={resetWeight}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           disabled={isSubmitting}
-          title="Clear weight"
+          aria-label="Clear weight"
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 

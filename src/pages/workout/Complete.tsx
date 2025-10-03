@@ -209,11 +209,13 @@ export default function Complete() {
                   <button
                     key={option.value}
                     onClick={() => setSelectedFeedback(option.value)}
-                    className={`p-3 rounded-xl border-2 transition-all duration-200 ${
+                    className={`p-3 rounded-xl border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                       selectedFeedback === option.value
                         ? `bg-gradient-to-br ${option.color} text-white border-transparent shadow-md scale-105`
                         : 'bg-white/70 border-gray-200 hover:border-gray-300 hover:scale-102'
                     }`}
+                    aria-pressed={selectedFeedback === option.value}
+                    aria-label={`Rate workout as ${option.label.toLowerCase()}`}
                   >
                     <div className="flex justify-center mb-1">
                       <option.icon className="h-5 w-5" />
@@ -236,7 +238,9 @@ export default function Complete() {
                     max="10"
                     value={rpeValue || 5}
                     onChange={(e) => setRpeValue(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    aria-label="Rate of Perceived Exertion from 1 to 10"
+                    aria-describedby="rpe-description"
                   />
                   <span className="text-xs text-gray-500">10</span>
                 </div>
