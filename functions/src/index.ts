@@ -15,20 +15,6 @@ export {
   getSubscriptionDetails,
   getBillingHistory,
 } from './subscription-functions';
-export { cleanupSubscriptions } from './cleanup-subscriptions';
-export {
-  getStripeSubscriptionStatus,
-  manualSyncSubscription,
-  checkWebhookDelivery,
-  forceWebhookProcessing,
-  debugSubscription,
-} from './subscription-debug';
-
-// Export emergency fix functions
-export {
-  emergencySubscriptionFix,
-  debugAllSubscriptions
-} from './emergency-subscription-fix';
 
 // Define the secret
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
