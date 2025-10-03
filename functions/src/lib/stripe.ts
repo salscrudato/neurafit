@@ -161,11 +161,16 @@ export async function createSubscription(
       customer: customerId,
       items: [{ price: priceId }],
       payment_behavior: 'default_incomplete',
-      payment_settings: { save_default_payment_method: 'on_subscription' },
+      payment_settings: {
+        save_default_payment_method: 'on_subscription',
+        payment_method_types: ['card']
+      },
       expand: ['latest_invoice.payment_intent'],
       metadata: {
         firebaseUID: uid,
       },
+      // Ensure automatic tax calculation if needed
+      automatic_tax: { enabled: false },
     });
 
     console.log('Subscription created:', subscription.id, 'status:', subscription.status);
@@ -210,42 +215,60 @@ export async function createSubscription(
         return subscription;
       }
 
-      // For non-zero invoices without payment intents, create a payment intent manually
-      console.log('Invoice has amount due but no payment intent, creating payment intent manually...');
+      // For non-zero invoices without payment intents, this indicates an issue with subscription setup
+      console.log('Invoice has amount due but no payment intent - this should not happen with default_incomplete');
+      console.log('Attempting to finalize the invoice to trigger payment intent creation...');
 
       try {
+        // Try to finalize the invoice which should create a payment intent
+        const finalizedInvoice = await stripeInstance.invoices.finalizeInvoice(expandedInvoice.id!, {
+          expand: ['payment_intent'],
+        });
+
+        console.log('Invoice finalized:', finalizedInvoice.id, 'status:', finalizedInvoice.status);
+
+        const finalizedInvoiceWithPI = finalizedInvoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | string };
+        if (finalizedInvoiceWithPI.payment_intent) {
+          console.log('Payment intent created after finalization:',
+            typeof finalizedInvoiceWithPI.payment_intent === 'string'
+              ? finalizedInvoiceWithPI.payment_intent
+              : finalizedInvoiceWithPI.payment_intent.id
+          );
+
+          // Return the subscription with the finalized invoice
+          return {
+            ...subscription,
+            latest_invoice: finalizedInvoice,
+          } as Stripe.Subscription;
+        }
+
+        // If still no payment intent, create one manually as last resort
+        console.log('Still no payment intent after finalization, creating manually...');
         const paymentIntent = await stripeInstance.paymentIntents.create({
-          amount: expandedInvoice.amount_due,
-          currency: expandedInvoice.currency,
+          amount: finalizedInvoice.amount_due,
+          currency: finalizedInvoice.currency,
           customer: customerId,
           payment_method_types: ['card'],
           metadata: {
-            invoice_id: expandedInvoice.id || '',
+            invoice_id: finalizedInvoice.id || '',
             subscription_id: subscription.id,
             firebaseUID: uid,
           },
         });
 
         console.log('Manual payment intent created:', paymentIntent.id);
-        console.log('Payment intent client secret:', paymentIntent.client_secret ? 'present' : 'missing');
 
-        // Update the invoice with the new payment intent
-        await stripeInstance.invoices.update(expandedInvoice.id!, {
-          metadata: {
-            payment_intent_id: paymentIntent.id,
-          },
-        } as Stripe.InvoiceUpdateParams);
-
-        // Return the subscription with updated invoice
+        // Return the subscription with the manual payment intent
         return {
           ...subscription,
           latest_invoice: {
-            ...expandedInvoice,
+            ...finalizedInvoice,
             payment_intent: paymentIntent,
           },
         } as Stripe.Subscription;
+
       } catch (piError) {
-        console.error('Error creating manual payment intent:', piError);
+        console.error('Error handling invoice without payment intent:', piError);
         throw piError;
       }
     }

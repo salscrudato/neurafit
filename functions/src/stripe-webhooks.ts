@@ -285,19 +285,45 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     // Payment succeeded, update subscription with full details
     const subscriptionData: Partial<UserSubscriptionData> = {
       subscriptionId: subscription.id,
+      customerId: subscription.customer as string,
       priceId: subscription.items.data[0]?.price.id,
-      status: 'active',
+      status: subscription.status as UserSubscriptionData['status'],
       currentPeriodStart: extendedSubscription.current_period_start * 1000,
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
+      // Ensure free workout limit is set
+      freeWorkoutLimit: 10,
     };
 
+    // Only add canceledAt if it exists
+    if (extendedSubscription.canceled_at != null) {
+      subscriptionData.canceledAt = extendedSubscription.canceled_at * 1000;
+    }
+
+    console.log(`📝 Payment succeeded - updating subscription for user ${uid}:`, {
+      subscriptionId: subscriptionData.subscriptionId,
+      status: subscriptionData.status,
+      customerId: subscriptionData.customerId,
+      freeWorkoutLimit: subscriptionData.freeWorkoutLimit
+    });
+
     await updateUserSubscription(uid, subscriptionData);
-    console.log('✅ Payment succeeded and subscription activated for user:', uid, 'Status:', subscriptionData.status);
+    console.log('✅ Payment succeeded and subscription updated for user:', uid, 'Status:', subscriptionData.status);
   } catch (error) {
     console.error('❌ Error processing payment success:', error);
-    // Fallback to basic status update
-    await updateUserSubscription(uid, { status: 'active' });
+    // Fallback to basic status update - use actual subscription status, not hardcoded 'active'
+    try {
+      const stripe = getStripeClient(process.env.STRIPE_SECRET_KEY!);
+      const subscription = await stripe.subscriptions.retrieve(extendedInvoice.subscription as string);
+      await updateUserSubscription(uid, {
+        status: subscription.status as UserSubscriptionData['status'],
+        customerId: subscription.customer as string,
+        freeWorkoutLimit: 10
+      });
+      console.log('✅ Fallback update completed with status:', subscription.status);
+    } catch (fallbackError) {
+      console.error('❌ Fallback update also failed:', fallbackError);
+    }
   }
 }
 
