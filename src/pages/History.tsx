@@ -18,6 +18,7 @@ const formatVolume = (volume: number): string => {
 import { LineChart, DonutChart } from '../components/Charts'
 import { StatsCard } from '../design-system/components/SpecializedCards'
 import { Card } from '../design-system/components/Card'
+import { DeferredRender, ChartSkeleton } from '../components/DeferredRender'
 
 type WorkoutItem = {
   id: string
@@ -452,16 +453,21 @@ export default function History() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <LineChart
-                        data={performanceMetrics.weeklyStats.map(week => ({
-                          label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                          value: week.totalVolume,
-                          date: week.weekStart
-                        }))}
-                        height={200}
-                        color="#3B82F6"
-                        animated
-                      />
+                      <DeferredRender
+                        minHeight="200px"
+                        placeholder={<ChartSkeleton height={200} />}
+                      >
+                        <LineChart
+                          data={performanceMetrics.weeklyStats.map(week => ({
+                            label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                            value: week.totalVolume,
+                            date: week.weekStart
+                          }))}
+                          height={200}
+                          color="#3B82F6"
+                          animated
+                        />
+                      </DeferredRender>
                     </div>
                   </Card>
 
@@ -479,15 +485,20 @@ export default function History() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <DonutChart
-                        data={performanceMetrics.exerciseStats.slice(0, 5).map((exercise, index) => ({
-                          label: exercise.name,
-                          value: exercise.totalVolume,
-                          color: `hsl(${(index * 72)}, 70%, 50%)`
-                        }))}
-                        size={200}
-                        animated
-                      />
+                      <DeferredRender
+                        minHeight="200px"
+                        placeholder={<ChartSkeleton height={200} />}
+                      >
+                        <DonutChart
+                          data={performanceMetrics.exerciseStats.slice(0, 5).map((exercise, index) => ({
+                            label: exercise.name,
+                            value: exercise.totalVolume,
+                            color: `hsl(${(index * 72)}, 70%, 50%)`
+                          }))}
+                          size={200}
+                          animated
+                        />
+                      </DeferredRender>
                     </div>
                   </Card>
                 </div>

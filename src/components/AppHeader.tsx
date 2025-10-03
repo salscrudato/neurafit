@@ -3,11 +3,31 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
-import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut, Crown } from 'lucide-react'
+import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut, Crown, type LucideIcon } from 'lucide-react'
+import { usePrefetchOnIdle, usePrefetchOnHover } from '../hooks/usePrefetch'
+
+// MenuItem component to properly use hooks
+function MenuItem({ path, icon: Icon, label, onClick }: { path: string; icon: LucideIcon; label: string; onClick: () => void }) {
+  const prefetchProps = usePrefetchOnHover(path)
+
+  return (
+    <button
+      onClick={onClick}
+      {...prefetchProps}
+      className="w-full flex items-center gap-3 px-4 py-4 text-left rounded-xl hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900 touch-manipulation min-h-[48px]"
+    >
+      <Icon className="h-5 w-5" />
+      <span className="font-medium">{label}</span>
+    </button>
+  )
+}
 
 export default function AppHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const nav = useNavigate()
+
+  // Prefetch critical routes on idle
+  usePrefetchOnIdle(['/generate', '/history', '/subscription'], 2000)
 
   const menuItems = [
     { label: 'Dashboard', path: '/dashboard', icon: Home },
@@ -77,15 +97,15 @@ export default function AppHeader() {
             <div className="p-2">
               {menuItems.map((item) => {
                 const Icon = item.icon
+
                 return (
-                  <button
+                  <MenuItem
                     key={item.path}
+                    path={item.path}
+                    icon={Icon}
+                    label={item.label}
                     onClick={() => handleNavigation(item.path)}
-                    className="w-full flex items-center gap-3 px-4 py-4 text-left rounded-xl hover:bg-gray-100 transition-colors text-gray-700 hover:text-gray-900 touch-manipulation min-h-[48px]"
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
+                  />
                 )
               })}
 

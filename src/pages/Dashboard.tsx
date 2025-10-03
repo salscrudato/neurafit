@@ -16,6 +16,8 @@ import { Button } from '../design-system/components/Button'
 import { Card } from '../design-system/components/Card'
 import { MotivationalBanner } from '../components/MotivationalBanner'
 import { SubscriptionManager } from '../components/SubscriptionManager'
+import { DeferredRender } from '../components/DeferredRender'
+import { usePrefetchOnIdle } from '../hooks/usePrefetch'
 
 interface WorkoutItem {
   id: string
@@ -45,6 +47,9 @@ export default function Dashboard() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Prefetch likely next routes on idle
+  usePrefetchOnIdle(['/generate', '/history', '/profile'], 3000)
 
   // Get current user
   useEffect(() => {
@@ -244,15 +249,22 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Motivational Banner with improved spacing */}
+      {/* Motivational Banner with improved spacing - Deferred rendering */}
       {dashboardStats && dashboardStats.totalWorkouts > 0 && (
         <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-10">
-          <MotivationalBanner
-            totalWorkouts={dashboardStats.totalWorkouts}
-            weeklyWorkouts={dashboardStats.weeklyWorkouts}
-            streak={dashboardStats.recentStreak}
-            consistencyScore={dashboardStats.consistencyScore}
-          />
+          <DeferredRender
+            minHeight="144px"
+            placeholder={
+              <div className="h-36 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-3xl shadow-2xl shadow-slate-200/50 backdrop-blur-xl border border-white/70 animate-pulse" />
+            }
+          >
+            <MotivationalBanner
+              totalWorkouts={dashboardStats.totalWorkouts}
+              weeklyWorkouts={dashboardStats.weeklyWorkouts}
+              streak={dashboardStats.recentStreak}
+              consistencyScore={dashboardStats.consistencyScore}
+            />
+          </DeferredRender>
         </section>
       )}
 
