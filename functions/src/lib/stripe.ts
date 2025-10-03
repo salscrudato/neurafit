@@ -89,7 +89,7 @@ export async function createOrGetCustomer(
       status: 'incomplete',
       workoutCount: 0,
       freeWorkoutsUsed: 0,
-      freeWorkoutLimit: 5,
+      freeWorkoutLimit: 10,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -267,20 +267,56 @@ export async function updateUserSubscription(
   try {
     console.log(`📝 Updating subscription for user ${uid}:`, subscriptionData);
 
-    await db.collection('users').doc(uid).set(
+    // Get current subscription data to preserve important fields
+    const userRef = db.collection('users').doc(uid);
+    const currentDoc = await userRef.get();
+    const currentSubscription = currentDoc.data()?.subscription as UserSubscriptionData || {};
+
+    // Ensure critical fields are preserved and validated
+    const updatedSubscription: Partial<UserSubscriptionData> = {
+      ...currentSubscription,
+      ...subscriptionData,
+      // Ensure free workout limit is always 10
+      freeWorkoutLimit: 10,
+      // Preserve workout counts if not explicitly updated
+      workoutCount: subscriptionData.workoutCount ?? currentSubscription.workoutCount ?? 0,
+      freeWorkoutsUsed: subscriptionData.freeWorkoutsUsed ?? currentSubscription.freeWorkoutsUsed ?? 0,
+      // Always update timestamp
+      updatedAt: Date.now(),
+      // Preserve creation timestamp
+      createdAt: currentSubscription.createdAt ?? Date.now(),
+    };
+
+    // Validate subscription period for active subscriptions
+    if (updatedSubscription.status === 'active' &&
+        updatedSubscription.currentPeriodStart &&
+        updatedSubscription.currentPeriodEnd) {
+      const duration = updatedSubscription.currentPeriodEnd - updatedSubscription.currentPeriodStart;
+      const expectedDuration = 30 * 24 * 60 * 60 * 1000; // 30 days
+      const tolerance = 24 * 60 * 60 * 1000; // 1 day tolerance
+
+      if (Math.abs(duration - expectedDuration) > tolerance) {
+        console.warn(`⚠️ Subscription period is not exactly 30 days: ${duration / (24 * 60 * 60 * 1000)} days`);
+      }
+    }
+
+    await userRef.set(
       {
-        subscription: {
-          ...subscriptionData,
-          updatedAt: Date.now(),
-        },
+        subscription: updatedSubscription,
       },
       { merge: true }
     );
 
-    console.log(`✅ Successfully updated subscription for user ${uid}`);
+    console.log(`✅ Successfully updated subscription for user ${uid}:`, {
+      status: updatedSubscription.status,
+      customerId: updatedSubscription.customerId,
+      subscriptionId: updatedSubscription.subscriptionId,
+      workoutCount: updatedSubscription.workoutCount,
+      freeWorkoutsUsed: updatedSubscription.freeWorkoutsUsed,
+    });
 
     // Verify the update was successful
-    const updatedDoc = await db.collection('users').doc(uid).get();
+    const updatedDoc = await userRef.get();
     const updatedData = updatedDoc.data();
     console.log(`🔍 Verified subscription status for user ${uid}:`, updatedData?.subscription?.status);
 
@@ -291,19 +327,54 @@ export async function updateUserSubscription(
 }
 
 /**
- * Get user by Stripe customer ID
+ * Get user by Stripe customer ID with enhanced lookup
  */
 export async function getUserByCustomerId(customerId: string): Promise<string | null> {
   try {
+    console.log(`🔍 Looking up user for customer ID: ${customerId}`);
+
+    // First, try to find user by customer ID in subscription
     const usersRef = db.collection('users');
     const query = usersRef.where('subscription.customerId', '==', customerId);
     const snapshot = await query.get();
 
-    if (snapshot.empty) {
-      return null;
+    if (!snapshot.empty) {
+      const userId = snapshot.docs[0].id;
+      console.log(`✅ Found user by customer ID: ${userId}`);
+      return userId;
     }
 
-    return snapshot.docs[0].id;
+    // If not found, try to get customer from Stripe and match by email
+    console.log(`🔍 Customer ID not found in profiles, checking Stripe for email...`);
+
+    try {
+      const stripeInstance = getStripeClient(process.env.STRIPE_SECRET_KEY!);
+      const customer = await stripeInstance.customers.retrieve(customerId) as Stripe.Customer;
+
+      if (customer.email) {
+        console.log(`📧 Found customer email: ${customer.email}`);
+
+        // Look up user by email
+        const emailQuery = usersRef.where('email', '==', customer.email);
+        const emailSnapshot = await emailQuery.get();
+
+        if (!emailSnapshot.empty) {
+          const userId = emailSnapshot.docs[0].id;
+          console.log(`✅ Found user by email: ${userId}`);
+
+          // Update the user's profile with the customer ID for future lookups
+          await updateUserSubscription(userId, { customerId });
+          console.log(`📝 Updated user profile with customer ID`);
+
+          return userId;
+        }
+      }
+    } catch (stripeError) {
+      console.error('Error fetching customer from Stripe:', stripeError);
+    }
+
+    console.log(`❌ No user found for customer ID: ${customerId}`);
+    return null;
   } catch (error) {
     console.error('Error getting user by customer ID:', error);
     return null;
@@ -364,7 +435,7 @@ export async function incrementWorkoutCount(uid: string): Promise<void> {
         status: 'incomplete',
         workoutCount: 1,
         freeWorkoutsUsed: 1,
-        freeWorkoutLimit: 5,
+        freeWorkoutLimit: 10,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };

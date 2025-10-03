@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { 
-  AlertTriangle, 
-  RefreshCw, 
-  CreditCard, 
-  Clock, 
-  CheckCircle, 
+import {
+  AlertTriangle,
+  RefreshCw,
+  CreditCard,
+  Clock,
+  CheckCircle,
   Crown,
   X,
   Loader2,
   ExternalLink,
-  Calendar
+  Calendar,
+  XCircle,
+  Shield
 } from 'lucide-react'
 import { useSubscription, useSubscriptionStatus } from '../hooks/useSubscription'
 import { subscriptionService, formatDate } from '../lib/subscriptionService'
@@ -44,6 +46,7 @@ export function SubscriptionManager({
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string>('')
   const [success, setSuccess] = useState<string>('')
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   const { 
     subscription, 
@@ -85,15 +88,38 @@ export function SubscriptionManager({
 
   async function handleManageBilling() {
     if (!subscription?.customerId) return
-    
+
     setActionLoading('billing')
     setLocalError('')
-    
+
     try {
       const url = await subscriptionService.getCustomerPortalUrl()
       if (url) window.open(url, '_blank')
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to open billing portal')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handleCancelSubscription() {
+    if (!subscription?.subscriptionId) return
+
+    setActionLoading('cancel')
+    setLocalError('')
+    setShowCancelConfirm(false)
+
+    try {
+      const success = await subscriptionService.cancelSubscription()
+      if (success) {
+        setSuccess('Your subscription has been cancelled. You\'ll continue to have access until the end of your current billing period.')
+        // Refresh subscription data
+        await handleRefreshSubscription()
+      } else {
+        setLocalError('Failed to cancel subscription. Please try again.')
+      }
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Failed to cancel subscription')
     } finally {
       setActionLoading(null)
     }
@@ -139,8 +165,12 @@ export function SubscriptionManager({
       error={localError}
       success={success}
       onManageBilling={handleManageBilling}
+      onCancelSubscription={() => setShowCancelConfirm(true)}
       onRefresh={handleRefreshSubscription}
       refreshing={refreshing}
+      showCancelConfirm={showCancelConfirm}
+      onConfirmCancel={handleCancelSubscription}
+      onCancelCancel={() => setShowCancelConfirm(false)}
     />
   }
 
@@ -378,8 +408,12 @@ interface ManagementDisplayProps {
   error: string
   success: string
   onManageBilling: () => void
+  onCancelSubscription: () => void
   onRefresh: () => void
   refreshing: boolean
+  showCancelConfirm: boolean
+  onConfirmCancel: () => void
+  onCancelCancel: () => void
 }
 
 function ManagementDisplay({
@@ -394,8 +428,12 @@ function ManagementDisplay({
   error,
   success,
   onManageBilling,
+  onCancelSubscription,
   onRefresh,
-  refreshing
+  refreshing,
+  showCancelConfirm,
+  onConfirmCancel,
+  onCancelCancel
 }: ManagementDisplayProps) {
   const getStatusColor = (color: string) => {
     const colors = {
@@ -460,7 +498,7 @@ function ManagementDisplay({
               {(subscription as { workoutCount?: number })?.workoutCount || 0} total
               {!hasUnlimitedWorkouts && (
                 <span className="ml-2">
-                  ({(subscription as { freeWorkoutsUsed?: number })?.freeWorkoutsUsed || 0}/{(subscription as { freeWorkoutLimit?: number })?.freeWorkoutLimit || 5} free used)
+                  ({(subscription as { freeWorkoutsUsed?: number })?.freeWorkoutsUsed || 0}/{(subscription as { freeWorkoutLimit?: number })?.freeWorkoutLimit || 10} free used)
                 </span>
               )}
             </p>
@@ -508,7 +546,78 @@ function ManagementDisplay({
               )}
             </button>
           )}
+
+          {/* Cancel Subscription Button - only show for active subscriptions */}
+          {hasUnlimitedWorkouts && !isInGracePeriod && (
+            <button
+              onClick={onCancelSubscription}
+              disabled={actionLoading === 'cancel'}
+              className="w-full flex items-center justify-between p-4 border border-red-200 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center gap-3">
+                <XCircle className="w-5 h-5 text-red-600" />
+                <div className="text-left">
+                  <p className="font-medium text-red-900">Cancel Subscription</p>
+                  <p className="text-sm text-red-600">Cancel at end of billing period</p>
+                </div>
+              </div>
+              {actionLoading === 'cancel' ? (
+                <Loader2 className="w-5 h-5 animate-spin text-red-400" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-400" />
+              )}
+            </button>
+          )}
         </div>
+
+        {/* Cancellation Confirmation Modal */}
+        {showCancelConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Cancel Subscription</h3>
+                  <p className="text-sm text-gray-600">Are you sure you want to cancel?</p>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <p className="text-amber-800 text-sm">
+                  <strong>Important:</strong> You'll continue to have access to NeuraFit Pro until {' '}
+                  {(subscription as { currentPeriodEnd?: number })?.currentPeriodEnd &&
+                    formatDate((subscription as { currentPeriodEnd: number }).currentPeriodEnd)
+                  }. After that, you'll return to the free plan with limited workouts.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={onCancelCancel}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Keep Subscription
+                </button>
+                <button
+                  onClick={onConfirmCancel}
+                  disabled={actionLoading === 'cancel'}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading === 'cancel' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    'Yes, Cancel'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

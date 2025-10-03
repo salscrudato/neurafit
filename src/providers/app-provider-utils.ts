@@ -100,7 +100,7 @@ export const appUtils = {
     if (subscription.status === 'active') return false
     
     const used = subscription.freeWorkoutsUsed || 0
-    const limit = subscription.freeWorkoutLimit || 5
+    const limit = subscription.freeWorkoutLimit || 10
     
     return used >= limit * 0.8 // Show when 80% of free workouts used
   }

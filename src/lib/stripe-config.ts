@@ -34,7 +34,7 @@ export const STRIPE_PRICE_IDS = {
   simple: 'price_1SCzf7QjUU16Imh7y9nLUIvP' // Simple Pro - $10.00/month (Updated)
 }
 
-// Simple subscription plan - single $10/month option
+// Simple subscription plan - single $10/month option (exactly 30 days)
 export const SUBSCRIPTION_PLANS = [
   {
     id: 'simple',
@@ -42,7 +42,7 @@ export const SUBSCRIPTION_PLANS = [
     description: 'Unlimited AI-powered workouts',
     price: 1000, // $10.00
     currency: 'usd',
-    interval: 'month' as const,
+    interval: 'month' as const, // Exactly 30 days as configured in Stripe
     stripePriceId: STRIPE_PRICE_IDS.simple,
     popular: true,
     features: [
@@ -54,6 +54,12 @@ export const SUBSCRIPTION_PLANS = [
     ]
   }
 ] as const
+
+// Subscription duration constants
+export const SUBSCRIPTION_DURATION = {
+  DAYS: 30,
+  MILLISECONDS: 30 * 24 * 60 * 60 * 1000
+} as const
 
 export type SubscriptionPlanId = typeof SUBSCRIPTION_PLANS[number]['id']
 
@@ -71,4 +77,20 @@ export function getSubscriptionPlan(planId: SubscriptionPlanId) {
 
 export function getSubscriptionPlanByPriceId(priceId: string) {
   return SUBSCRIPTION_PLANS.find(plan => plan.stripePriceId === priceId)
+}
+
+// Subscription duration validation
+export function validateSubscriptionDuration(startDate: number, endDate: number): boolean {
+  const durationMs = endDate - startDate
+  const expectedDurationMs = SUBSCRIPTION_DURATION.MILLISECONDS
+
+  // Allow for small variations (up to 1 hour) to account for timezone differences
+  const tolerance = 60 * 60 * 1000 // 1 hour in milliseconds
+  const difference = Math.abs(durationMs - expectedDurationMs)
+
+  return difference <= tolerance
+}
+
+export function calculateSubscriptionEndDate(startDate: number): number {
+  return startDate + SUBSCRIPTION_DURATION.MILLISECONDS
 }

@@ -67,7 +67,7 @@ export async function createDefaultSubscription(uid: string): Promise<void> {
             status: 'incomplete',
             workoutCount: 0,
             freeWorkoutsUsed: 0,
-            freeWorkoutLimit: 5,
+            freeWorkoutLimit: 10,
             createdAt: Date.now(),
             updatedAt: Date.now(),
           },

@@ -77,7 +77,15 @@ export function AppProvider({ children }: AppProviderProps) {
 
                 // Handle subscription data with robust manager
                 if (profileData.subscription) {
-                  setSubscription(profileData.subscription);
+                  // Validate subscription data integrity
+                  const validatedSubscription = {
+                    ...profileData.subscription,
+                    freeWorkoutLimit: profileData.subscription.freeWorkoutLimit || 10,
+                    workoutCount: profileData.subscription.workoutCount || 0,
+                    freeWorkoutsUsed: profileData.subscription.freeWorkoutsUsed || 0,
+                    updatedAt: profileData.subscription.updatedAt || Date.now(),
+                  };
+                  setSubscription(validatedSubscription);
                 } else {
                   // Set default subscription if none exists
                   const defaultSubscription: UserSubscription = {
@@ -85,7 +93,7 @@ export function AppProvider({ children }: AppProviderProps) {
                     status: 'incomplete',
                     workoutCount: 0,
                     freeWorkoutsUsed: 0,
-                    freeWorkoutLimit: 5,
+                    freeWorkoutLimit: 10,
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                   };

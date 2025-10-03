@@ -131,26 +131,33 @@ export const stripeWebhook = onRequest(
 );
 
 /**
- * Handle subscription created event with retry logic
+ * Handle subscription created event with enhanced retry logic
  */
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  console.log(`📝 Processing subscription created: ${subscription.id}`);
+  console.log(`📝 Processing subscription created: ${subscription.id} for customer: ${subscription.customer}`);
 
   try {
     const uid = await getUserByCustomerId(subscription.customer as string);
     if (!uid) {
       console.error(`❌ User not found for customer: ${subscription.customer}`);
-      throw new Error(`User not found for customer: ${subscription.customer}`);
+
+      // For subscription created events, we might need to wait for the user profile to be created
+      // This can happen if the webhook arrives before the payment intent completion
+      console.log(`⏳ Scheduling retry for subscription created: ${subscription.id}`);
+      throw new Error(`User not found for customer: ${subscription.customer} - will retry`);
     }
 
     const extendedSubscription = subscription as unknown as ExtendedStripeSubscription;
     const subscriptionData: Partial<UserSubscriptionData> = {
       subscriptionId: subscription.id,
+      customerId: subscription.customer as string,
       priceId: subscription.items.data[0]?.price.id,
       status: subscription.status as UserSubscriptionData['status'],
       currentPeriodStart: extendedSubscription.current_period_start * 1000,
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
+      // Ensure free workout limit is set to 10
+      freeWorkoutLimit: 10,
     };
 
     // Only add canceledAt if it exists
@@ -158,7 +165,13 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       subscriptionData.canceledAt = extendedSubscription.canceled_at * 1000;
     }
 
-    console.log(`📝 Updating subscription for user ${uid}:`, subscriptionData);
+    console.log(`📝 Updating subscription for user ${uid}:`, {
+      subscriptionId: subscriptionData.subscriptionId,
+      status: subscriptionData.status,
+      customerId: subscriptionData.customerId,
+      freeWorkoutLimit: subscriptionData.freeWorkoutLimit
+    });
+
     await updateUserSubscription(uid, subscriptionData);
     console.log(`✅ Successfully created subscription for user: ${uid}`);
 
@@ -172,7 +185,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
  * Handle subscription updated event with enhanced logging
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  console.log(`📝 Processing subscription updated: ${subscription.id}`);
+  console.log(`📝 Processing subscription updated: ${subscription.id} for customer: ${subscription.customer}`);
+  console.log(`📊 Subscription status: ${subscription.status}`);
 
   try {
     const uid = await getUserByCustomerId(subscription.customer as string);
@@ -184,11 +198,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const extendedSubscription = subscription as unknown as ExtendedStripeSubscription;
     const subscriptionData: Partial<UserSubscriptionData> = {
       subscriptionId: subscription.id,
+      customerId: subscription.customer as string,
       priceId: subscription.items.data[0]?.price.id,
       status: subscription.status as UserSubscriptionData['status'],
       currentPeriodStart: extendedSubscription.current_period_start * 1000,
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
+      // Ensure free workout limit is preserved
+      freeWorkoutLimit: 10,
     };
 
     // Only add canceledAt if it exists
@@ -196,7 +213,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       subscriptionData.canceledAt = extendedSubscription.canceled_at * 1000;
     }
 
-    console.log(`📝 Updating subscription for user ${uid}:`, subscriptionData);
+    console.log(`📝 Updating subscription for user ${uid}:`, {
+      subscriptionId: subscriptionData.subscriptionId,
+      status: subscriptionData.status,
+      customerId: subscriptionData.customerId,
+      cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
+      freeWorkoutLimit: subscriptionData.freeWorkoutLimit
+    });
+
     await updateUserSubscription(uid, subscriptionData);
 
     // Verify subscription status after update

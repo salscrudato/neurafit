@@ -58,15 +58,47 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
     })
 
     if (error) {
-      if (error.type === 'card_error' || error.type === 'validation_error') {
-        setMessage(error.message || 'Payment failed')
-        setMessageType('error')
-        onError(error.message || 'Payment failed')
-      } else {
-        setMessage('An unexpected error occurred.')
-        setMessageType('error')
-        onError('An unexpected error occurred.')
+      let errorMessage = 'Payment failed'
+
+      // Handle specific error types with user-friendly messages
+      switch (error.type) {
+        case 'card_error':
+          switch (error.code) {
+            case 'card_declined':
+              errorMessage = 'Your card was declined. Please try a different payment method.'
+              break
+            case 'insufficient_funds':
+              errorMessage = 'Insufficient funds. Please check your account balance or try a different card.'
+              break
+            case 'expired_card':
+              errorMessage = 'Your card has expired. Please use a different payment method.'
+              break
+            case 'incorrect_cvc':
+              errorMessage = 'The security code is incorrect. Please check and try again.'
+              break
+            case 'processing_error':
+              errorMessage = 'An error occurred while processing your card. Please try again.'
+              break
+            default:
+              errorMessage = error.message || 'Your card was declined. Please try a different payment method.'
+          }
+          break
+        case 'validation_error':
+          errorMessage = error.message || 'Please check your payment information and try again.'
+          break
+        case 'api_error':
+          errorMessage = 'A temporary error occurred. Please try again in a moment.'
+          break
+        case 'rate_limit_error':
+          errorMessage = 'Too many requests. Please wait a moment and try again.'
+          break
+        default:
+          errorMessage = 'An unexpected error occurred. Please try again.'
       }
+
+      setMessage(errorMessage)
+      setMessageType('error')
+      onError(errorMessage)
       setLoading(false)
       return
     }
@@ -233,7 +265,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
     }
 
     initializePayment()
-  }, [priceId, clientSecret, error, onError])
+  }, [priceId, onError]) // Remove clientSecret and error from dependencies to prevent re-initialization
 
   if (loading) {
     return (

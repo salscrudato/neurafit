@@ -7,6 +7,7 @@ import { httpsCallable } from 'firebase/functions'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { auth, db, fns } from './firebase'
 import type { UserSubscription } from '../types/subscription'
+import { validateSubscriptionDuration, SUBSCRIPTION_DURATION } from './stripe-config'
 
 export interface SubscriptionServiceOptions {
   enableCache?: boolean
@@ -133,35 +134,79 @@ class SubscriptionService {
   }
 
   /**
-   * Create payment intent for subscription
+   * Create payment intent for subscription with retry logic
    */
   async createPaymentIntent(priceId: string): Promise<{ clientSecret: string } | null> {
-    try {
-      const createPaymentIntentFn = httpsCallable(fns, 'createPaymentIntent')
-      const result = await createPaymentIntentFn({ priceId })
-      
-      const data = result.data as { clientSecret?: string }
-      return data.clientSecret ? { clientSecret: data.clientSecret } : null
-    } catch (error) {
-      console.error('Error creating payment intent:', error)
-      return null
+    let lastError: Error | null = null
+
+    for (let attempt = 1; attempt <= this.options.maxRetries; attempt++) {
+      try {
+        console.log(`Creating payment intent (attempt ${attempt}/${this.options.maxRetries})`)
+
+        const createPaymentIntentFn = httpsCallable(fns, 'createPaymentIntent')
+        const result = await createPaymentIntentFn({ priceId })
+
+        const data = result.data as { clientSecret?: string; error?: string }
+        if (data.error) throw new Error(data.error)
+
+        if (data.clientSecret) {
+          console.log('Payment intent created successfully')
+          return { clientSecret: data.clientSecret }
+        }
+
+        throw new Error('No client secret returned')
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error')
+        console.error(`Payment intent creation attempt ${attempt} failed:`, lastError.message)
+
+        if (attempt < this.options.maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000) // Exponential backoff, max 5s
+          console.log(`Retrying in ${delay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
     }
+
+    console.error('All payment intent creation attempts failed')
+    throw lastError || new Error('Failed to create payment intent after all retries')
   }
 
   /**
-   * Cancel subscription
+   * Cancel subscription with retry logic
    */
   async cancelSubscription(): Promise<boolean> {
-    try {
-      const cancelFn = httpsCallable(fns, 'cancelUserSubscription')
-      const result = await cancelFn()
-      
-      const data = result.data as { success?: boolean }
-      return data.success || false
-    } catch (error) {
-      console.error('Error canceling subscription:', error)
-      return false
+    let lastError: Error | null = null
+
+    for (let attempt = 1; attempt <= this.options.maxRetries; attempt++) {
+      try {
+        console.log(`Canceling subscription (attempt ${attempt}/${this.options.maxRetries})`)
+
+        const cancelFn = httpsCallable(fns, 'cancelUserSubscription')
+        const result = await cancelFn()
+
+        const data = result.data as { success?: boolean; error?: string }
+        if (data.error) throw new Error(data.error)
+
+        if (data.success) {
+          console.log('Subscription cancelled successfully')
+          return true
+        }
+
+        throw new Error('Cancellation failed - no success response')
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error')
+        console.error(`Subscription cancellation attempt ${attempt} failed:`, lastError.message)
+
+        if (attempt < this.options.maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000) // Exponential backoff, max 3s
+          console.log(`Retrying in ${delay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
     }
+
+    console.error('All subscription cancellation attempts failed')
+    throw lastError || new Error('Failed to cancel subscription after all retries')
   }
 
   /**
@@ -185,15 +230,145 @@ class SubscriptionService {
    */
   async getCustomerPortalUrl(): Promise<string | null> {
     try {
+      const subscription = await this.getSubscription()
+      if (!subscription?.customerId) return null
+
       const getPortalFn = httpsCallable(fns, 'getCustomerPortalUrl')
-      const result = await getPortalFn()
-      
+      const result = await getPortalFn({
+        customerId: subscription.customerId,
+        returnUrl: window.location.origin + '/profile'
+      })
+
       const data = result.data as { url?: string }
       return data.url || null
     } catch (error) {
       console.error('Error getting customer portal URL:', error)
       return null
     }
+  }
+
+  /**
+   * Validate subscription data integrity
+   */
+  validateSubscription(subscription: UserSubscription): boolean {
+    // Check required fields
+    if (!subscription.customerId && subscription.status !== 'incomplete') {
+      console.warn('Subscription missing customer ID')
+      return false
+    }
+
+    // Validate free workout limits
+    if (subscription.freeWorkoutLimit !== 10) {
+      console.warn('Subscription has incorrect free workout limit:', subscription.freeWorkoutLimit)
+    }
+
+    // Validate workout counts
+    if (subscription.freeWorkoutsUsed > subscription.freeWorkoutLimit) {
+      console.warn('Free workouts used exceeds limit')
+      return false
+    }
+
+    return true
+  }
+
+  /**
+   * Perform subscription health check
+   */
+  async performHealthCheck(): Promise<{ healthy: boolean; issues: string[] }> {
+    const issues: string[] = []
+
+    try {
+      const subscription = await this.getSubscription()
+
+      if (!subscription) {
+        issues.push('No subscription data found')
+        return { healthy: false, issues }
+      }
+
+      // Validate subscription data
+      if (!this.validateSubscription(subscription)) {
+        issues.push('Subscription data validation failed')
+      }
+
+      // Check for stale data
+      const now = Date.now()
+      const lastUpdate = subscription.updatedAt || 0
+      const staleThreshold = 24 * 60 * 60 * 1000 // 24 hours
+
+      if (now - lastUpdate > staleThreshold) {
+        issues.push('Subscription data is stale (last updated > 24h ago)')
+      }
+
+      return { healthy: issues.length === 0, issues }
+    } catch (error) {
+      issues.push(`Health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      return { healthy: false, issues }
+    }
+  }
+
+  /**
+   * Recover from subscription sync issues
+   */
+  async recoverSubscriptionSync(): Promise<boolean> {
+    try {
+      console.log('🔄 Attempting subscription sync recovery...')
+
+      const uid = auth.currentUser?.uid
+      if (!uid) {
+        console.error('No authenticated user for sync recovery')
+        return false
+      }
+
+      // Clear stale cache
+      this.clearCache(uid)
+
+      // Force refresh from Firestore
+      const subscription = await this.fetchFromFirestore(uid)
+
+      if (!subscription) {
+        console.warn('No subscription found during recovery')
+        return false
+      }
+
+      // Validate subscription data
+      const isValid = this.validateSubscription(subscription)
+      if (!isValid) {
+        console.warn('Subscription data validation failed during recovery')
+        // Could trigger a webhook re-sync here if needed
+      }
+
+      console.log('✅ Subscription sync recovery completed')
+      return true
+    } catch (error) {
+      console.error('❌ Subscription sync recovery failed:', error)
+      return false
+    }
+  }
+
+  /**
+   * Handle subscription errors with automatic recovery
+   */
+  async handleSubscriptionError(error: Error, context: string): Promise<void> {
+    console.error(`Subscription error in ${context}:`, error)
+
+    // Attempt recovery for specific error types
+    if (error.message.includes('subscription') || error.message.includes('sync')) {
+      console.log('Attempting automatic recovery...')
+      const recovered = await this.recoverSubscriptionSync()
+
+      if (recovered) {
+        console.log('✅ Automatic recovery successful')
+        return
+      }
+    }
+
+    // Log error for monitoring
+    console.error(`❌ Unrecoverable subscription error in ${context}:`, {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      userId: auth.currentUser?.uid
+    })
   }
 
   /**
@@ -231,16 +406,16 @@ export const canGenerateWorkout = (subscription?: UserSubscription): boolean => 
 
   // Free tier - check usage
   const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 5
+  const limit = subscription.freeWorkoutLimit || 10
   return used < limit
 }
 
 export const getRemainingFreeWorkouts = (subscription?: UserSubscription): number => {
-  if (!subscription) return 5
+  if (!subscription) return 10
   if (subscription.status === 'active' || subscription.status === 'trialing') return Infinity
 
   const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 5
+  const limit = subscription.freeWorkoutLimit || 10
   return Math.max(0, limit - used)
 }
 
@@ -269,4 +444,25 @@ export const getDaysRemaining = (subscription?: UserSubscription): number => {
 
 export const formatDate = (timestamp: number): string => {
   return new Date(timestamp).toLocaleDateString()
+}
+
+// Subscription duration validation
+export const validateSubscriptionPeriod = (subscription?: UserSubscription): boolean => {
+  if (!subscription?.currentPeriodStart || !subscription?.currentPeriodEnd) {
+    return false
+  }
+
+  return validateSubscriptionDuration(
+    subscription.currentPeriodStart,
+    subscription.currentPeriodEnd
+  )
+}
+
+export const getSubscriptionDurationDays = (subscription?: UserSubscription): number => {
+  if (!subscription?.currentPeriodStart || !subscription?.currentPeriodEnd) {
+    return 0
+  }
+
+  const durationMs = subscription.currentPeriodEnd - subscription.currentPeriodStart
+  return Math.round(durationMs / (24 * 60 * 60 * 1000))
 }
