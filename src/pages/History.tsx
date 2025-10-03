@@ -1,24 +1,11 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { convertToDate } from '../utils/timestamp'
-import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity, BarChart3, Trophy, TrendingUp, Target, Award } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { WorkoutHistorySkeleton } from '../components/Loading'
-import { WorkoutAnalytics } from '../components/WorkoutAnalytics'
-// Simple utility functions
-const formatVolume = (volume: number): string => {
-  if (volume >= 1000) {
-    return `${(volume / 1000).toFixed(1)}k lbs`
-  }
-  return `${volume} lbs`
-}
-
-import { LineChart, DonutChart } from '../components/Charts'
-import { StatsCard } from '../design-system/components/SpecializedCards'
-import { Card } from '../design-system/components/Card'
-import { DeferredRender, ChartSkeleton } from '../components/DeferredRender'
 
 type WorkoutItem = {
   id: string
@@ -34,39 +21,6 @@ export default function History() {
   const [items, setItems] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'history' | 'analytics' | 'achievements'>('history')
-
-  // Simplified analytics calculations
-  const performanceMetrics = useMemo(() => {
-    if (items.length === 0) return null
-
-    const totalWorkouts = items.length
-    const totalVolume = items.reduce((sum, item) => {
-      return sum + (item.exercises || []).reduce((exerciseSum, exercise) => {
-        return exerciseSum + Object.values(exercise.weights || {}).reduce((setSum, weight) => {
-          return setSum + (weight || 0)
-        }, 0)
-      }, 0)
-    }, 0)
-
-    const totalSets = items.reduce((sum, item) => {
-      return sum + (item.exercises || []).reduce((exerciseSum, exercise) => {
-        return exerciseSum + Object.values(exercise.weights || {}).filter(weight => weight !== null).length
-      }, 0)
-    }, 0)
-
-    return {
-      totalWorkouts,
-      totalVolume,
-      totalSets,
-      exerciseStats: [], // Simplified - removed complex exercise stats
-      workoutFrequency: totalWorkouts > 0 ? (totalWorkouts / 4) : 0, // Simple approximation
-      consistencyScore: totalWorkouts > 0 ? Math.min(100, totalWorkouts * 10) : 0,
-      progressionRate: totalWorkouts > 1 ? 5.2 : 0, // Simple placeholder
-      weeklyStats: [], // Simplified - empty array
-      personalRecords: [] // Simplified - empty array
-    }
-  }, [items])
 
   useEffect(() => {
     (async () => {
@@ -198,76 +152,15 @@ export default function History() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-4">
             <Activity className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-600">Fitness Dashboard</span>
+            <span className="text-sm font-medium text-blue-600">Workout History</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Fitness Journey</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Workout History</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Track your progress, analyze your performance, and celebrate your achievements.
+            Track your completed workouts and monitor your progress over time.
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-white rounded-2xl p-1 border border-gray-200 shadow-sm" role="tablist" aria-label="Fitness dashboard tabs">
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
-                activeTab === 'history'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              role="tab"
-              aria-selected={activeTab === 'history'}
-              aria-controls="history-panel"
-              id="history-tab"
-            >
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" aria-hidden="true" />
-                History
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
-                activeTab === 'analytics'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              role="tab"
-              aria-selected={activeTab === 'analytics'}
-              aria-controls="analytics-panel"
-              id="analytics-tab"
-            >
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" aria-hidden="true" />
-                Analytics
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('achievements')}
-              className={`px-6 py-3 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
-                activeTab === 'achievements'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              role="tab"
-              aria-selected={activeTab === 'achievements'}
-              aria-controls="achievements-panel"
-              id="achievements-tab"
-            >
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" aria-hidden="true" />
-                Achievements
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'history' && (
-          <div role="tabpanel" id="history-panel" aria-labelledby="history-tab">
-          <>
-            {/* Workout List */}
+        {/* Workout List */}
             {items.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -394,198 +287,6 @@ export default function History() {
                 </button>
               )
             })}
-          </div>
-        )}
-          </>
-          </div>
-        )}
-
-        {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
-          <div className="space-y-6" role="tabpanel" id="analytics-panel" aria-labelledby="analytics-tab">
-            {performanceMetrics ? (
-              <div>
-                {/* Performance Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                  <StatsCard
-                    label="Total Workouts"
-                    value={performanceMetrics.totalWorkouts}
-                    change={`${performanceMetrics.workoutFrequency.toFixed(1)}/week`}
-                    trend="up"
-                    icon={<Zap className="h-5 w-5" />}
-                  />
-                  <StatsCard
-                    label="Total Volume"
-                    value={formatVolume(performanceMetrics.totalVolume)}
-                    change={`${performanceMetrics.totalSets} sets`}
-                    trend="up"
-                    icon={<TrendingUp className="h-5 w-5" />}
-                  />
-                  <StatsCard
-                    label="Consistency"
-                    value={`${performanceMetrics.consistencyScore}%`}
-                    change={performanceMetrics.consistencyScore > 70 ? 'Excellent!' : 'Keep going!'}
-                    trend={performanceMetrics.consistencyScore > 70 ? 'up' : 'neutral'}
-                    icon={<Target className="h-5 w-5" />}
-                  />
-                  <StatsCard
-                    label="Progress Rate"
-                    value={`${performanceMetrics.progressionRate.toFixed(1)}%`}
-                    change="Overall improvement"
-                    trend={performanceMetrics.progressionRate > 0 ? 'up' : 'down'}
-                    icon={<Award className="h-5 w-5" />}
-                  />
-                </div>
-
-                {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                  {/* Weekly Volume Chart */}
-                  <Card variant="elevated" rounded="xl" className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                          <BarChart3 className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Weekly Volume Trend</h3>
-                          <p className="text-sm text-gray-600">Your training volume over the past 12 weeks</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <DeferredRender
-                        minHeight="200px"
-                        placeholder={<ChartSkeleton height={200} />}
-                      >
-                        <LineChart
-                          data={performanceMetrics.weeklyStats.map(week => ({
-                            label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                            value: week.totalVolume,
-                            date: week.weekStart
-                          }))}
-                          height={200}
-                          color="#3B82F6"
-                          animated
-                        />
-                      </DeferredRender>
-                    </div>
-                  </Card>
-
-                  {/* Exercise Distribution */}
-                  <Card variant="elevated" rounded="xl" className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                          <Activity className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Exercise Distribution</h3>
-                          <p className="text-sm text-gray-600">Your most trained exercises by volume</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <DeferredRender
-                        minHeight="200px"
-                        placeholder={<ChartSkeleton height={200} />}
-                      >
-                        <DonutChart
-                          data={performanceMetrics.exerciseStats.slice(0, 5).map((exercise, index) => ({
-                            label: exercise.name,
-                            value: exercise.totalVolume,
-                            color: `hsl(${(index * 72)}, 70%, 50%)`
-                          }))}
-                          size={200}
-                          animated
-                        />
-                      </DeferredRender>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Simplified Exercise Summary */}
-                <Card variant="elevated" rounded="xl" className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                        <Trophy className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Exercise Summary</h3>
-                        <p className="text-sm text-gray-600">Basic workout statistics</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">
-                      Detailed exercise analytics have been simplified.
-                      <br />
-                      Check the Analytics tab for workout trends and achievements.
-                    </p>
-                  </div>
-                </Card>
-
-                {/* Personal Records */}
-                {performanceMetrics.personalRecords.length > 0 && (
-                  <Card variant="elevated" rounded="xl" className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                          <Award className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">Recent Personal Records</h3>
-                          <p className="text-sm text-gray-600">Your latest achievements and milestones</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-6 space-y-4">
-                      {performanceMetrics.personalRecords.slice(0, 5).map((record, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{record.exerciseName}</h4>
-                            <p className="text-sm text-gray-600">
-                              {record.weight} lbs × {record.reps} reps
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(record.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-yellow-500">
-                              <Trophy className="h-6 w-6" />
-                            </div>
-                            {record.previousRecord && (
-                              <p className="text-xs text-green-600">
-                                +{(record.weight - record.previousRecord.weight).toFixed(1)} lbs
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Available</h3>
-                <p className="text-gray-600">Complete some workouts to see your performance analytics.</p>
-              </div>
-            )}
-
-            {/* Fallback to original analytics component */}
-            <WorkoutAnalytics workouts={items} />
-          </div>
-        )}
-
-        {/* Achievements Tab */}
-        {activeTab === 'achievements' && (
-          <div className="bg-white rounded-xl p-6 border border-gray-100 text-center" role="tabpanel" id="achievements-panel" aria-labelledby="achievements-tab">
-            <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Achievements Coming Soon</h3>
-            <p className="text-gray-600">Achievement system will be available in a future update.</p>
           </div>
         )}
       </main>
