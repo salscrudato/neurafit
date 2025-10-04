@@ -111,6 +111,13 @@ export async function createOrGetCustomer(
 /**
  * Create a subscription for a user
  */
+/**
+ * Helper function to wait for a short period
+ */
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function createSubscription(
   customerId: string,
   priceId: string,
@@ -182,8 +189,18 @@ export async function createSubscription(
 
     console.log('Subscription created:', subscription.id, 'status:', subscription.status);
 
+    // Wait a moment for Stripe to finish processing
+    await sleep(500);
+
+    // Retrieve the subscription again to get the latest state
+    const refreshedSubscription = await stripeInstance.subscriptions.retrieve(subscription.id, {
+      expand: ['latest_invoice.payment_intent'],
+    });
+
+    console.log('Refreshed subscription:', refreshedSubscription.id, 'status:', refreshedSubscription.status);
+
     // Log invoice details for debugging
-    const invoice = subscription.latest_invoice as string | Stripe.Invoice | null;
+    const invoice = refreshedSubscription.latest_invoice as string | Stripe.Invoice | null;
     let expandedInvoice: Stripe.Invoice | null = null;
 
     if (typeof invoice === 'string') {
@@ -219,70 +236,78 @@ export async function createSubscription(
       // Check if this is a zero-amount invoice (like a trial)
       if (expandedInvoice.amount_due === 0) {
         console.log('Zero-amount invoice, no payment intent needed');
-        return subscription;
+        return refreshedSubscription;
       }
 
-      // For non-zero invoices without payment intents, this indicates an issue with subscription setup
-      console.log('Invoice has amount due but no payment intent - this should not happen with default_incomplete');
-      console.log('Attempting to finalize the invoice to trigger payment intent creation...');
+      // For non-zero invoices without payment intents, wait and retry
+      console.log('Invoice has amount due but no payment intent - waiting for Stripe to process...');
 
-      try {
-        // Try to finalize the invoice which should create a payment intent
-        const finalizedInvoice = await stripeInstance.invoices.finalizeInvoice(expandedInvoice.id!, {
-          expand: ['payment_intent'],
-        });
+      // Retry up to 3 times with exponential backoff
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`Retry attempt ${attempt}/3 - waiting ${attempt * 1000}ms...`);
+        await sleep(attempt * 1000);
 
-        console.log('Invoice finalized:', finalizedInvoice.id, 'status:', finalizedInvoice.status);
+        try {
+          const retryInvoice = await stripeInstance.invoices.retrieve(expandedInvoice.id!, {
+            expand: ['payment_intent'],
+          });
 
-        const finalizedInvoiceWithPI = finalizedInvoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | string };
-        if (finalizedInvoiceWithPI.payment_intent) {
-          console.log('Payment intent created after finalization:',
-            typeof finalizedInvoiceWithPI.payment_intent === 'string'
-              ? finalizedInvoiceWithPI.payment_intent
-              : finalizedInvoiceWithPI.payment_intent.id
-          );
+          const retryInvoiceWithPI = retryInvoice as Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | string };
+          if (retryInvoiceWithPI.payment_intent) {
+            console.log('Payment intent found after retry:',
+              typeof retryInvoiceWithPI.payment_intent === 'string'
+                ? retryInvoiceWithPI.payment_intent
+                : retryInvoiceWithPI.payment_intent.id
+            );
 
-          // Return the subscription with the finalized invoice
-          return {
-            ...subscription,
-            latest_invoice: finalizedInvoice,
-          } as Stripe.Subscription;
+            return {
+              ...refreshedSubscription,
+              latest_invoice: retryInvoice,
+            } as Stripe.Subscription;
+          }
+        } catch (retryError) {
+          console.warn(`Retry attempt ${attempt} failed:`, retryError);
+          if (attempt === 3) {
+            throw retryError;
+          }
         }
-
-        // If still no payment intent, create one manually as last resort
-        console.log('Still no payment intent after finalization, creating manually...');
-        const paymentIntent = await stripeInstance.paymentIntents.create({
-          amount: finalizedInvoice.amount_due,
-          currency: finalizedInvoice.currency,
-          customer: customerId,
-          payment_method_types: ['card'],
-          metadata: {
-            invoice_id: finalizedInvoice.id || '',
-            subscription_id: subscription.id,
-            firebaseUID: uid,
-          },
-        });
-
-        console.log('Manual payment intent created:', paymentIntent.id);
-
-        // Return the subscription with the manual payment intent
-        return {
-          ...subscription,
-          latest_invoice: {
-            ...finalizedInvoice,
-            payment_intent: paymentIntent,
-          },
-        } as Stripe.Subscription;
-
-      } catch (piError) {
-        console.error('Error handling invoice without payment intent:', piError);
-        throw piError;
       }
+
+      // If still no payment intent after retries, create one manually
+      console.log('Still no payment intent after retries, creating manually...');
+      const paymentIntent = await stripeInstance.paymentIntents.create({
+        amount: expandedInvoice.amount_due,
+        currency: expandedInvoice.currency,
+        customer: customerId,
+        payment_method_types: ['card'],
+        metadata: {
+          invoice_id: expandedInvoice.id || '',
+          subscription_id: refreshedSubscription.id,
+          firebaseUID: uid,
+        },
+      });
+
+      console.log('Manual payment intent created:', paymentIntent.id);
+
+      // Return the subscription with the manual payment intent
+      return {
+        ...refreshedSubscription,
+        latest_invoice: {
+          ...expandedInvoice,
+          payment_intent: paymentIntent,
+        },
+      } as Stripe.Subscription;
     }
 
-    return subscription;
+    return refreshedSubscription;
   } catch (error) {
     console.error('Error creating subscription:', error);
+
+    // Preserve the original error message for better debugging
+    if (error instanceof Error) {
+      throw error;
+    }
+
     throw new Error('Failed to create subscription');
   }
 }

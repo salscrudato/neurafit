@@ -36,7 +36,7 @@ export function formatTimestamp(timestamp: TimestampType): string {
  * Formats a timestamp to an ISO string for date inputs
  */
 export function formatTimestampISO(timestamp: TimestampType): string {
-  return convertToDate(timestamp).toISOString().split('T')[0]
+  return convertToDate(timestamp).toISOString().split('T')[0] || ''
 }
 
 /**

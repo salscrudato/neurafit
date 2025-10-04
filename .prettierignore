@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+dist
+dist-ssr
+build
+.next
+out
+
+# Cache
+.cache
+.parcel-cache
+.vite
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode
+.idea
+
+# Generated files
+neurafit-codebase.txt
+coverage
+stats.html
+
+# Firebase
+.firebase
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Service worker
+public/sw.js
+dist/sw.js
+

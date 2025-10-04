@@ -12,11 +12,11 @@ export function useSubscription() {
   const { subscription, subscriptionLoading } = useAppStore()
 
   // Calculate derived values
-  const canGenerate = canGenerateWorkout(subscription)
-  const remainingFree = getRemainingFreeWorkouts(subscription)
-  const hasUnlimited = hasUnlimitedWorkouts(subscription)
-  const inGracePeriod = isInGracePeriod(subscription)
-  const daysLeft = getDaysRemaining(subscription)
+  const canGenerate = canGenerateWorkout(subscription ?? undefined)
+  const remainingFree = getRemainingFreeWorkouts(subscription ?? undefined)
+  const hasUnlimited = hasUnlimitedWorkouts(subscription ?? undefined)
+  const inGracePeriod = isInGracePeriod(subscription ?? undefined)
+  const daysLeft = getDaysRemaining(subscription ?? undefined)
 
   return {
     subscription,

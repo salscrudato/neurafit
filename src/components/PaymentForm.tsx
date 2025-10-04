@@ -252,9 +252,8 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         if (result) {
           setClientSecret(result.clientSecret)
           // Note: subscriptionId is handled by the backend
+          console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}`)
         }
-
-        console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}`)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
         setError(errorMessage)

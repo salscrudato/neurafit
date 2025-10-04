@@ -27,10 +27,10 @@ export function getFeatureFlags(): FeatureFlags {
   // In a production app, you might fetch these from a remote config service
   // For now, we'll use environment variables with fallbacks to defaults
   
-  const adaptiveEnabled = import.meta.env.VITE_ADAPTIVE_PERSONALIZATION_ENABLED !== 'false'
-  const feedbackEnabled = import.meta.env.VITE_ADAPTIVE_FEEDBACK_UI_ENABLED !== 'false'
-  const calibrationEnabled = import.meta.env.VITE_ADAPTIVE_CALIBRATION_ENABLED !== 'false'
-  const telemetryEnabled = import.meta.env.VITE_ADAPTIVE_TELEMETRY_ENABLED !== 'false'
+  const adaptiveEnabled = import.meta.env['VITE_ADAPTIVE_PERSONALIZATION_ENABLED'] !== 'false'
+  const feedbackEnabled = import.meta.env['VITE_ADAPTIVE_FEEDBACK_UI_ENABLED'] !== 'false'
+  const calibrationEnabled = import.meta.env['VITE_ADAPTIVE_CALIBRATION_ENABLED'] !== 'false'
+  const telemetryEnabled = import.meta.env['VITE_ADAPTIVE_TELEMETRY_ENABLED'] !== 'false'
 
   return {
     adaptivePersonalization: {

@@ -105,6 +105,7 @@ export function ChartSkeleton({ height = 200 }: { height?: number }) {
 /**
  * Hook for manual IntersectionObserver usage
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useIntersectionObserver(
   options: { rootMargin?: string; threshold?: number } = {}
 ): [{ current: HTMLDivElement | null }, boolean] {

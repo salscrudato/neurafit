@@ -119,13 +119,17 @@ export function LineChart({
         )}
 
         {/* Area fill */}
-        {points.length > 0 && (
-          <path
-            d={`${pathD} L ${points[points.length - 1].x} ${height - 40} L ${points[0].x} ${height - 40} Z`}
-            fill={`url(#${gradientId})`}
-            className={animated ? 'animate-scale-in' : ''}
-          />
-        )}
+        {points.length > 0 && points[0] && points[points.length - 1] && (() => {
+          const firstPoint = points[0]!
+          const lastPoint = points[points.length - 1]!
+          return (
+            <path
+              d={`${pathD} L ${lastPoint.x} ${height - 40} L ${firstPoint.x} ${height - 40} Z`}
+              fill={`url(#${gradientId})`}
+              className={animated ? 'animate-scale-in' : ''}
+            />
+          )
+        })()}
 
         {/* Line */}
         {points.length > 0 && (

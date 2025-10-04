@@ -215,7 +215,7 @@ export const useAppStore = create<AppState & AppActions>()(
                 duration: Math.round((Date.now() - state.currentWorkout.startTime) / 1000 / 60),
                 exercises: state.currentWorkout.plan.exercises.map((ex: Exercise, i: number) => ({
                   ...ex,
-                  weights: state.workoutWeights[i] || null
+                  weights: state.workoutWeights[i] || undefined
                 })),
                 completionRate: calculateCompletionRate(state.workoutWeights, state.currentWorkout.plan.exercises)
               }
@@ -253,7 +253,7 @@ export const useAppStore = create<AppState & AppActions>()(
           syncPendingOperations: async () => {
             const { pendingOperations } = get()
             // Implementation will be added in the data persistence section
-            if (process.env.NODE_ENV === 'development') {
+            if (import.meta.env.MODE === 'development') {
               console.log('Syncing pending operations:', pendingOperations.length)
             }
           },

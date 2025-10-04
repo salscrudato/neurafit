@@ -114,25 +114,25 @@ export function EnhancedWorkoutLoader({
 }: EnhancedWorkoutLoaderProps) {
   const [currentMessage, setCurrentMessage] = React.useState(0)
 
-  const messages = [
+  const messages = React.useMemo(() => [
     'Analyzing your fitness profile...',
     'Selecting optimal exercises...',
     'Calculating perfect intensity...',
     'Personalizing your workout...',
     'Finalizing your training plan...'
-  ]
+  ], [])
 
   // Cycle through messages every 3.5 seconds to match ~17.5s average API response time
   // This ensures the animation completes one full cycle (5 messages × 3.5s = 17.5s)
   React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log('[LOADING] Animation started at:', new Date().toISOString())
     }
 
     const interval = setInterval(() => {
       setCurrentMessage((prev) => {
         const next = (prev + 1) % messages.length
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log(`[LOADING] Message ${next + 1}/${messages.length}: ${messages[next]}`)
         }
         return next
@@ -141,7 +141,7 @@ export function EnhancedWorkoutLoader({
 
     return () => {
       clearInterval(interval)
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         console.log('[LOADING] Animation ended at:', new Date().toISOString())
       }
     }

@@ -1,5 +1,5 @@
 // src/components/WorkoutActionFooter.tsx
-import React from 'react'
+
 import { SkipForward, Check, X } from 'lucide-react'
 
 interface WorkoutActionFooterProps {

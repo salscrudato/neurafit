@@ -49,12 +49,12 @@ export default function Complete() {
         }))
 
         // Development-only logging
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log('[SAVE] Saving workout with the following completion data:')
           exercisesWithWeights.forEach((exercise: Record<string, unknown>, index: number) => {
-            console.log(`Exercise ${index}: ${exercise.name}`)
-            if (exercise.weights) {
-              Object.entries(exercise.weights).forEach(([setNum, weight]) => {
+            console.log(`Exercise ${index}: ${exercise['name']}`)
+            if (exercise['weights']) {
+              Object.entries(exercise['weights']).forEach(([setNum, weight]) => {
                 const status = weight === null ? 'SKIPPED' : weight === 0 ? 'COMPLETED (no weight)' : `COMPLETED (${weight}lbs)`
                 console.log(`  Set ${setNum}: ${status}`)
               })
@@ -85,7 +85,7 @@ export default function Complete() {
         setWorkoutId(docRef.id)
         setWorkoutSaved(true)
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log('[FEEDBACK] Workout saved, should show feedback UI now')
         }
 
@@ -106,19 +106,19 @@ export default function Complete() {
     let completedSets = 0
 
     exercises.forEach(exercise => {
-      if (exercise.weights && typeof exercise.weights === 'object') {
-        const setCount = (typeof exercise.sets === 'number' ? exercise.sets : 0) || Object.keys(exercise.weights).length
+      if (exercise['weights'] && typeof exercise['weights'] === 'object') {
+        const setCount = (typeof exercise['sets'] === 'number' ? exercise['sets'] : 0) || Object.keys(exercise['weights']).length
         totalSets += setCount
 
         // Count completed sets (non-null weights)
-        Object.values(exercise.weights).forEach((weight: unknown) => {
+        Object.values(exercise['weights']).forEach((weight: unknown) => {
           if (weight !== null) {
             completedSets++
           }
         })
       } else {
         // Fallback: assume all sets completed if no weight data
-        const sets = typeof exercise.sets === 'number' ? exercise.sets : 0
+        const sets = typeof exercise['sets'] === 'number' ? exercise['sets'] : 0
         totalSets += sets
         completedSets += sets
       }
@@ -137,7 +137,7 @@ export default function Complete() {
       if (!uid) return
 
       // Calculate completion rate
-      const completionRate = calculateCompletionRate(workoutData.exercises as Record<string, unknown>[])
+      const completionRate = calculateCompletionRate(workoutData['exercises'] as Record<string, unknown>[])
 
       // Update workout document with feedback
       const workoutRef = doc(db, 'users', uid, 'workouts', workoutId)
@@ -152,7 +152,7 @@ export default function Complete() {
 
       // For now, we'll update the adaptive state when generating the next workout
       // This ensures we have the most recent feedback and completion data
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         console.log('Feedback submitted:', {
           feedback: selectedFeedback,
           rpe: rpeValue,

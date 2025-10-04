@@ -41,7 +41,7 @@ export function prefetchRoute(path: string): void {
   // Prefetch the module
   moduleLoader()
     .then(() => {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         console.log(`[PREFETCH] Successfully prefetched: ${path}`);
       }
     })

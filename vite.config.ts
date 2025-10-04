@@ -2,16 +2,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 import { resolve } from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 /**
- * Simplified Vite Configuration for NeuraFit
+ * Production-Ready Vite Configuration for NeuraFit
  * React/TypeScript application with Firebase, Tailwind CSS, and Stripe
+ * Includes sourcemaps, bundle analysis, and optimized chunking
  */
-export default defineConfig({
-  // Path resolution
+export default defineConfig(({ mode }) => ({
+  // Path resolution - matches tsconfig paths
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
+      '@': resolve(__dirname, 'src'),
     },
   },
 
@@ -19,7 +21,15 @@ export default defineConfig({
   plugins: [
     react(),
     tailwind(),
-  ],
+    // Bundle analyzer (only when ANALYZE=true)
+    process.env.ANALYZE === 'true' &&
+      visualizer({
+        open: true,
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+      }),
+  ].filter(Boolean),
 
   // Development server
   server: {
@@ -31,7 +41,16 @@ export default defineConfig({
   build: {
     target: 'es2020',
     outDir: 'dist',
-    sourcemap: false,
+    // Enable sourcemaps for production debugging (hidden from browser by default)
+    sourcemap: 'hidden',
+    // Minification
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production',
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -41,6 +60,8 @@ export default defineConfig({
           ui: ['lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge'],
           state: ['zustand', 'immer'],
           stripe: ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          query: ['@tanstack/react-query'],
+          monitoring: ['@sentry/react'],
         },
       },
     },
@@ -52,5 +73,4 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     global: 'globalThis',
   },
-
-})
+}))

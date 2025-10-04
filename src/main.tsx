@@ -3,9 +3,14 @@ import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
 import './index.css';
+import { isDevelopment, isProduction } from './lib/env';
+import { initSentry } from './lib/sentry';
+
+// Initialize Sentry for error tracking
+initSentry();
 
 // In development, clear specific version-related localStorage keys
-if (process.env.NODE_ENV === 'development') {
+if (isDevelopment) {
   const versionKeys = ['current-deployment-version', 'page-etag', 'page-last-modified', 'manifest-version'];
   versionKeys.forEach((key) => {
     if (localStorage.getItem(key)) {
@@ -23,19 +28,19 @@ root.render(
   </BrowserRouter>
 );
 
-// Register service worker for PWA functionality
+// Register service worker for PWA functionality with enhanced update flow
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
       .then((registration) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('SW registered:', registration);
+        if (isDevelopment) {
+          console.log('✅ Service worker registered:', registration);
         }
 
         // Periodically check for updates in production
         let updateInterval: NodeJS.Timeout | undefined;
-        if (process.env.NODE_ENV === 'production') {
+        if (isProduction) {
           updateInterval = setInterval(() => {
             registration.update().catch((error) => {
               console.error('Error updating service worker:', error);
@@ -56,27 +61,22 @@ if ('serviceWorker' in navigator) {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('New version available!');
+                if (isDevelopment) {
+                  console.log('🔄 New service worker version available!');
                 }
+                // Show update notification to user (optional)
+                // You can implement a toast/banner here
               }
             });
           }
         });
       })
       .catch((registrationError) => {
-        console.error('SW registration failed:', registrationError);
+        console.error('❌ Service worker registration failed:', registrationError);
       });
   });
 
-  // Listen for messages from service worker
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SW_UPDATED') {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Service worker updated, reloading page...');
-      }
-      window.location.reload();
-    }
-  });
+  // Note: SW update handling is now done via UpdateToast component in App.tsx
+  // This provides a better UX by asking the user to refresh instead of auto-reloading
 }
 

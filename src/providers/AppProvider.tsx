@@ -9,6 +9,7 @@ import type { UserSubscription } from '../types/subscription';
 import { ensureUserDocument } from '../lib/user-utils';
 // Subscription service available but not used in this component
 import ErrorBoundary from '../components/ErrorBoundary';
+import { setUserContext, clearUserContext } from '../lib/sentry';
 
 interface AppProviderProps {
   children: ReactNode;
@@ -35,7 +36,7 @@ export function AppProvider({ children }: AppProviderProps) {
     const setupAuthListener = () => {
       unsubAuth = onAuthStateChanged(auth, async (user: User | null) => {
       try {
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log('🔐 Auth state changed:', user?.email || 'signed out');
         }
 
@@ -50,12 +51,19 @@ export function AppProvider({ children }: AppProviderProps) {
         setSubscription(null);
 
         if (!user) {
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.MODE === 'development') {
             console.log('🔐 No user, setting status to signedOut');
           }
           setAuthStatus('signedOut');
+          clearUserContext(); // Clear Sentry user context
           return;
         }
+
+        // Set Sentry user context
+        setUserContext({
+          id: user.uid,
+          email: user.email || undefined,
+        });
 
         // Delay to ensure auth stability
         setTimeout(async () => {
@@ -194,7 +202,7 @@ export function AppProvider({ children }: AppProviderProps) {
     const handleError = (event: ErrorEvent) => {
       console.error('Global error:', event.error);
 
-      if (process.env.NODE_ENV === 'production') {
+      if (import.meta.env.MODE === 'production') {
         // Integrate with error tracking service
         console.error('Production error reported:', {
           message: event.message,

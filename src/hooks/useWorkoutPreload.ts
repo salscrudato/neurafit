@@ -49,13 +49,13 @@ export function useWorkoutPreload() {
         const workout = doc.data()
 
         // Get the most recent feedback
-        if (!lastFeedback && workout.feedback) {
-          lastFeedback = workout.feedback
+        if (!lastFeedback && workout['feedback']) {
+          lastFeedback = workout['feedback']
         }
 
         // Calculate completion rate from all recent workouts
-        if (workout.exercises && Array.isArray(workout.exercises)) {
-          workout.exercises.forEach((exercise: { sets?: number; weights?: Record<string, number | null> }) => {
+        if (workout['exercises'] && Array.isArray(workout['exercises'])) {
+          workout['exercises'].forEach((exercise: { sets?: number; weights?: Record<string, number | null> }) => {
             if (exercise.weights && typeof exercise.weights === 'object') {
               const setCount = exercise.sets || Object.keys(exercise.weights).length
               totalSets += setCount
@@ -138,7 +138,7 @@ export function useWorkoutPreload() {
           }
           const profile = snap.data()
           // Basic completeness check
-          const complete = !!(profile.experience && profile.goals?.length && profile.personal?.height && profile.personal?.weight)
+          const complete = !!(profile['experience'] && profile['goals']?.length && profile['personal']?.height && profile['personal']?.weight)
           if (!complete) {
             throw new Error('Profile incomplete')
           }

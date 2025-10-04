@@ -44,22 +44,22 @@ export const validateUserProfile = (profile: Record<string, unknown>): Validatio
   const errors: string[] = []
 
   // Experience validation
-  if (!profile.experience) {
+  if (!profile['experience']) {
     errors.push('Experience level is required')
-  } else if (!['Beginner', 'Intermediate', 'Advanced'].includes(profile.experience as string)) {
+  } else if (!['Beginner', 'Intermediate', 'Advanced'].includes(profile['experience'] as string)) {
     errors.push('Invalid experience level')
   }
 
   // Goals validation
-  if (!profile.goals || !Array.isArray(profile.goals) || profile.goals.length === 0) {
+  if (!profile['goals'] || !Array.isArray(profile['goals']) || profile['goals'].length === 0) {
     errors.push('At least one fitness goal is required')
   }
 
   // Personal info validation
-  if (!profile.personal) {
+  if (!profile['personal']) {
     errors.push('Personal information is required')
   } else {
-    const { height, weight } = profile.personal as { height?: number; weight?: number }
+    const { height, weight } = profile['personal'] as { height?: number; weight?: number }
 
     if (!height || isNaN(parseFloat(height as unknown as string))) {
       errors.push('Valid height is required')

@@ -8,7 +8,7 @@ export const lockOrientation = () => {
     if ('lock' in screenOrientation && screenOrientation.lock) {
       screenOrientation.lock('portrait').catch((error: { message?: string; name?: string }) => {
         // Only log in development and for unexpected errors
-        if (process.env.NODE_ENV === 'development' &&
+        if (import.meta.env.MODE === 'development' &&
             !error.message?.includes('not supported') &&
             error.name !== 'NotSupportedError') {
           console.log('Orientation lock failed:', error.name)
@@ -51,7 +51,7 @@ export const unlockOrientation = () => {
     if ('unlock' in screenOrientation && screenOrientation.unlock) {
       Promise.resolve(screenOrientation.unlock()).catch((error: { name?: string }) => {
         // Silently handle unlock failures as they're not critical
-        if (process.env.NODE_ENV === 'development' &&
+        if (import.meta.env.MODE === 'development' &&
             error.name !== 'NotSupportedError') {
           console.log('Orientation unlock failed:', error.name)
         }

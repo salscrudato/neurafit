@@ -87,7 +87,7 @@ export default function Generate() {
 
       if (preloadedData.profile) {
         // Initialize equipment from profile
-        setEquipment((preloadedData.profile.equipment as string[]) || [])
+        setEquipment((preloadedData.profile['equipment'] as string[]) || [])
       }
     }
   }, [nav, preloadedData])
@@ -111,11 +111,11 @@ export default function Generate() {
     const uid = auth.currentUser?.uid
 
     const payload = {
-      experience: preloadedData.profile.experience,
-      goals: preloadedData.profile.goals,
+      experience: preloadedData.profile['experience'],
+      goals: preloadedData.profile['goals'],
       equipment: equipment,
-      personalInfo: preloadedData.profile.personal,
-      injuries: preloadedData.profile.injuries,
+      personalInfo: preloadedData.profile['personal'],
+      injuries: preloadedData.profile['injuries'],
       workoutType: type,
       duration,
       uid,
@@ -123,7 +123,7 @@ export default function Generate() {
       progressionNote: preloadedData.progressionNote
     }
 
-    const url = import.meta.env.VITE_WORKOUT_FN_URL as string
+    const url = import.meta.env['VITE_WORKOUT_FN_URL'] as string
     const controller = new AbortController()
 
     const fetchOnce = async () => {
@@ -157,7 +157,7 @@ export default function Generate() {
         sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
 
         // Navigate immediately when workout is ready
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log('[GENERATE] Workout generated successfully, navigating to preview')
         }
         setLoading(false)
@@ -188,13 +188,13 @@ export default function Generate() {
           // Before showing upgrade prompt, try refreshing subscription status
           // This handles cases where payment was completed but subscription status hasn't synced yet
           try {
-            if (process.env.NODE_ENV === 'development') {
+            if (import.meta.env.MODE === 'development') {
               console.log('🔄 Payment required error - checking for recent subscription updates...')
             }
             const freshSubscription = await subscriptionService.getSubscription()
 
             if (freshSubscription && (freshSubscription.status === 'active' || freshSubscription.status === 'trialing')) {
-              if (process.env.NODE_ENV === 'development') {
+              if (import.meta.env.MODE === 'development') {
                 console.log('✅ Found active subscription after refresh, retrying workout generation...')
               }
               // Retry the workout generation with fresh subscription data
@@ -507,7 +507,7 @@ export default function Generate() {
         isVisible={showProgressiveLoading}
         onComplete={() => {
           // Loading bar animation completed
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.MODE === 'development') {
             console.log('Loading animation complete')
           }
         }}

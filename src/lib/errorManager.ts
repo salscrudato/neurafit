@@ -126,7 +126,7 @@ class SimpleErrorManager {
 
     // In production, use generic message for unknown errors
     if (import.meta.env.PROD) {
-      return ERROR_MESSAGES['unknown-error']
+      return ERROR_MESSAGES['unknown-error'] || 'An unexpected error occurred'
     }
 
     // In development, show original message (sanitized)

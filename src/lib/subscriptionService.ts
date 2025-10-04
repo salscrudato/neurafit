@@ -70,7 +70,7 @@ class SubscriptionService {
       if (!userDoc.exists()) return null
       
       const userData = userDoc.data()
-      return userData.subscription as UserSubscription || null
+      return userData['subscription'] as UserSubscription || null
     } catch (error) {
       console.error('Error fetching from Firestore:', error)
       return null
@@ -94,7 +94,7 @@ class SubscriptionService {
         (doc) => {
           if (doc.exists()) {
             const userData = doc.data()
-            const subscription = userData.subscription as UserSubscription || null
+            const subscription = userData['subscription'] as UserSubscription || null
             
             // Update cache
             if (this.options.enableCache) {

@@ -59,7 +59,7 @@ export async function createDefaultSubscription(uid: string): Promise<void> {
     }
 
     const userData = userDoc.data();
-    if (!userData?.subscription) {
+    if (!userData?.['subscription']) {
       await setDoc(userDocRef,
         {
           subscription: {

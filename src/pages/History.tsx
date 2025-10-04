@@ -31,7 +31,7 @@ export default function History() {
           return
         }
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log('📚 Loading workout history for user:', uid)
         }
         const q = query(collection(db, 'users', uid, 'workouts'), orderBy('timestamp', 'desc'))
@@ -39,13 +39,13 @@ export default function History() {
 
         const workouts = snap.docs.map(d => {
           const data = d.data()
-          if (process.env.NODE_ENV === 'development') {
+          if (import.meta.env.MODE === 'development') {
             console.log('📋 Raw workout data:', { id: d.id, ...data })
           }
           return { id: d.id, ...data } as WorkoutItem
         })
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log(`Loaded ${workouts.length} workouts`)
         }
         setItems(workouts)
@@ -189,7 +189,7 @@ export default function History() {
               const completionRate = setCompletionRate
 
               // Debug logging for workout stats
-              if (process.env.NODE_ENV === 'development') {
+              if (import.meta.env.MODE === 'development') {
                 console.log(`Workout "${workout.workoutType}" stats:`, {
                   totalExercises: stats.totalExercises,
                   completedExercises: stats.completedExercises,

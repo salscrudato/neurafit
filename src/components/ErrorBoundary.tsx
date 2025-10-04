@@ -1,5 +1,6 @@
-import React, { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react'
+import { captureException, setContext } from '../lib/sentry'
 
 interface Props {
   children: ReactNode
@@ -40,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { onError, level = 'component' } = this.props
     
     // Log error details
@@ -57,8 +58,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private reportError = (error: Error, errorInfo: ErrorInfo, level: string) => {
-    // In production, send to error monitoring service (e.g., Sentry)
-    const errorReport = {
+    // Build error context
+    const errorContext = {
       message: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -69,11 +70,19 @@ export class ErrorBoundary extends Component<Props, State> {
       errorId: this.state.errorId
     }
 
-    // For now, just log to console
-    console.error('Error Report:', errorReport)
-    
-    // In production, you would send this to your error tracking service:
-    // errorTrackingService.captureException(error, { extra: errorReport })
+    // Log to console in development
+    if (import.meta.env.MODE === 'development') {
+      console.error('Error Report:', errorContext)
+    }
+
+    // Send to Sentry
+    setContext('errorBoundary', {
+      level,
+      errorId: this.state.errorId,
+      componentStack: errorInfo.componentStack,
+    })
+
+    captureException(error, errorContext)
   }
 
   private handleRetry = () => {
@@ -196,7 +205,7 @@ export class ErrorBoundary extends Component<Props, State> {
     )
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // Use custom fallback if provided
       if (this.props.fallback) {

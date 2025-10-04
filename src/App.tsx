@@ -1,9 +1,10 @@
 import { useEffect, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
 import { SubscriptionManager } from './components/SubscriptionManager';
+import { UpdateToast } from './hooks/useUpdateToast';
 
 
 // Eager-loaded critical pages
@@ -23,6 +24,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Subscription = lazy(() => import('./pages/Subscription'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 import { AppProvider } from './providers/AppProvider';
 import { HomeGate } from './routes/guards';
@@ -30,10 +32,19 @@ import { lockOrientation, preventZoom } from './utils/orientation';
 // Version management removed for simplicity
 import { usePageTracking } from './hooks/useAnalytics';
 import { trackSessionStart } from './lib/firebase-analytics';
+import { useRoutePrefetch } from './hooks/useRoutePrefetch';
+import { useFocusManagement, useSkipLink } from './hooks/useFocusManagement';
 
 function AppContent() {
   // Automatically track page views
   usePageTracking();
+
+  // Automatically prefetch next-hop routes
+  useRoutePrefetch();
+
+  // Focus management for accessibility
+  useFocusManagement();
+  useSkipLink();
 
   // Handle mobile optimizations, version management, and analytics on mount
   useEffect(() => {
@@ -62,6 +73,7 @@ function AppContent() {
   return (
     <ErrorBoundary level="critical">
       <div className="min-h-screen">
+        <main id="main-content" role="main" tabIndex={-1}>
         <Routes>
           {/* Public legal pages */}
           <Route path="/terms" element={<PublicRoute lazy><Terms /></PublicRoute>} />
@@ -85,12 +97,16 @@ function AppContent() {
           <Route path="/profile" element={<ProfileRoute lazy><Profile /></ProfileRoute>} />
           <Route path="/subscription" element={<ProfileRoute lazy><Subscription /></ProfileRoute>} />
 
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch-all 404 page */}
+          <Route path="*" element={<PublicRoute lazy><NotFound /></PublicRoute>} />
         </Routes>
+        </main>
 
         {/* Unified Subscription Manager - Consolidated subscription functionality */}
         <SubscriptionManager mode="status" />
+
+        {/* Service Worker Update Toast */}
+        <UpdateToast />
       </div>
     </ErrorBoundary>
   );

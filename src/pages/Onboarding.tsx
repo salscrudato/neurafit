@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   BookOpen,
   Zap,
@@ -201,6 +201,7 @@ function SecondaryButton({ children, onClick, disabled }: { children: React.Reac
 /** -------------- PAGE -------------- */
 export default function Onboarding() {
   const nav = useNavigate()
+  const location = useLocation()
   const [step, setStep] = useState(1)
   const total = 5
   const [loading, setLoading] = useState(true)
@@ -304,7 +305,10 @@ export default function Onboarding() {
         })
       }
 
-      nav('/dashboard')
+      // Check if there's a saved destination from a protected route redirect
+      const from = (location.state as { from?: string })?.from
+      const destination = from && from !== '/' && from !== '/onboarding' ? from : '/dashboard'
+      nav(destination)
     } catch (error) {
       console.error('Error saving profile:', error)
       // You might want to show an error message to the user here

@@ -91,7 +91,23 @@ export const createPaymentIntent = onCall(
       };
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      // Extract detailed error information
+      let errorMessage = 'Unknown error occurred';
+      let errorCode = 'unknown';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+
+        // Check if it's a Stripe error with additional details
+        const stripeError = error as any;
+        if (stripeError.type) {
+          errorCode = stripeError.code || stripeError.type;
+          errorMessage = `${stripeError.type}: ${errorMessage}`;
+        }
+      }
+
+      console.error('Error details:', { errorMessage, errorCode });
       throw new functions.https.HttpsError('internal', `Failed to create payment intent: ${errorMessage}`);
     }
   }

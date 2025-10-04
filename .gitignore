@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Consolidated codebase file (regenerate with ./consolidate-codebase.sh)
+neurafit-codebase.txt

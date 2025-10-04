@@ -27,7 +27,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log(`Fetching weight history for ${exerciseName}`)
     }
 
@@ -36,14 +36,14 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
       orderBy('timestamp', 'desc'),
       limit(maxSessions)
     )
-    
+
     const snap = await getDocs(q)
     const weightHistory: WeightHistory[] = []
 
     snap.docs.forEach(doc => {
       const data = doc.data()
-      const exercises = data.exercises || []
-      const timestamp = data.timestamp?.toMillis() || Date.now()
+      const exercises = data['exercises'] || []
+      const timestamp = data['timestamp']?.toMillis() || Date.now()
       const date = new Date(timestamp).toISOString().split('T')[0]
 
       exercises.forEach((exercise: { name: string; weights?: Record<string, number> }) => {
@@ -56,7 +56,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
                 weight: weight,
                 timestamp,
                 reps: (exercise as { reps?: number }).reps || 10,
-                date
+                date: date || ''
               })
             }
           })
@@ -67,7 +67,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
     // Sort by timestamp descending (most recent first)
     weightHistory.sort((a, b) => b.timestamp - a.timestamp)
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log(`📈 Found ${weightHistory.length} weight entries for ${exerciseName}`)
     }
     return weightHistory
@@ -86,7 +86,7 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log('Fetching recent workout sessions')
     }
 
@@ -95,14 +95,14 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
       orderBy('timestamp', 'desc'),
       limit(maxSessions)
     )
-    
+
     const snap = await getDocs(q)
     const sessions: WorkoutSession[] = []
 
     snap.docs.forEach(doc => {
       const data = doc.data()
-      const exercises = data.exercises || []
-      const timestamp = data.timestamp?.toMillis() || Date.now()
+      const exercises = data['exercises'] || []
+      const timestamp = data['timestamp']?.toMillis() || Date.now()
       const date = new Date(timestamp).toISOString().split('T')[0]
 
       const sessionExercises = exercises.map((exercise: { name: string; sets?: number; reps?: number | string; weights?: Record<string, number | null> }) => {
@@ -128,12 +128,12 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
       })
 
       sessions.push({
-        date,
+        date: date || '',
         exercises: sessionExercises
       })
     })
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.log(`📈 Found ${sessions.length} recent sessions`)
     }
     return sessions
@@ -152,7 +152,7 @@ export function getLastUsedWeight(weightHistory: WeightHistory[], exerciseName: 
     .filter(w => w.exerciseName === exerciseName && w.setNumber === setNumber)
     .sort((a, b) => b.timestamp - a.timestamp)
 
-  return relevantWeights.length > 0 ? relevantWeights[0].weight : null
+  return relevantWeights.length > 0 && relevantWeights[0] ? relevantWeights[0].weight : null
 }
 
 /**

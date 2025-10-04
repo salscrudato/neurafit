@@ -85,12 +85,12 @@ export function ProgressiveOverloadTracker({
     })
 
     // Calculate changes
-    const totalVolumeChange = volumeProgression.length >= 2 
-      ? ((volumeProgression[volumeProgression.length - 1] - volumeProgression[0]) / volumeProgression[0]) * 100
+    const totalVolumeChange = volumeProgression.length >= 2 && volumeProgression[0] !== undefined && volumeProgression[volumeProgression.length - 1] !== undefined
+      ? ((volumeProgression[volumeProgression.length - 1]! - volumeProgression[0]!) / volumeProgression[0]!) * 100
       : 0
 
-    const maxWeightChange = maxWeightProgression.length >= 2
-      ? ((maxWeightProgression[maxWeightProgression.length - 1] - maxWeightProgression[0]) / maxWeightProgression[0]) * 100
+    const maxWeightChange = maxWeightProgression.length >= 2 && maxWeightProgression[0] !== undefined && maxWeightProgression[maxWeightProgression.length - 1] !== undefined
+      ? ((maxWeightProgression[maxWeightProgression.length - 1]! - maxWeightProgression[0]!) / maxWeightProgression[0]!) * 100
       : 0
 
     // Consistency score (percentage of sessions where exercise was performed)
@@ -119,7 +119,7 @@ export function ProgressiveOverloadTracker({
 
     if (currentWeight && maxWeightProgression.length > 0) {
       const lastMaxWeight = maxWeightProgression[maxWeightProgression.length - 1]
-      if (currentWeight > lastMaxWeight) {
+      if (lastMaxWeight && currentWeight > lastMaxWeight) {
         recommendations.push('New personal record! Great job pushing your limits.')
       }
     }

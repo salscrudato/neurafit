@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { CheckCircle, Zap, Target, TrendingUp, Shield } from 'lucide-react'
 
 interface SubscriptionSuccessProps {

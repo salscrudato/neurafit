@@ -1,5 +1,5 @@
 // Simplified Workout Analytics
-import React from 'react'
+
 import { TrendingUp, Calendar, Clock } from 'lucide-react'
 
 interface WorkoutData {

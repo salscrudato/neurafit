@@ -145,9 +145,9 @@ export function SmartWeightInput({
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 3)
 
-    if (recent.length < 2) return null
+    if (recent.length < 2 || !recent[0] || !recent[recent.length - 1]) return null
 
-    const trend = recent[0].weight - recent[recent.length - 1].weight
+    const trend = recent[0]!.weight - recent[recent.length - 1]!.weight
     if (Math.abs(trend) < 2.5) return null
 
     return trend > 0 ? 'up' : 'down'

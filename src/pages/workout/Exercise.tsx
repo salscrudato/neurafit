@@ -84,7 +84,7 @@ export default function Exercise() {
     const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
     if (!hasWorkoutStartTime) {
       sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         console.log('[TIME] Workout start time set (fallback)')
       }
     }
@@ -198,7 +198,7 @@ export default function Exercise() {
         }
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
         }
       }
@@ -236,7 +236,7 @@ export default function Exercise() {
         }
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log(`[COMPLETE] Set ${setNo} of ${ex.name} marked as COMPLETE:`, finalWeight)
         }
 
@@ -274,7 +274,7 @@ export default function Exercise() {
         }
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
 
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.MODE === 'development') {
           console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
         }
 

@@ -261,32 +261,3 @@ function CompactBadge({
   )
 }
 
-function _EnhancedBadge({
-  children,
-  variant = 'primary'
-}: {
-  children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'pro' | 'free'
-}) {
-  const variants = {
-    primary: "inline-flex items-center gap-3 rounded-2xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 text-blue-700 shadow-md shadow-blue-100/50 hover:shadow-lg hover:shadow-blue-200/30 transition-all duration-300",
-    secondary: "inline-flex items-center gap-3 rounded-2xl border border-slate-200/50 bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3 text-slate-700 shadow-md shadow-slate-100/50 hover:shadow-lg hover:shadow-slate-200/30 transition-all duration-300",
-    pro: "inline-flex items-center gap-3 rounded-2xl border border-yellow-300/50 bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-3 text-white font-semibold shadow-lg shadow-yellow-500/25 hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300",
-    free: "inline-flex items-center gap-3 rounded-2xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50 to-green-50 px-4 py-3 text-emerald-700 shadow-md shadow-emerald-100/50 hover:shadow-lg hover:shadow-emerald-200/30 transition-all duration-300"
-  }
-
-  return (
-    <span className={variants[variant]}>
-      {children}
-    </span>
-  )
-}
-
-// Keep the old Badge component for backward compatibility
-function _Badge({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={className || "inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700"}>
-      {children}
-    </span>
-  )
-}

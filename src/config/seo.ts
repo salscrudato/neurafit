@@ -155,7 +155,7 @@ export const SEO_CONFIGS: Record<string, SEOConfig> = {
 
 // Utility function to get SEO config for a page
 export function getSEOConfig(page: string): SEOConfig {
-  return SEO_CONFIGS[page] || SEO_CONFIGS.home
+  return SEO_CONFIGS[page] ?? SEO_CONFIGS['home']!
 }
 
 // Generate meta keywords string
