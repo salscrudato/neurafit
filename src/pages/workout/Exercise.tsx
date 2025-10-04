@@ -10,7 +10,7 @@ import {
   WorkoutStats
 } from '../../components/WorkoutProgress'
 import { SmartWeightInput } from '../../components/SmartWeightInput'
-
+import { logger } from '../../lib/logger'
 import { ProgressiveOverloadTracker } from '../../components/ProgressiveOverloadTracker'
 import {
   getCachedWeightHistory,
@@ -84,9 +84,7 @@ export default function Exercise() {
     const hasWorkoutStartTime = sessionStorage.getItem('nf_workout_start_time')
     if (!hasWorkoutStartTime) {
       sessionStorage.setItem('nf_workout_start_time', String(Date.now()))
-      if (import.meta.env.MODE === 'development') {
-        console.log('[TIME] Workout start time set (fallback)')
-      }
+      logger.debug('Workout start time set (fallback)')
     }
   }, [])
 
@@ -105,7 +103,7 @@ export default function Exercise() {
         setWeightHistory(history)
         setRecentSessions(sessions)
       } catch (error) {
-        console.error('Error loading history data:', error)
+        logger.error('Error loading history data', error as Error, { exerciseName: ex.name })
       } finally {
         setLoadingHistory(false)
       }
@@ -177,7 +175,6 @@ export default function Exercise() {
   if (!saved) return <EmptyState />
   if (list.length === 0) return <EmptyState />
 
-  // Removed smart rest period calculation - using AI-generated rest periods directly
   const workoutWeights = weightState.data
 
   // Update weight for current exercise and set with optimistic updates

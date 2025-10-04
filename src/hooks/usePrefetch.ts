@@ -1,11 +1,12 @@
 /**
  * Route Prefetching Hook
- * 
+ *
  * Prefetches route chunks on hover or idle to improve perceived performance
  * and reduce First Input Delay (FID) for navigation.
  */
 
 import { useEffect, useCallback, useRef } from 'react';
+import { logger } from '../lib/logger';
 
 // Map of route paths to their lazy-loaded modules
 const routeModules: Record<string, () => Promise<unknown>> = {
@@ -41,14 +42,12 @@ export function prefetchRoute(path: string): void {
   // Prefetch the module
   moduleLoader()
     .then(() => {
-      if (import.meta.env.MODE === 'development') {
-        console.log(`[PREFETCH] Successfully prefetched: ${path}`);
-      }
+      logger.debug('Route prefetched successfully', { path });
     })
     .catch((error) => {
       // Remove from set if prefetch failed so it can be retried
       prefetchedRoutes.delete(path);
-      console.warn(`[PREFETCH] Failed to prefetch ${path}:`, error);
+      logger.warn('Failed to prefetch route', { path, error: String(error) });
     });
 }
 

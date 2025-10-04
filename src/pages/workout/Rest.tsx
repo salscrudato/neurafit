@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { EnhancedRestTimer } from '../../components/EnhancedRestTimer'
+import { logger } from '../../lib/logger'
 
 export default function Rest() {
   const nav = useNavigate()
@@ -34,7 +35,7 @@ export default function Rest() {
         restSeconds: ex.restSeconds
       }
     } catch (error) {
-      console.error('Error parsing next exercise data:', error)
+      logger.error('Error parsing next exercise data', { error })
       return undefined
     }
   }, [])

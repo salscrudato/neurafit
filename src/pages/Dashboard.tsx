@@ -5,6 +5,7 @@ import { auth, db } from '../lib/firebase'
 import { collection, query, orderBy, getDocs } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { convertToDate } from '../utils/timestamp'
+import { logger } from '../lib/logger'
 import {
   Zap,
   History,
@@ -41,10 +42,60 @@ interface DashboardStats {
   recentStreak: number
 }
 
+// Memoized stats calculation function
+const calculateDashboardStats = (workouts: WorkoutItem[]): DashboardStats => {
+  if (workouts.length === 0) {
+    return {
+      totalWorkouts: 0,
+      weeklyWorkouts: 0,
+      consistencyScore: 0,
+      recentStreak: 0,
+    }
+  }
+
+  const now = new Date()
+  const thirtyDaysAgo = new Date(now)
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const weekAgo = new Date(now)
+  weekAgo.setDate(weekAgo.getDate() - 7)
+
+  // Calculate consistency over last 30 days (percentage of active days)
+  const recentWorkouts = workouts.filter(w => convertToDate(w.timestamp) >= thirtyDaysAgo)
+  const activeDays = new Set(recentWorkouts.map(w => convertToDate(w.timestamp).toDateString())).size
+  const consistencyScore = Math.round((activeDays / 30) * 100)
+
+  // Calculate weekly workouts (count in last 7 days)
+  const weeklyWorkouts = workouts.filter(w => convertToDate(w.timestamp) >= weekAgo).length
+
+  // Calculate recent streak
+  // Workouts are already sorted newest first from query
+  let streak = 0
+  let currentDate = new Date()
+  for (const workout of workouts) {
+    const workoutDate = convertToDate(workout.timestamp)
+    if (!workout.timestamp) break
+
+    const daysDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24))
+    if (daysDiff <= 1 || (streak === 0 && daysDiff <= 7)) {
+      streak++
+      currentDate = workoutDate
+    } else {
+      break
+    }
+  }
+
+  return {
+    totalWorkouts: workouts.length,
+    weeklyWorkouts,
+    consistencyScore,
+    recentStreak: streak,
+  }
+}
+
 export default function Dashboard() {
   const nav = useNavigate()
   const [user, setUser] = useState<User | null>(null)
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+  const [workouts, setWorkouts] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -56,10 +107,16 @@ export default function Dashboard() {
     setUser(auth.currentUser)
   }, [])
 
+  // Memoize first name extraction
   const firstName = useMemo(() => {
     const n = user?.displayName || user?.email || user?.phoneNumber || 'Athlete'
     return String(n).split(' ')[0]
   }, [user])
+
+  // Memoize dashboard stats calculation
+  const dashboardStats = useMemo(() => {
+    return calculateDashboardStats(workouts)
+  }, [workouts])
 
   // Fetch dashboard data
   useEffect(() => {
@@ -75,61 +132,16 @@ export default function Dashboard() {
         const workoutsRef = collection(db, 'users', uid, 'workouts')
         const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'))
         const workoutsSnap = await getDocs(workoutsQuery)
-        const workouts = workoutsSnap.docs.map(doc => ({
+        const fetchedWorkouts = workoutsSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as WorkoutItem[]
 
-        // Calculate dashboard statistics
-        if (workouts.length > 0) {
-          // Calculate consistency over last 30 days (percentage of active days)
-          const thirtyDaysAgo = new Date()
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-          const recentWorkouts = workouts.filter(w => convertToDate(w.timestamp) >= thirtyDaysAgo)
-          const activeDays = new Set(recentWorkouts.map(w => convertToDate(w.timestamp).toDateString())).size
-          const consistencyScore = Math.round((activeDays / 30) * 100)
-
-          // Calculate weekly workouts (count in last 7 days)
-          const weekAgo = new Date()
-          weekAgo.setDate(weekAgo.getDate() - 7)
-          const weeklyWorkouts = workouts.filter(w => convertToDate(w.timestamp) >= weekAgo).length
-
-          // Calculate recent streak
-          // Workouts are already sorted newest first from query
-          let streak = 0
-          let currentDate = new Date()
-          for (const workout of workouts) {
-            const workoutDate = convertToDate(workout.timestamp)
-            if (!workout.timestamp) break
-
-            const daysDiff = Math.floor((currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24))
-            if (daysDiff <= 1 || (streak === 0 && daysDiff <= 7)) {
-              streak++
-              currentDate = workoutDate
-            } else {
-              break
-            }
-          }
-
-          const totalWorkouts = workouts.length
-
-          setDashboardStats({
-            totalWorkouts,
-            weeklyWorkouts,
-            consistencyScore,
-            recentStreak: streak
-          })
-        } else {
-          setDashboardStats({
-            totalWorkouts: 0,
-            weeklyWorkouts: 0,
-            consistencyScore: 0,
-            recentStreak: 0
-          })
-        }
+        setWorkouts(fetchedWorkouts)
+        logger.debug('Dashboard data loaded', { workoutCount: fetchedWorkouts.length })
       } catch (err) {
         const error = err as { message?: string }
-        console.error('Error fetching dashboard data:', error)
+        logger.error('Error fetching dashboard data', err as Error)
         setError(error.message || 'Failed to load dashboard data')
       } finally {
         setLoading(false)

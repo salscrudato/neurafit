@@ -7,6 +7,7 @@ import { convertToDate } from '../utils/timestamp'
 import { ArrowLeft, Clock, Calendar, CheckCircle, XCircle, Weight } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { WorkoutDetailSkeleton } from '../components/Loading'
+import { logger } from '../lib/logger'
 
 type Exercise = {
   name: string
@@ -53,8 +54,8 @@ export default function WorkoutDetail() {
 
         setWorkout({ id: workoutDoc.id, ...workoutDoc.data() } as WorkoutData)
       } catch (err) {
-        const error = err as { message?: string }
-        console.error('Error fetching workout:', error)
+        const error = err as Error
+        logger.error('Error fetching workout', error, { workoutId })
         setError(error.message || 'Failed to load workout')
       } finally {
         setLoading(false)

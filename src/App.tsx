@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
 import { SubscriptionManager } from './components/SubscriptionManager';
 import { UpdateToast } from './hooks/useUpdateToast';
+import { logger } from './lib/logger';
 
 
 // Eager-loaded critical pages
@@ -58,7 +59,7 @@ function AppContent() {
 
     // Event listener for version updates
     const handleVersionUpdate = () => {
-      console.log('Version update detected by version manager');
+      logger.info('Version update detected by version manager');
     };
 
     window.addEventListener('versionUpdate', handleVersionUpdate);

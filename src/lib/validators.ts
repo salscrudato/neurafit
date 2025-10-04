@@ -120,13 +120,13 @@ export const validateForm = (data: Record<string, unknown>, rules: Record<string
 }
 
 // Validation middleware for API calls
-export const withValidation = <T extends (..._args: unknown[]) => unknown>(
+export const withValidation = <T extends (...args: unknown[]) => unknown>(
   fn: T,
   validator: (_data: unknown) => ValidationResult,
-  dataExtractor: (..._args: Parameters<T>) => unknown = (..._args) => _args[0]
+  dataExtractor?: (...args: Parameters<T>) => unknown
 ): T => {
   return ((...args: Parameters<T>) => {
-    const data = dataExtractor(...args)
+    const data = dataExtractor ? dataExtractor(...args) : args[0]
     const validation = validator(data)
 
     if (!validation.isValid) {

@@ -1,6 +1,8 @@
-import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import { db } from './firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import type { User } from 'firebase/auth'
+import { logger } from './logger'
+import { sanitizeInput } from './security'
 
 /**
  * Ensures a user document exists in Firestore
@@ -8,40 +10,44 @@ import type { User } from 'firebase/auth';
  */
 export async function ensureUserDocument(user: User): Promise<void> {
   try {
-    console.log('🔍 Ensuring user document for:', user.uid);
+    logger.debug('Ensuring user document', { uid: user.uid })
 
-    // Firestore is now available synchronously
-
-    console.log('✅ Firestore instance ready, creating user document...');
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = doc(db, 'users', user.uid)
+    const userDoc = await getDoc(userDocRef)
 
     if (!userDoc.exists()) {
-      console.log('Creating user document for:', user.uid);
-      await setDoc(userDocRef,
+      logger.info('Creating user document', { uid: user.uid })
+
+      // Sanitize user inputs
+      const displayName = user.displayName ? sanitizeInput(user.displayName) : null
+      const email = user.email ? user.email.toLowerCase().trim() : null
+
+      await setDoc(
+        userDocRef,
         {
           uid: user.uid,
-          email: user.email,
-          displayName: user.displayName || null,
+          email,
+          displayName,
           photoURL: user.photoURL || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
         { merge: true }
-      );
-      console.log('User document created successfully');
+      )
+      logger.info('User document created successfully', { uid: user.uid })
     } else {
-      // Optional: Update updated_at if document exists
-      await setDoc(userDocRef,
+      // Update updated_at if document exists
+      await setDoc(
+        userDocRef,
         {
           updated_at: new Date().toISOString(),
         },
         { merge: true }
-      );
+      )
     }
   } catch (error) {
-    console.error('Error ensuring user document:', error);
-    throw new Error('Failed to ensure user document exists');
+    logger.error('Error ensuring user document', error as Error, { uid: user.uid })
+    throw new Error('Failed to ensure user document exists')
   }
 }
 
@@ -50,17 +56,18 @@ export async function ensureUserDocument(user: User): Promise<void> {
  */
 export async function createDefaultSubscription(uid: string): Promise<void> {
   try {
-
-    const userDocRef = doc(db, 'users', uid);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = doc(db, 'users', uid)
+    const userDoc = await getDoc(userDocRef)
 
     if (!userDoc.exists()) {
-      throw new Error('User document does not exist');
+      logger.error('User document does not exist', new Error('User not found'), { uid })
+      throw new Error('User document does not exist')
     }
 
-    const userData = userDoc.data();
+    const userData = userDoc.data()
     if (!userData?.['subscription']) {
-      await setDoc(userDocRef,
+      await setDoc(
+        userDocRef,
         {
           subscription: {
             customerId: '',
@@ -73,11 +80,11 @@ export async function createDefaultSubscription(uid: string): Promise<void> {
           },
         },
         { merge: true }
-      );
-      console.log('Default subscription created for user:', uid);
+      )
+      logger.info('Default subscription created', { uid })
     }
   } catch (error) {
-    console.error('Error creating default subscription:', error);
-    throw new Error('Failed to create default subscription');
+    logger.error('Error creating default subscription', error as Error, { uid })
+    throw new Error('Failed to create default subscription')
   }
 }

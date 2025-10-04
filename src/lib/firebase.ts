@@ -4,20 +4,42 @@ import { getAuth, type Auth } from 'firebase/auth'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getFunctions, type Functions } from 'firebase/functions'
 import { getAnalytics, type Analytics, isSupported } from 'firebase/analytics'
+import { logger } from './logger'
 
-// Firebase configuration
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: 'AIzaSyAKo_Bf8aPCWSPM9Nigcnga1t6_Psi70T8',
-  authDomain: 'neurafit-ai-2025.firebaseapp.com',
-  projectId: 'neurafit-ai-2025',
-  storageBucket: 'neurafit-ai-2025.firebasestorage.app',
-  messagingSenderId: '226392212811',
-  appId: '1:226392212811:web:4e41b01723ca5ecec8d4ce',
-  measurementId: 'G-5LHTKTWX0M',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+}
+
+// Validate required environment variables
+const requiredEnvVars = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID',
+]
+
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !import.meta.env[varName]
+)
+
+if (missingEnvVars.length > 0) {
+  throw new Error(
+    `Missing required Firebase environment variables: ${missingEnvVars.join(', ')}\n` +
+    'Please copy .env.example to .env and fill in your Firebase configuration.'
+  )
 }
 
 // Initialize Firebase
-console.log('🔥 Initializing Firebase...')
+logger.firebase('Initializing Firebase...')
 const app: FirebaseApp = initializeApp(firebaseConfig)
 
 // Initialize services
@@ -25,18 +47,25 @@ export const auth: Auth = getAuth(app)
 export const db: Firestore = getFirestore(app)
 export const fns: Functions = getFunctions(app)
 
-// Initialize analytics conditionally
-let analytics: Analytics | null = null
-isSupported().then((supported) => {
-  if (supported) {
-    analytics = getAnalytics(app)
-    console.log('✅ Firebase Analytics initialized')
-  }
-}).catch((error) => {
-  console.warn('⚠️ Analytics initialization failed:', error)
+logger.firebase('Firebase services initialized', {
+  auth: '✓',
+  firestore: '✓',
+  functions: '✓',
 })
 
-console.log('✅ Firebase initialization complete!')
+// Initialize analytics conditionally
+let analytics: Analytics | null = null
+isSupported()
+  .then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(app)
+      logger.firebase('Firebase Analytics initialized')
+    }
+  })
+  .catch((error) => {
+    // Analytics initialization failed - log in development only
+    logger.warn('Firebase Analytics initialization failed', { error })
+  })
 
 // Simplified service getters (now synchronous)
 export const getAuthInstance = (): Auth => auth

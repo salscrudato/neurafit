@@ -3,6 +3,8 @@
  * Unified analytics, telemetry, and tracking system
  */
 
+import { logger } from './logger'
+
 // Simple analytics configuration
 interface AnalyticsConfig {
   enabled: boolean
@@ -52,7 +54,7 @@ class SimpleAnalytics {
 
     // Debug logging
     if (this.config.debug) {
-      console.log('Analytics:', event, data)
+      logger.debug('Analytics event', { event, data })
     }
 
     // Store in localStorage for debugging

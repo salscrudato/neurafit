@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
@@ -6,23 +6,30 @@ import { SubscriptionManager } from '../components/SubscriptionManager'
 import { PaymentForm } from '../components/PaymentForm'
 import { SubscriptionSuccess } from '../components/SubscriptionSuccess'
 import { useSubscription } from '../hooks/useSubscription'
+import { SubscriptionStatusSkeleton } from '../components/Loading'
+import { logger } from '../lib/logger'
 
-import { getSubscriptionPlanByPriceId } from '../lib/stripe-config'
+import { getSubscriptionPlanByPriceId, formatPrice } from '../lib/stripe-config'
 
 type ViewState = 'plans' | 'payment' | 'success' | 'manage'
 
 export default function Subscription() {
   const navigate = useNavigate()
-  const { hasUnlimitedWorkouts } = useSubscription()
+  const { hasUnlimitedWorkouts, loading } = useSubscription()
 
-  const [currentView, setCurrentView] = useState<ViewState>(
-    hasUnlimitedWorkouts ? 'manage' : 'plans'
-  )
+  const [currentView, setCurrentView] = useState<ViewState>('plans')
   const [selectedPriceId, setSelectedPriceId] = useState<string>('')
-  // Removed unused variables for cleaner code
+
+  // Update view based on subscription status once loaded
+  useEffect(() => {
+    if (!loading) {
+      setCurrentView(hasUnlimitedWorkouts ? 'manage' : 'plans')
+    }
+  }, [hasUnlimitedWorkouts, loading])
 
   const handlePaymentSuccess = () => {
     setCurrentView('success')
+    logger.info('Payment successful, refreshing subscription')
     // The PaymentForm component now handles subscription synchronization
     // We'll refresh the page after a longer delay to ensure everything is synced
     setTimeout(() => {
@@ -31,7 +38,7 @@ export default function Subscription() {
   }
 
   const handlePaymentError = (error: string) => {
-    console.error('Payment error:', error)
+    logger.error('Payment error', new Error(error))
     // Stay on payment form to allow retry
   }
 
@@ -39,8 +46,6 @@ export default function Subscription() {
     setCurrentView('plans')
     setSelectedPriceId('')
   }
-
-  // Removed unused handleUpgrade function
 
   const selectedPlan = getSubscriptionPlanByPriceId(selectedPriceId)
 
@@ -81,49 +86,54 @@ export default function Subscription() {
 
         {/* Content */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-lg p-6 md:p-8">
-          {currentView === 'plans' && (
-            <SubscriptionManager
-              mode="plans"
-              onClose={() => navigate('/dashboard')}
-              onSuccess={() => setCurrentView('success')}
-            />
-          )}
+          {loading ? (
+            <SubscriptionStatusSkeleton />
+          ) : (
+            <>
+              {currentView === 'plans' && (
+                <SubscriptionManager
+                  mode="plans"
+                  onClose={() => navigate('/dashboard')}
+                  onSuccess={() => setCurrentView('success')}
+                />
+              )}
 
-          {currentView === 'payment' && (
-            <div className="max-w-md mx-auto">
-              <div className="text-center mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Complete Your Subscription
-                </h2>
-                {selectedPlan && (
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="font-medium text-blue-900">{selectedPlan.name}</p>
-                    <p className="text-blue-700">{selectedPlan.description}</p>
-                    <p className="text-2xl font-bold text-blue-900 mt-2">
-                      ${selectedPlan.price / 100}/{selectedPlan.interval}
-                    </p>
+              {currentView === 'payment' && (
+                <div className="max-w-md mx-auto">
+                  <div className="text-center mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      Complete Your Subscription
+                    </h2>
+                    {selectedPlan && (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <p className="font-medium text-blue-900">{selectedPlan.name}</p>
+                        <p className="text-2xl font-bold text-blue-600 mt-1">
+                          {formatPrice(selectedPlan.price)}/{selectedPlan.interval}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <PaymentForm
-                priceId={selectedPriceId}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-                onCancel={handleBackToPlans}
-              />
-            </div>
-          )}
 
-          {currentView === 'success' && (
-            <SubscriptionSuccess
-              onContinue={() => navigate('/generate')}
-              planName={selectedPlan?.name}
-            />
-          )}
+                  <PaymentForm
+                    priceId={selectedPriceId}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    onCancel={handleBackToPlans}
+                  />
+                </div>
+              )}
 
-          {currentView === 'manage' && (
-            <SubscriptionManager mode="management" />
+              {currentView === 'success' && (
+                <SubscriptionSuccess onContinue={() => navigate('/dashboard')} />
+              )}
+
+              {currentView === 'manage' && (
+                <SubscriptionManager
+                  mode="management"
+                  onClose={() => navigate('/dashboard')}
+                />
+              )}
+            </>
           )}
         </div>
       </main>

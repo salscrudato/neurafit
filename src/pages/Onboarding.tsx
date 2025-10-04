@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { validateUserProfile } from '../lib/validators'
+import { logger } from '../lib/logger'
 import {
   BookOpen,
   Zap,
@@ -236,7 +238,7 @@ export default function Onboarding() {
           })
         }
       } catch (error) {
-        console.error('Error loading existing profile:', error)
+        logger.error('Error loading existing profile', error as Error)
         // Continue with empty draft if loading fails
       } finally {
         setLoading(false)
@@ -272,46 +274,68 @@ export default function Onboarding() {
 
   async function finish() {
     const uid = auth.currentUser?.uid
-    if (!uid) return
+    if (!uid) {
+      logger.warn('Attempted to save profile without user ID')
+      return
+    }
+
     setSaving(true)
     try {
+      // Prepare profile data
+      const profileData = {
+        experience: draft.experience,
+        goals: draft.goals,
+        equipment: draft.equipment,
+        personal: draft.personal,
+        injuries: draft.injuries || { list: [], notes: '' },
+      }
+
+      // Validate profile data
+      const validation = validateUserProfile(profileData)
+
+      if (!validation.isValid) {
+        logger.warn('Profile validation failed', { errors: validation.errors })
+        alert(`Please fix the following errors:\n${validation.errors.join('\n')}`)
+        setSaving(false)
+        return
+      }
+
+      // Save to Firestore
       await setDoc(
         doc(db, 'users', uid),
         {
-          experience: draft.experience,
-          goals: draft.goals,
-          equipment: draft.equipment,
-          personal: draft.personal,
-          injuries: draft.injuries,
+          ...profileData,
+          updated_at: new Date().toISOString(),
         },
         { merge: true }
       )
 
+      logger.info('Profile saved successfully', { uid })
+
       // Track profile completion
-      trackProfileComplete(
-        draft.experience || 'Unknown',
-        draft.goals,
-        draft.equipment
-      )
+      if (profileData.experience && profileData.goals && profileData.equipment) {
+        trackProfileComplete(
+          profileData.experience,
+          profileData.goals,
+          profileData.equipment
+        )
+      }
 
       // Set enhanced user properties with location context
-      if (uid) {
-        setEnhancedUserProperties(uid, {
-          experience: draft.experience,
-          goals: draft.goals,
-          equipment: draft.equipment,
-          personal: draft.personal,
-          injuries: draft.injuries
-        })
-      }
+      setEnhancedUserProperties(uid, {
+        experience: profileData.experience,
+        goals: profileData.goals,
+        equipment: profileData.equipment,
+        personal: profileData.personal,
+        injuries: profileData.injuries,
+      })
 
       // Check if there's a saved destination from a protected route redirect
       const from = (location.state as { from?: string })?.from
       const destination = from && from !== '/' && from !== '/onboarding' ? from : '/dashboard'
       nav(destination)
     } catch (error) {
-      console.error('Error saving profile:', error)
-      // You might want to show an error message to the user here
+      logger.error('Error saving profile', error as Error, { uid })
       alert('Failed to save profile. Please try again.')
     } finally {
       setSaving(false)

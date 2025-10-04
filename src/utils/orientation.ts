@@ -1,4 +1,5 @@
 // Orientation lock utilities for mobile experience
+import { logger } from '../lib/logger'
 
 export const lockOrientation = () => {
   // Try to lock to portrait orientation using the Screen Orientation API
@@ -7,11 +8,9 @@ export const lockOrientation = () => {
 
     if ('lock' in screenOrientation && screenOrientation.lock) {
       screenOrientation.lock('portrait').catch((error: { message?: string; name?: string }) => {
-        // Only log in development and for unexpected errors
-        if (import.meta.env.MODE === 'development' &&
-            !error.message?.includes('not supported') &&
-            error.name !== 'NotSupportedError') {
-          console.log('Orientation lock failed:', error.name)
+        // Only log unexpected errors (not "not supported" errors)
+        if (!error.message?.includes('not supported') && error.name !== 'NotSupportedError') {
+          logger.debug('Orientation lock failed', { errorName: error.name })
         }
       })
     }
@@ -51,9 +50,8 @@ export const unlockOrientation = () => {
     if ('unlock' in screenOrientation && screenOrientation.unlock) {
       Promise.resolve(screenOrientation.unlock()).catch((error: { name?: string }) => {
         // Silently handle unlock failures as they're not critical
-        if (import.meta.env.MODE === 'development' &&
-            error.name !== 'NotSupportedError') {
-          console.log('Orientation unlock failed:', error.name)
+        if (error.name !== 'NotSupportedError') {
+          logger.debug('Orientation unlock failed', { errorName: error.name })
         }
       })
     }

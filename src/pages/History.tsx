@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
@@ -6,6 +6,7 @@ import { convertToDate } from '../utils/timestamp'
 import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { WorkoutHistorySkeleton } from '../components/Loading'
+import { logger } from '../lib/logger'
 
 type WorkoutItem = {
   id: string
@@ -16,12 +17,67 @@ type WorkoutItem = {
   timestamp?: Date | { toDate(): Date } | string
 }
 
+// Memoized date formatter
+const formatDate = (timestamp: Date | { toDate(): Date } | string): string => {
+  if (!timestamp) return 'Unknown date'
+  const date = convertToDate(timestamp)
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+// Memoized workout stats calculator
+const calculateWorkoutStats = (workout: WorkoutItem) => {
+  if (!workout.exercises || workout.exercises.length === 0) {
+    return { totalExercises: 0, completedExercises: 0, totalSets: 0, completedSets: 0, fullyCompletedExercises: 0 }
+  }
+
+  const totalExercises = workout.exercises.length
+  let completedExercises = 0 // Exercises with ANY completed sets
+  let fullyCompletedExercises = 0 // Exercises with ALL sets completed
+  let totalSets = 0
+  let completedSets = 0
+
+  workout.exercises.forEach(exercise => {
+    totalSets += exercise.sets
+
+    // Calculate completed sets for this exercise using the exact same logic as WorkoutDetail
+    let exerciseCompletedSets = 0
+
+    if (exercise.weights && typeof exercise.weights === 'object') {
+      // Count all entries with non-null values (including 0 which indicates completed sets)
+      // null values indicate skipped sets
+      exerciseCompletedSets = Object.values(exercise.weights).filter(w => w !== null).length
+    } else {
+      // No weights data means no sets were tracked (shouldn't happen with new system)
+      exerciseCompletedSets = 0
+    }
+
+    completedSets += exerciseCompletedSets
+
+    // Exercise is considered "completed" if it has ANY completed sets
+    if (exerciseCompletedSets > 0) {
+      completedExercises++
+    }
+
+    // Track fully completed exercises separately
+    if (exerciseCompletedSets === exercise.sets) {
+      fullyCompletedExercises++
+    }
+  })
+
+  return { totalExercises, completedExercises, totalSets, completedSets, fullyCompletedExercises }
+}
+
 export default function History() {
   const nav = useNavigate()
   const [items, setItems] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Fetch workout history
   useEffect(() => {
     (async () => {
       try {
@@ -31,27 +87,20 @@ export default function History() {
           return
         }
 
-        if (import.meta.env.MODE === 'development') {
-          console.log('📚 Loading workout history for user:', uid)
-        }
+        logger.debug('Loading workout history', { uid })
         const q = query(collection(db, 'users', uid, 'workouts'), orderBy('timestamp', 'desc'))
         const snap = await getDocs(q)
 
         const workouts = snap.docs.map(d => {
           const data = d.data()
-          if (import.meta.env.MODE === 'development') {
-            console.log('📋 Raw workout data:', { id: d.id, ...data })
-          }
           return { id: d.id, ...data } as WorkoutItem
         })
 
-        if (import.meta.env.MODE === 'development') {
-          console.log(`Loaded ${workouts.length} workouts`)
-        }
+        logger.debug('Workout history loaded', { count: workouts.length })
         setItems(workouts)
       } catch (err) {
         const error = err as { message?: string }
-        console.error('❌ Error fetching workout history:', error)
+        logger.error('Error fetching workout history', err as Error)
         setError(error.message || 'Failed to load workout history')
       } finally {
         setLoading(false)
@@ -59,57 +108,13 @@ export default function History() {
     })()
   }, [])
 
-  const formatDate = (timestamp: Date | { toDate(): Date } | string) => {
-    if (!timestamp) return 'Unknown date'
-    const date = convertToDate(timestamp)
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
-
-  const calculateWorkoutStats = (workout: WorkoutItem) => {
-    if (!workout.exercises || workout.exercises.length === 0) {
-      return { totalExercises: 0, completedExercises: 0, totalSets: 0, completedSets: 0, fullyCompletedExercises: 0 }
-    }
-
-    const totalExercises = workout.exercises.length
-    let completedExercises = 0 // Exercises with ANY completed sets
-    let fullyCompletedExercises = 0 // Exercises with ALL sets completed
-    let totalSets = 0
-    let completedSets = 0
-
-    workout.exercises.forEach(exercise => {
-      totalSets += exercise.sets
-
-      // Calculate completed sets for this exercise using the exact same logic as WorkoutDetail
-      let exerciseCompletedSets = 0
-
-      if (exercise.weights && typeof exercise.weights === 'object') {
-        // Count all entries with non-null values (including 0 which indicates completed sets)
-        // null values indicate skipped sets
-        exerciseCompletedSets = Object.values(exercise.weights).filter(w => w !== null).length
-      } else {
-        // No weights data means no sets were tracked (shouldn't happen with new system)
-        exerciseCompletedSets = 0
-      }
-
-      completedSets += exerciseCompletedSets
-
-      // Exercise is considered "completed" if it has ANY completed sets
-      if (exerciseCompletedSets > 0) {
-        completedExercises++
-      }
-
-      // Track fully completed exercises separately
-      if (exerciseCompletedSets === exercise.sets) {
-        fullyCompletedExercises++
-      }
-    })
-
-    return { totalExercises, completedExercises, totalSets, completedSets, fullyCompletedExercises }
-  }
+  // Memoize workout stats calculations
+  const workoutStats = useMemo(() => {
+    return items.map(workout => ({
+      id: workout.id,
+      stats: calculateWorkoutStats(workout),
+    }))
+  }, [items])
 
   if (loading) {
     return <WorkoutHistorySkeleton />
@@ -179,7 +184,9 @@ export default function History() {
         ) : (
           <div className="space-y-4">
             {items.map(workout => {
-              const stats = calculateWorkoutStats(workout)
+              // Use memoized stats
+              const workoutStat = workoutStats.find(ws => ws.id === workout.id)
+              const stats = workoutStat?.stats || { totalExercises: 0, completedExercises: 0, totalSets: 0, completedSets: 0, fullyCompletedExercises: 0 }
 
               // Calculate completion rate based on sets completed, not exercises
               const setCompletionRate = stats.totalSets > 0 ? Math.round((stats.completedSets / stats.totalSets) * 100) : 0

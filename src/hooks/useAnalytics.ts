@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { trackPageView } from '../lib/firebase-analytics'
+import { logger } from '../lib/logger'
 
 /**
  * Route metadata for analytics and SEO
@@ -108,13 +109,11 @@ export function usePageTracking() {
     // Track page view with screen name
     trackPageView(metadata.screenName, metadata.title)
 
-    // Log in development
-    if (import.meta.env.MODE === 'development') {
-      console.log('📊 Page tracked:', {
-        pathname: location.pathname,
-        screenName: metadata.screenName,
-        title: metadata.title,
-      })
-    }
+    // Log page tracking
+    logger.debug('Page tracked', {
+      pathname: location.pathname,
+      screenName: metadata.screenName,
+      title: metadata.title,
+    })
   }, [location])
 }

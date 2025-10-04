@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useApp } from '../providers/app-provider-utils'
 import type { ReactNode } from 'react'
 import { useEffect, useRef } from 'react'
+import { logger } from '../lib/logger'
 
 /**
  * Hook to detect and prevent redirect loops
@@ -25,11 +26,12 @@ function useRedirectLoopDetection(guardName: string) {
 
     // If we've redirected too many times, log error and break the loop
     if (redirectCountRef.current > 5) {
-      console.error(
-        `🔴 Redirect loop detected in ${guardName}! ` +
-        `Attempted to redirect to ${targetPath} ${redirectCountRef.current} times. ` +
-        `Current path: ${location.pathname}`
-      )
+      logger.error('Redirect loop detected', {
+        guard: guardName,
+        targetPath,
+        redirectCount: redirectCountRef.current,
+        currentPath: location.pathname
+      })
       // Reset counter and return false to break the loop
       redirectCountRef.current = 0
       return false
@@ -50,10 +52,12 @@ export function HomeGate({ authPage }: { authPage: ReactNode }) {
   // Check if there's a saved destination from a protected route redirect
   const from = (location.state as { from?: string })?.from
 
-  // Development-only logging for debugging
-  if (import.meta.env.MODE === 'development') {
-    console.log('[HOME] HomeGate:', authStatus, user?.email || 'no user', from ? `(from: ${from})` : '')
-  }
+  // Log authentication state for debugging
+  logger.debug('HomeGate check', {
+    authStatus,
+    userEmail: user?.email || 'no user',
+    from: from || 'none'
+  })
 
   if (authStatus === 'loading') return <ScreenLoader />
   if (authStatus === 'signedOut') return <>{authPage}</>

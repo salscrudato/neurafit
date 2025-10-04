@@ -278,5 +278,130 @@ export function WorkoutDetailSkeleton() {
   )
 }
 
+// Subscription status skeleton
+export function SubscriptionStatusSkeleton() {
+  return (
+    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <SkeletonBase className="h-6 w-32" variant="text" />
+        <SkeletonBase className="h-8 w-20 rounded-full" />
+      </div>
+      <div className="space-y-3">
+        <SkeletonBase className="h-4 w-full" variant="text" />
+        <SkeletonBase className="h-4 w-3/4" variant="text" />
+        <SkeletonBase className="h-10 w-full rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+// Profile form skeleton
+export function ProfileFormSkeleton() {
+  return (
+    <div className="space-y-6">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="bg-white rounded-xl p-6 border border-gray-200">
+          <SkeletonBase className="h-6 w-40 mb-4" variant="text" />
+          <div className="space-y-3">
+            <SkeletonBase className="h-10 w-full rounded-lg" />
+            <SkeletonBase className="h-10 w-full rounded-lg" />
+          </div>
+        </div>
+      ))}
+      <div className="flex gap-3">
+        <SkeletonBase className="h-12 w-32 rounded-lg" />
+        <SkeletonBase className="h-12 w-32 rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+// Subscription plans skeleton
+export function SubscriptionPlansSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <SkeletonBase className="h-8 w-64 mx-auto mb-2" variant="text" />
+        <SkeletonBase className="h-4 w-96 mx-auto" variant="text" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+            <SkeletonBase className="h-6 w-32 mb-2" variant="text" />
+            <SkeletonBase className="h-10 w-40 mb-4" variant="text" />
+            <div className="space-y-2 mb-6">
+              {[...Array(4)].map((_, j) => (
+                <SkeletonBase key={j} className="h-4 w-full" variant="text" />
+              ))}
+            </div>
+            <SkeletonBase className="h-12 w-full rounded-lg" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Weight history skeleton
+export function WeightHistorySkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <SkeletonBase className="h-6 w-40" variant="text" />
+        <SkeletonBase className="h-8 w-24 rounded-lg" />
+      </div>
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <SkeletonBase className="h-10 w-10 rounded-full" />
+              <div className="space-y-2">
+                <SkeletonBase className="h-4 w-32" variant="text" />
+                <SkeletonBase className="h-3 w-24" variant="text" />
+              </div>
+            </div>
+            <SkeletonBase className="h-6 w-16" variant="text" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Inline loading button
+interface LoadingButtonProps {
+  loading?: boolean
+  children: React.ReactNode
+  className?: string
+  disabled?: boolean
+  onClick?: () => void
+  type?: 'button' | 'submit' | 'reset'
+}
+
+export function LoadingButton({
+  loading = false,
+  children,
+  className = '',
+  disabled = false,
+  onClick,
+  type = 'button'
+}: LoadingButtonProps) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`relative ${className} ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </span>
+      )}
+      <span className={loading ? 'invisible' : ''}>{children}</span>
+    </button>
+  )
+}
+
 // Default export for backward compatibility
 export default LoadingSpinner

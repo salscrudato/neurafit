@@ -4,8 +4,16 @@
 
 import { loadStripe } from '@stripe/stripe-js'
 
-// Stripe publishable key (test key provided by user)
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51RlpPwQjUU16Imh7NtysYpU3jWIYJI2tl13IGJlLunXASqRSIvawsKbzM090PHQ7IbdHGYxbcH5l31a7fIArCKz700uq9hyVBp'
+// Stripe publishable key from environment variables
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+
+// Validate required environment variables
+if (!STRIPE_PUBLISHABLE_KEY) {
+  throw new Error(
+    'Missing required Stripe environment variable: VITE_STRIPE_PUBLISHABLE_KEY\n' +
+    'Please copy .env.example to .env and fill in your Stripe configuration.'
+  )
+}
 
 // Initialize Stripe
 export const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY)
@@ -28,10 +36,18 @@ export const STRIPE_CONFIG = {
   clientSecret: undefined as string | undefined
 }
 
-// Subscription plans with actual Stripe price IDs
-// Simple $10/month plan
+// Subscription plans with actual Stripe price IDs from environment variables
+const STRIPE_PRICE_ID_SIMPLE = import.meta.env.VITE_STRIPE_PRICE_ID_SIMPLE
+
+if (!STRIPE_PRICE_ID_SIMPLE) {
+  throw new Error(
+    'Missing required Stripe environment variable: VITE_STRIPE_PRICE_ID_SIMPLE\n' +
+    'Please copy .env.example to .env and fill in your Stripe price IDs.'
+  )
+}
+
 export const STRIPE_PRICE_IDS = {
-  simple: 'price_1SCzf7QjUU16Imh7y9nLUIvP' // Simple Pro - $10.00/month (Updated)
+  simple: STRIPE_PRICE_ID_SIMPLE
 }
 
 // Simple subscription plan - single $10/month option (exactly 30 days)

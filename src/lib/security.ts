@@ -1,5 +1,6 @@
 // Simplified Security Utilities
 import { handleError } from './errorManager'
+import { logger } from './logger'
 
 class SecurityManager {
   constructor() {
@@ -8,12 +9,10 @@ class SecurityManager {
 
   // Basic security setup
   private setupBasicSecurity(): void {
-    // Only disable console in production
-    if (import.meta.env.PROD) {
-      console.log = () => {}
-      console.info = () => {}
-      console.warn = () => {}
-    }
+    // Security initialization
+    // Note: Console removal is handled by Vite's terser configuration in production
+    // All logging should use the centralized logger utility instead
+    logger.debug('Security manager initialized')
   }
 
   // Basic input sanitization

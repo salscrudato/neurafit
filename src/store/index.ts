@@ -8,6 +8,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { User } from 'firebase/auth'
 import type { UserProfile } from '../session/types'
 import type { UserSubscription } from '../types/subscription'
+import { logger } from '../lib/logger'
 
 // Exercise and workout types
 export interface Exercise {
@@ -252,10 +253,17 @@ export const useAppStore = create<AppState & AppActions>()(
           
           syncPendingOperations: async () => {
             const { pendingOperations } = get()
-            // Implementation will be added in the data persistence section
-            if (import.meta.env.MODE === 'development') {
-              console.log('Syncing pending operations:', pendingOperations.length)
-            }
+
+            // Sync pending operations when back online
+            // This is a placeholder for future offline sync functionality
+            // Currently, operations are executed immediately when online
+            logger.debug(`Syncing ${pendingOperations.length} pending operations`)
+
+            // In a full implementation, this would:
+            // 1. Iterate through pendingOperations
+            // 2. Retry failed operations
+            // 3. Remove successful operations from the queue
+            // 4. Handle conflicts and merge strategies
           },
           
           // Error handling actions

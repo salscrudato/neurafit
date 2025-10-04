@@ -10,13 +10,14 @@ import {
   Loader2,
   ExternalLink,
   Calendar,
-  XCircle,
-  Shield
+  XCircle
 } from 'lucide-react'
 import { useSubscription, useSubscriptionStatus } from '../hooks/useSubscription'
 import { subscriptionService, formatDate } from '../lib/subscriptionService'
 import { PaymentForm } from './PaymentForm'
 import { SUBSCRIPTION_PLANS, formatPrice } from '../lib/stripe-config'
+import { ConfirmModal } from './Modal'
+import { announceToScreenReader } from '../lib/accessibility'
 
 // Unified Subscription Manager Component
 // Consolidates: SubscriptionErrorHandler, SubscriptionMonitor, SimpleSubscription, 
@@ -64,15 +65,19 @@ export function SubscriptionManager({
   async function handleRefreshSubscription() {
     setRefreshing(true)
     setLocalError('')
+    announceToScreenReader('Refreshing subscription status', 'polite')
     try {
       await refreshSubscription()
       if (subscription?.status === 'active' || subscription?.status === 'trialing') {
         onRetry?.()
       }
       setSuccess('Subscription refreshed successfully')
+      announceToScreenReader('Subscription refreshed successfully', 'polite')
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Failed to refresh subscription')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to refresh subscription'
+      setLocalError(errorMessage)
+      announceToScreenReader(`Error: ${errorMessage}`, 'assertive')
     } finally {
       setRefreshing(false)
     }
@@ -644,53 +649,21 @@ function ManagementDisplay({
         </div>
 
         {/* Cancellation Confirmation Modal */}
-        {showCancelConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Cancel Subscription</h3>
-                  <p className="text-sm text-gray-600">Are you sure you want to cancel?</p>
-                </div>
-              </div>
-
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-amber-800 text-sm">
-                  <strong>Important:</strong> You'll continue to have access to NeuraFit Pro until {' '}
-                  {(subscription as { currentPeriodEnd?: number })?.currentPeriodEnd &&
-                    formatDate((subscription as { currentPeriodEnd: number }).currentPeriodEnd)
-                  }. After that, you'll return to the free plan with limited workouts.
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={onCancelCancel}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Keep Subscription
-                </button>
-                <button
-                  onClick={onConfirmCancel}
-                  disabled={actionLoading === 'cancel'}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {actionLoading === 'cancel' ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Cancelling...
-                    </>
-                  ) : (
-                    'Yes, Cancel'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showCancelConfirm}
+          onClose={onCancelCancel}
+          onConfirm={onConfirmCancel}
+          title="Cancel Subscription"
+          description={`You'll continue to have access to NeuraFit Pro until ${
+            (subscription as { currentPeriodEnd?: number })?.currentPeriodEnd
+              ? formatDate((subscription as { currentPeriodEnd: number }).currentPeriodEnd)
+              : 'the end of your billing period'
+          }. After that, you'll return to the free plan with limited workouts.`}
+          confirmText="Yes, Cancel"
+          cancelText="Keep Subscription"
+          variant="danger"
+          loading={actionLoading === 'cancel'}
+        />
       </div>
     </div>
   )

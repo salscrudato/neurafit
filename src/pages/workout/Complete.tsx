@@ -7,6 +7,7 @@ import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { trackAdaptiveFeedback, trackCustomEvent } from '../../lib/firebase-analytics'
 import { Bed, ThumbsUp, Flame, CheckCircle } from 'lucide-react'
 import { trackWorkoutCompleted } from '../../lib/firebase-analytics'
+import { logger } from '../../lib/logger'
 
 type FeedbackSignal = 'easy' | 'right' | 'hard'
 
@@ -85,16 +86,14 @@ export default function Complete() {
         setWorkoutId(docRef.id)
         setWorkoutSaved(true)
 
-        if (import.meta.env.MODE === 'development') {
-          console.log('[FEEDBACK] Workout saved, should show feedback UI now')
-        }
+        logger.debug('Workout saved, showing feedback UI', { workoutId: docRef.id })
 
         // Clear the session storage after successful save
         sessionStorage.removeItem('nf_workout_plan')
         sessionStorage.removeItem('nf_workout_weights')
         sessionStorage.removeItem('nf_workout_start_time')
       } catch (error) {
-        console.error('Error saving workout:', error)
+        logger.error('Error saving workout', error as Error)
         // Don't block the user, but log the error
       }
     })()
@@ -162,7 +161,7 @@ export default function Complete() {
 
       setFeedbackSubmitted(true)
     } catch (error) {
-      console.error('Error submitting feedback:', error)
+      logger.error('Error submitting feedback', error as Error)
       const uid = auth.currentUser?.uid
       if (uid) {
         trackCustomEvent('adaptive_personalization_error', { error: String(error), context: 'feedback_submission' })

@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react'
 import { captureException, setContext } from '../lib/sentry'
+import { logger } from '../lib/logger'
 
 interface Props {
   children: ReactNode
@@ -43,16 +44,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { onError, level = 'component' } = this.props
-    
-    // Log error details
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
-    
+
     // Update state with error info
     this.setState({ errorInfo })
-    
+
     // Report error to monitoring service
     this.reportError(error, errorInfo, level)
-    
+
     // Call custom error handler
     onError?.(error, errorInfo)
   }
@@ -70,18 +68,21 @@ export class ErrorBoundary extends Component<Props, State> {
       errorId: this.state.errorId
     }
 
-    // Log to console in development
-    if (import.meta.env.MODE === 'development') {
-      console.error('Error Report:', errorContext)
-    }
+    // Log error with context (automatically sent to Sentry in production)
+    logger.error(
+      `ErrorBoundary caught ${level} error: ${error.message}`,
+      error,
+      errorContext
+    )
 
-    // Send to Sentry
+    // Set additional Sentry context
     setContext('errorBoundary', {
       level,
       errorId: this.state.errorId,
       componentStack: errorInfo.componentStack,
     })
 
+    // Ensure error is captured by Sentry
     captureException(error, errorContext)
   }
 

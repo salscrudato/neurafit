@@ -14,7 +14,9 @@ import {
   INJURY_OPTIONS
 } from '../config/onboarding'
 import AppHeader from '../components/AppHeader'
-import { LoadingSpinner } from '../components/Loading'
+import { ProfileFormSkeleton, LoadingButton } from '../components/Loading'
+import { validateUserProfile } from '../lib/validators'
+import { logger } from '../lib/logger'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -107,7 +109,7 @@ export default function Profile() {
           })
         }
       } catch (error) {
-        console.error('Error loading profile:', error)
+        logger.error('Error loading profile', error as Error, { uid })
         // Handle permission errors gracefully
       } finally {
         setLoading(false)
@@ -133,11 +135,46 @@ export default function Profile() {
 
   // Actions
   const save = async () => {
-    if (!uid || invalid) return
+    if (!uid || invalid) {
+      logger.warn('Attempted to save invalid profile', { uid, invalid })
+      return
+    }
+
     setSaving(true)
     try {
-      await setDoc(doc(db, 'users', uid), draft, { merge: true })
+      // Prepare profile data
+      const profileData = {
+        experience: draft.experience,
+        goals: draft.goals || [],
+        equipment: draft.equipment || [],
+        personal: draft.personal || { sex: '', height: '', weight: '' },
+        injuries: draft.injuries || { list: [], notes: '' },
+      }
+
+      // Validate profile data
+      const validation = validateUserProfile(profileData)
+
+      if (!validation.isValid) {
+        logger.warn('Profile validation failed', { errors: validation.errors })
+        alert(`Please fix the following errors:\n${validation.errors.join('\n')}`)
+        return
+      }
+
+      // Save to Firestore
+      await setDoc(
+        doc(db, 'users', uid),
+        {
+          ...profileData,
+          updated_at: new Date().toISOString(),
+        },
+        { merge: true }
+      )
+
       setSaved(draft)
+      logger.info('Profile updated successfully', { uid })
+    } catch (error) {
+      logger.error('Error saving profile', error as Error, { uid })
+      alert('Failed to save profile. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -149,10 +186,6 @@ export default function Profile() {
   }
 
 
-
-  if (loading) {
-    return <LoadingSpinner fullScreen text="Loading profile..." />
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
@@ -173,6 +206,11 @@ export default function Profile() {
             <div className="text-lg font-semibold text-gray-900">{displayId}</div>
           </div>
         </div>
+
+        {loading ? (
+          <ProfileFormSkeleton />
+        ) : (
+          <>
 
         {/* Editable sections */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -308,9 +346,10 @@ export default function Profile() {
               >
                 Reset
               </button>
-              <button
+              <LoadingButton
+                loading={saving}
                 onClick={save}
-                disabled={invalid || !hasChanges || saving}
+                disabled={invalid || !hasChanges}
                 className={[
                   'rounded-xl px-5 py-2 font-semibold',
                   invalid || !hasChanges || saving
@@ -318,11 +357,13 @@ export default function Profile() {
                     : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
                 ].join(' ')}
               >
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
+                Save changes
+              </LoadingButton>
             </div>
           </div>
         </div>
+          </>
+        )}
       </main>
     </div>
   )

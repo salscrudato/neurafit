@@ -1,6 +1,7 @@
 // src/lib/weightHistory.ts
 import { auth, db } from './firebase'
 import { collection, getDocs, orderBy, query, limit } from 'firebase/firestore'
+import { logger } from './logger'
 
 export interface WeightHistory {
   exerciseName: string
@@ -27,9 +28,7 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
     const uid = auth.currentUser?.uid
     if (!uid) return []
 
-    if (import.meta.env.MODE === 'development') {
-      console.log(`Fetching weight history for ${exerciseName}`)
-    }
+    logger.debug(`Fetching weight history for ${exerciseName}`)
 
     const q = query(
       collection(db, 'users', uid, 'workouts'),
@@ -67,13 +66,11 @@ export async function fetchWeightHistory(exerciseName: string, maxSessions = 10)
     // Sort by timestamp descending (most recent first)
     weightHistory.sort((a, b) => b.timestamp - a.timestamp)
 
-    if (import.meta.env.MODE === 'development') {
-      console.log(`📈 Found ${weightHistory.length} weight entries for ${exerciseName}`)
-    }
+    logger.debug(`Found ${weightHistory.length} weight entries for ${exerciseName}`)
     return weightHistory
 
   } catch (error) {
-    console.error('❌ Error fetching weight history:', error)
+    logger.error('Error fetching weight history', error as Error)
     return []
   }
 }

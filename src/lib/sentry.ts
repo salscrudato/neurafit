@@ -1,11 +1,12 @@
 /**
  * Sentry Error Tracking Configuration
- * 
+ *
  * Configures Sentry for error tracking and performance monitoring.
  */
 
 import * as Sentry from '@sentry/react';
 import { isProduction, isDevelopment } from './env';
+import { logger } from './logger';
 
 /**
  * Initialize Sentry
@@ -17,16 +18,14 @@ export function initSentry() {
   const enableSentry = isProduction || import.meta.env['VITE_ENABLE_SENTRY'] === 'true';
 
   if (!enableSentry) {
-    if (isDevelopment) {
-      console.log('🔍 Sentry disabled in development');
-    }
+    logger.debug('Sentry disabled in development');
     return;
   }
 
   const dsn = import.meta.env['VITE_SENTRY_DSN'];
 
   if (!dsn) {
-    console.warn('⚠️ Sentry DSN not configured. Set VITE_SENTRY_DSN environment variable.');
+    logger.warn('Sentry DSN not configured. Set VITE_SENTRY_DSN environment variable.');
     return;
   }
 
@@ -99,9 +98,7 @@ export function initSentry() {
     ],
   });
 
-  if (isDevelopment) {
-    console.log('✅ Sentry initialized');
-  }
+  logger.debug('Sentry initialized', { environment: isProduction ? 'production' : 'development' });
 }
 
 /**
