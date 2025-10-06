@@ -136,7 +136,7 @@ class SubscriptionService {
   /**
    * Create payment intent for subscription with retry logic
    */
-  async createPaymentIntent(priceId: string): Promise<{ clientSecret: string } | null> {
+  async createPaymentIntent(priceId: string): Promise<{ clientSecret: string; subscriptionId?: string } | null> {
     let lastError: Error | null = null
 
     for (let attempt = 1; attempt <= this.options.maxRetries; attempt++) {
@@ -146,12 +146,15 @@ class SubscriptionService {
         const createPaymentIntentFn = httpsCallable(fns, 'createPaymentIntent')
         const result = await createPaymentIntentFn({ priceId })
 
-        const data = result.data as { clientSecret?: string; error?: string }
+        const data = result.data as { clientSecret?: string; subscriptionId?: string; error?: string }
         if (data.error) throw new Error(data.error)
 
         if (data.clientSecret) {
           console.log('Payment intent created successfully')
-          return { clientSecret: data.clientSecret }
+          return {
+            clientSecret: data.clientSecret,
+            subscriptionId: data.subscriptionId
+          }
         }
 
         throw new Error('No client secret returned')
@@ -434,8 +437,20 @@ export const subscriptionService = new SubscriptionService()
 export const canGenerateWorkout = (subscription?: UserSubscription): boolean => {
   if (!subscription) return true // Allow free workouts
 
-  // Active subscription = unlimited workouts
-  if (subscription.status === 'active' || subscription.status === 'trialing') {
+  // Active subscription = unlimited workouts, BUT check if period has ended
+  const isActive = subscription.status === 'active' || subscription.status === 'trialing'
+  const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
+
+  if (isActive || isIncompleteWithPayment) {
+    // Verify the subscription period hasn't ended (30 days)
+    if (subscription.currentPeriodEnd && !isNaN(subscription.currentPeriodEnd)) {
+      const now = Date.now()
+      if (now > subscription.currentPeriodEnd) {
+        // Subscription period has ended, treat as expired
+        console.warn('Subscription period has ended but status is still active')
+        return false
+      }
+    }
     return true
   }
 
@@ -447,7 +462,11 @@ export const canGenerateWorkout = (subscription?: UserSubscription): boolean => 
 
 export const getRemainingFreeWorkouts = (subscription?: UserSubscription): number => {
   if (!subscription) return 15
-  if (subscription.status === 'active' || subscription.status === 'trialing') return Infinity
+
+  const isActive = subscription.status === 'active' || subscription.status === 'trialing'
+  const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
+
+  if (isActive || isIncompleteWithPayment) return Infinity
 
   const used = subscription.freeWorkoutsUsed || 0
   const limit = subscription.freeWorkoutLimit || 15
@@ -455,7 +474,24 @@ export const getRemainingFreeWorkouts = (subscription?: UserSubscription): numbe
 }
 
 export const hasUnlimitedWorkouts = (subscription?: UserSubscription): boolean => {
-  return subscription?.status === 'active' || subscription?.status === 'trialing'
+  if (!subscription) return false
+
+  // Check status AND verify period hasn't ended
+  const isActive = subscription.status === 'active' || subscription.status === 'trialing'
+  const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
+
+  if (isActive || isIncompleteWithPayment) {
+    if (subscription.currentPeriodEnd && !isNaN(subscription.currentPeriodEnd)) {
+      const now = Date.now()
+      if (now > subscription.currentPeriodEnd) {
+        // Subscription period has ended
+        return false
+      }
+    }
+    return true
+  }
+
+  return false
 }
 
 export const isInGracePeriod = (subscription?: UserSubscription): boolean => {

@@ -68,13 +68,13 @@ export function MotivationalBanner({
   const Icon = motivation.icon
 
   return (
-    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${motivation.bgColor} border border-white/70 shadow-2xl shadow-slate-200/40 hover:shadow-3xl hover:shadow-slate-300/30 transition-all duration-700 hover:scale-[1.005] hover:-translate-y-1`}>
+    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${motivation.bgColor} border border-white/70 shadow-depth-xl hover:shadow-depth-xl transition-all duration-500 hover:scale-[1.003] hover:-translate-y-1 border-inner`}>
       <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/25 to-transparent" />
       <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-white/25 blur-3xl group-hover:blur-2xl group-hover:scale-110 transition-all duration-700" />
       <div className="absolute -left-16 -bottom-16 h-32 w-32 rounded-full bg-white/15 blur-2xl group-hover:blur-3xl transition-all duration-700" />
       <div className="relative p-6 sm:p-8 lg:p-10">
         <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-          <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-2xl shadow-current/30 group-hover:shadow-current/50 group-hover:scale-110 transition-all duration-500`}>
+          <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-depth-lg shadow-current/30 group-hover:shadow-current/50 group-hover:scale-110 transition-all duration-500`}>
             <Icon className="h-9 w-9 sm:h-10 sm:w-10 text-white" />
           </div>
           <div className="flex-1 space-y-3">

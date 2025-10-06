@@ -61,8 +61,8 @@ export function SubscriptionSuccess({ onContinue, planName = 'NeuraFit Pro' }: S
       {/* Additional Info */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <p className="text-sm text-blue-800">
-          <strong>Next billing:</strong> Your subscription will automatically renew in 30 days. 
-          You can cancel anytime from your profile settings.
+          <strong>Subscription Duration:</strong> Your Pro subscription is active for 30 days.
+          After 30 days, you can renew your subscription to continue enjoying unlimited workouts.
         </p>
       </div>
     </div>

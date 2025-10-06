@@ -304,11 +304,11 @@ export default function Generate() {
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div
                         className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${((10 - remainingFreeWorkouts) / 10) * 100}%` }}
+                        style={{ width: `${((15 - remainingFreeWorkouts) / 15) * 100}%` }}
                       />
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {10 - remainingFreeWorkouts} of 10 free workouts used
+                      {15 - remainingFreeWorkouts} of 15 free workouts used
                     </div>
                   </div>
                 </div>

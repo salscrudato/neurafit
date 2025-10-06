@@ -7,6 +7,8 @@ import {
   cancelSubscription,
   reactivateSubscription,
   getStripeClient,
+  updateUserSubscription,
+  UserSubscriptionData,
 } from './lib/stripe';
 import * as functions from 'firebase-functions/v2';
 
@@ -109,6 +111,77 @@ export const createPaymentIntent = onCall(
 
       console.error('Error details:', { errorMessage, errorCode });
       throw new functions.https.HttpsError('internal', `Failed to create payment intent: ${errorMessage}`);
+    }
+  }
+);
+
+/**
+ * Verify and sync subscription status after payment
+ * This is needed for local development where webhooks don't work
+ */
+export const verifySubscriptionStatus = onCall(
+  {
+    region: 'us-central1',
+    secrets: [stripeSecretKey],
+    cors: true, // Enable CORS for local development
+  },
+  async (request) => {
+    const { auth, data } = request;
+
+    if (!auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+    }
+
+    const { subscriptionId } = data;
+    if (!subscriptionId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Subscription ID is required');
+    }
+
+    try {
+      console.log(`🔍 Verifying subscription status for user ${auth.uid}, subscription ${subscriptionId}`);
+
+      const stripeInstance = getStripeClient(stripeSecretKey.value());
+
+      // Retrieve the subscription from Stripe
+      const subscription = await stripeInstance.subscriptions.retrieve(subscriptionId);
+      const extendedSubscription = subscription as unknown as ExtendedStripeSubscription;
+
+      console.log(`📊 Subscription status from Stripe: ${subscription.status}`);
+
+      // Update Firestore with the subscription data
+      const subscriptionData: Partial<UserSubscriptionData> = {
+        subscriptionId: subscription.id,
+        customerId: subscription.customer as string,
+        priceId: subscription.items.data[0]?.price.id,
+        status: subscription.status as UserSubscriptionData['status'],
+        currentPeriodStart: extendedSubscription.current_period_start * 1000,
+        currentPeriodEnd: extendedSubscription.current_period_end * 1000,
+        cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
+        freeWorkoutLimit: 15,
+      };
+
+      // Only add canceledAt if it exists
+      if (extendedSubscription.canceled_at != null) {
+        subscriptionData.canceledAt = extendedSubscription.canceled_at * 1000;
+      }
+
+      console.log(`📝 Updating Firestore for user ${auth.uid}:`, {
+        status: subscriptionData.status,
+        currentPeriodEnd: new Date(subscriptionData.currentPeriodEnd!).toISOString(),
+      });
+
+      await updateUserSubscription(auth.uid, subscriptionData);
+
+      console.log(`✅ Successfully synced subscription for user ${auth.uid}`);
+
+      return {
+        success: true,
+        status: subscription.status,
+        currentPeriodEnd: subscriptionData.currentPeriodEnd,
+      };
+    } catch (error) {
+      console.error('Error verifying subscription status:', error);
+      throw new functions.https.HttpsError('internal', 'Failed to verify subscription status');
     }
   }
 );

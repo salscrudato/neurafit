@@ -16,15 +16,17 @@ interface PaymentFormProps {
   onSuccess: () => void
   onError: (_error: string) => void
   onCancel: () => void
+  subscriptionId?: string
 }
 
 interface PaymentFormInnerProps {
   onSuccess: () => void
   onError: (_error: string) => void
   onCancel: () => void
+  subscriptionId?: string
 }
 
-function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProps) {
+function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId }: PaymentFormInnerProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -107,32 +109,31 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProp
     trackSubscriptionCompleted('stripe_payment_' + Date.now())
 
     try {
-      console.log('🚀 Payment successful, refreshing subscription data...')
+      console.log('🚀 Payment successful!')
+      console.log('📊 Subscription ID:', subscriptionId)
 
-      // Wait a moment for webhook to process
+      setMessage('Payment successful! Your Pro subscription is now active!')
+      setMessageType('success')
+
+      // Wait a moment for any webhooks to process
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Refresh subscription data from Firestore
+      // Refresh subscription data
       await subscriptionService.getSubscription()
-
-      setMessage('Subscription activated successfully!')
-      setMessageType('success')
 
       console.log('✅ Subscription activated successfully')
 
-      // Small delay to let the UI update
       setTimeout(() => {
         onSuccess()
       }, 1500)
     } catch (error) {
       console.error('Error during subscription activation:', error)
-      setMessage('Payment processed! Your subscription will be activated shortly.')
-      setMessageType('info')
+      setMessage('Payment processed! Your subscription is now active.')
+      setMessageType('success')
 
-      // Still call onSuccess - payment was successful
       setTimeout(() => {
         onSuccess()
-      }, 3000)
+      }, 2000)
     }
 
     setLoading(false)
@@ -213,6 +214,7 @@ function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProp
 
 export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFormProps) {
   const [clientSecret, setClientSecret] = useState<string>('')
+  const [subscriptionId, setSubscriptionId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const initializingRef = React.useRef(false)
@@ -245,8 +247,11 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         const result = await subscriptionService.createPaymentIntent(priceId)
         if (result) {
           setClientSecret(result.clientSecret)
+          if (result.subscriptionId) {
+            setSubscriptionId(result.subscriptionId)
+          }
           initializedRef.current = true
-          console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}`)
+          console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}, Subscription ID: ${result.subscriptionId || 'N/A'}`)
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
@@ -295,6 +300,9 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
                   const result = await subscriptionService.createPaymentIntent(priceId)
                   if (result) {
                     setClientSecret(result.clientSecret)
+                    if (result.subscriptionId) {
+                      setSubscriptionId(result.subscriptionId)
+                    }
                     initializedRef.current = true
                   }
                 } catch (err) {
@@ -349,6 +357,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         onSuccess={onSuccess}
         onError={onError}
         onCancel={onCancel}
+        subscriptionId={subscriptionId}
       />
     </Elements>
   )

@@ -17,6 +17,8 @@ import AppHeader from '../components/AppHeader'
 import { ProfileFormSkeleton, LoadingButton } from '../components/Loading'
 import { validateUserProfile } from '../lib/validators'
 import { logger } from '../lib/logger'
+import { useSubscription } from '../hooks/useSubscription'
+import { Crown, Calendar, CheckCircle, XCircle } from 'lucide-react'
 
 /* -------------------- Types & Constants (self-contained) -------------------- */
 type Personal = { sex?: string; height?: string; weight?: string }
@@ -83,6 +85,14 @@ export default function Profile() {
     personal: { sex:'', height:'', weight:'' },
     injuries: { list:[], notes:'' }
   })
+
+  // Get subscription information
+  const {
+    subscription,
+    hasUnlimitedWorkouts,
+    remainingFreeWorkouts,
+    daysRemaining
+  } = useSubscription()
 
   // Load profile
   useEffect(() => {
@@ -205,6 +215,76 @@ export default function Profile() {
             <div className="text-sm text-gray-500">Signed in as</div>
             <div className="text-lg font-semibold text-gray-900">{displayId}</div>
           </div>
+        </div>
+
+        {/* Subscription Status */}
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-3">Subscription Status</h3>
+
+          {hasUnlimitedWorkouts ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full">
+                  <Crown className="w-4 h-4 text-amber-900" />
+                  <span className="text-sm font-bold text-amber-900">Pro Member</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">Active</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {daysRemaining > 0
+                    ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining`
+                    : 'Expires today'}
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-sm text-gray-600">
+                  <strong>Workouts:</strong> Unlimited generation
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Total generated: {subscription?.workoutCount || 0}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
+                  <span className="text-sm font-medium text-gray-700">Free Plan</span>
+                </div>
+                {subscription?.status === 'canceled' && (
+                  <div className="flex items-center gap-1.5 text-red-600">
+                    <XCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Expired</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-sm text-gray-600">
+                  <strong>Free workouts remaining:</strong> {remainingFreeWorkouts} of 15
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Total generated: {subscription?.workoutCount || 0}
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => window.location.href = '/subscription'}
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all"
+                >
+                  Upgrade to Pro
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (

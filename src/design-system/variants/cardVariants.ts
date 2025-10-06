@@ -1,13 +1,13 @@
 import { cva } from 'class-variance-authority'
 
 export const cardVariants = cva(
-  'border bg-white text-card-foreground transition-all duration-300',
+  'border bg-white text-card-foreground transition-all duration-300 border-inner',
   {
     variants: {
       variant: {
-        default: 'border-gray-200 shadow-sm',
-        elevated: 'border-white/60 bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30',
-        interactive: 'border-white/60 bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30 hover:shadow-xl hover:shadow-slate-300/20 hover:scale-[1.01] cursor-pointer transition-all duration-500'
+        default: 'border-gray-200 shadow-depth-sm hover:shadow-depth-md',
+        elevated: 'border-white/70 bg-gradient-to-br from-white/98 via-white/96 to-white/94 backdrop-blur-xl shadow-depth-lg hover:shadow-depth-xl',
+        interactive: 'border-white/70 bg-gradient-to-br from-white/98 via-white/96 to-white/94 backdrop-blur-xl shadow-depth-lg hover:shadow-depth-xl hover:scale-[1.008] active:scale-[0.998] cursor-pointer transition-all duration-400 touch-manipulation'
       },
       size: {
         sm: 'p-3',

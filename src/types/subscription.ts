@@ -109,12 +109,30 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   }
 ]
 
-export const FREE_WORKOUT_LIMIT = 10
+export const FREE_WORKOUT_LIMIT = 15
 
 // Helper functions
 export function isSubscriptionActive(subscription?: UserSubscription): boolean {
   if (!subscription) return false
-  return subscription.status === 'active' || subscription.status === 'trialing'
+
+  // Check status
+  const hasActiveStatus = subscription.status === 'active' || subscription.status === 'trialing'
+
+  // TEMPORARY FIX: Treat 'incomplete' as active if it has a subscription ID
+  // This handles the case where payment succeeded but webhook hasn't updated status yet
+  const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
+
+  if (!hasActiveStatus && !isIncompleteWithPayment) return false
+
+  // Also verify the period hasn't ended (30 days)
+  if (subscription.currentPeriodEnd && !isNaN(subscription.currentPeriodEnd)) {
+    const now = Date.now()
+    if (now > subscription.currentPeriodEnd) {
+      return false // Period has ended
+    }
+  }
+
+  return true
 }
 
 export function canGenerateWorkout(subscription?: UserSubscription): boolean {

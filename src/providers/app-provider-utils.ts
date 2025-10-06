@@ -95,12 +95,17 @@ export const appUtils = {
     return count.toString()
   },
 
-  shouldShowUpgradePrompt: (subscription?: { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number }): boolean => {
+  shouldShowUpgradePrompt: (subscription?: { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number; subscriptionId?: string }): boolean => {
     if (!subscription) return true
-    if (subscription.status === 'active') return false
-    
+
+    // Don't show upgrade prompt if subscription is active or incomplete with payment
+    const isActive = subscription.status === 'active' || subscription.status === 'trialing'
+    const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
+
+    if (isActive || isIncompleteWithPayment) return false
+
     const used = subscription.freeWorkoutsUsed || 0
-    const limit = subscription.freeWorkoutLimit || 10
+    const limit = subscription.freeWorkoutLimit || 15
     
     return used >= limit * 0.8 // Show when 80% of free workouts used
   }

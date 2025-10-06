@@ -137,7 +137,16 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   console.log(`📝 Processing subscription created: ${subscription.id} for customer: ${subscription.customer}`);
 
   try {
-    const uid = await getUserByCustomerId(subscription.customer as string);
+    // Get user ID from subscription metadata (more reliable than querying)
+    let uid: string | null = subscription.metadata?.firebaseUID || null;
+
+    if (!uid) {
+      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      uid = await getUserByCustomerId(subscription.customer as string);
+    } else {
+      console.log(`✅ Found Firebase UID in metadata: ${uid}`);
+    }
+
     if (!uid) {
       console.error(`❌ User not found for customer: ${subscription.customer}`);
 
@@ -189,7 +198,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log(`📊 Subscription status: ${subscription.status}`);
 
   try {
-    const uid = await getUserByCustomerId(subscription.customer as string);
+    // Get user ID from subscription metadata (more reliable than querying)
+    let uid: string | null = subscription.metadata?.firebaseUID || null;
+
+    if (!uid) {
+      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      uid = await getUserByCustomerId(subscription.customer as string);
+    } else {
+      console.log(`✅ Found Firebase UID in metadata: ${uid}`);
+    }
+
     if (!uid) {
       console.error(`❌ User not found for customer: ${subscription.customer}`);
       throw new Error(`User not found for customer: ${subscription.customer}`);
@@ -233,30 +251,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 }
 
-/**
- * Handle subscription deleted event
- */
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  console.log('Processing subscription deleted:', subscription.id);
 
-  const uid = await getUserByCustomerId(subscription.customer as string);
-  if (!uid) {
-    console.error('User not found for customer:', subscription.customer);
-    return;
-  }
-
-  const extendedSubscription = subscription as unknown as ExtendedStripeSubscription;
-  const subscriptionData: Partial<UserSubscriptionData> = {
-    status: 'canceled',
-  };
-
-  // Use Stripe's canceled_at if available, otherwise fallback to current time
-  subscriptionData.canceledAt =
-    extendedSubscription.canceled_at != null ? extendedSubscription.canceled_at * 1000 : Date.now();
-
-  await updateUserSubscription(uid, subscriptionData);
-  console.log('Subscription deleted for user:', uid);
-}
 
 /**
  * Handle successful payment
@@ -270,17 +265,28 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     return;
   }
 
-  const uid = await getUserByCustomerId(invoice.customer as string);
-  if (!uid) {
-    console.error('User not found for customer:', invoice.customer);
-    return;
-  }
+  let uid: string | null = null; // Declare outside try block so it's available in catch
 
   try {
     // Get the full subscription details from Stripe
     const stripe = getStripeClient(process.env.STRIPE_SECRET_KEY!);
     const subscription = await stripe.subscriptions.retrieve(extendedInvoice.subscription as string);
     const extendedSubscription = subscription as unknown as ExtendedStripeSubscription;
+
+    // Get user ID from subscription metadata (more reliable than querying)
+    uid = subscription.metadata?.firebaseUID || null;
+
+    if (!uid) {
+      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      uid = await getUserByCustomerId(invoice.customer as string);
+    } else {
+      console.log(`✅ Found Firebase UID in metadata: ${uid}`);
+    }
+
+    if (!uid) {
+      console.error('User not found for customer:', invoice.customer);
+      return;
+    }
 
     // Payment succeeded, update subscription with full details
     const subscriptionData: Partial<UserSubscriptionData> = {
@@ -312,18 +318,53 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   } catch (error) {
     console.error('❌ Error processing payment success:', error);
     // Fallback to basic status update - use actual subscription status, not hardcoded 'active'
-    try {
-      const stripe = getStripeClient(process.env.STRIPE_SECRET_KEY!);
-      const subscription = await stripe.subscriptions.retrieve(extendedInvoice.subscription as string);
-      await updateUserSubscription(uid, {
-        status: subscription.status as UserSubscriptionData['status'],
-        customerId: subscription.customer as string,
-        freeWorkoutLimit: 15
-      });
-      console.log('✅ Fallback update completed with status:', subscription.status);
-    } catch (fallbackError) {
-      console.error('❌ Fallback update also failed:', fallbackError);
+    if (uid) {
+      try {
+        const stripe = getStripeClient(process.env.STRIPE_SECRET_KEY!);
+        const subscription = await stripe.subscriptions.retrieve(extendedInvoice.subscription as string);
+        await updateUserSubscription(uid, {
+          status: subscription.status as UserSubscriptionData['status'],
+          customerId: subscription.customer as string,
+          freeWorkoutLimit: 15
+        });
+        console.log('✅ Fallback update completed with status:', subscription.status);
+      } catch (fallbackError) {
+        console.error('❌ Fallback update also failed:', fallbackError);
+      }
     }
+  }
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log(`📝 Processing subscription deleted: ${subscription.id}`);
+
+  try {
+    // Get user ID from subscription metadata
+    let uid: string | null = subscription.metadata?.firebaseUID || null;
+
+    if (!uid) {
+      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      uid = await getUserByCustomerId(subscription.customer as string);
+    } else {
+      console.log(`✅ Found Firebase UID in metadata: ${uid}`);
+    }
+
+    if (!uid) {
+      console.error(`❌ User not found for customer: ${subscription.customer}`);
+      return;
+    }
+
+    const extendedSubscription = subscription as unknown as ExtendedStripeSubscription;
+    const subscriptionData: Partial<UserSubscriptionData> = {
+      status: 'canceled',
+      canceledAt: extendedSubscription.canceled_at != null ? extendedSubscription.canceled_at * 1000 : Date.now(),
+    };
+
+    await updateUserSubscription(uid, subscriptionData);
+    console.log(`✅ Subscription deleted for user: ${uid}`);
+  } catch (error) {
+    console.error(`❌ Failed to handle subscription deleted:`, error);
+    throw error;
   }
 }
 
@@ -336,7 +377,20 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const extendedInvoice = invoice as ExtendedStripeInvoice;
   if (!extendedInvoice.subscription) return;
 
-  const uid = await getUserByCustomerId(invoice.customer as string);
+  // Get the subscription to access metadata
+  const stripe = getStripeClient(process.env.STRIPE_SECRET_KEY!);
+  const subscription = await stripe.subscriptions.retrieve(extendedInvoice.subscription as string);
+
+  // Get user ID from subscription metadata
+  let uid: string | null = subscription.metadata?.firebaseUID || null;
+
+  if (!uid) {
+    console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+    uid = await getUserByCustomerId(invoice.customer as string);
+  } else {
+    console.log(`✅ Found Firebase UID in metadata: ${uid}`);
+  }
+
   if (!uid) {
     console.error('User not found for customer:', invoice.customer);
     return;
