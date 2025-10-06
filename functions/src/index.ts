@@ -112,7 +112,7 @@ export const generateWorkout = onRequest(
               } else {
                 const isActive = subscription.status === 'active' || subscription.status === 'trialing';
                 const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0;
-                const freeWorkoutLimit = subscription.freeWorkoutLimit || 10;
+                const freeWorkoutLimit = subscription.freeWorkoutLimit || 15;
 
                 // Check if user can generate workout
                 if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {

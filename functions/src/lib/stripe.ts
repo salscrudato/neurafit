@@ -89,7 +89,7 @@ export async function createOrGetCustomer(
       status: 'incomplete',
       workoutCount: 0,
       freeWorkoutsUsed: 0,
-      freeWorkoutLimit: 10,
+      freeWorkoutLimit: 15,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -331,8 +331,8 @@ export async function updateUserSubscription(
     const updatedSubscription: Partial<UserSubscriptionData> = {
       ...currentSubscription,
       ...subscriptionData,
-      // Ensure free workout limit is always 10
-      freeWorkoutLimit: 10,
+      // Ensure free workout limit is always 15
+      freeWorkoutLimit: 15,
       // Preserve workout counts if not explicitly updated
       workoutCount: subscriptionData.workoutCount ?? currentSubscription.workoutCount ?? 0,
       freeWorkoutsUsed: subscriptionData.freeWorkoutsUsed ?? currentSubscription.freeWorkoutsUsed ?? 0,
@@ -490,7 +490,7 @@ export async function incrementWorkoutCount(uid: string): Promise<void> {
         status: 'incomplete',
         workoutCount: 1,
         freeWorkoutsUsed: 1,
-        freeWorkoutLimit: 10,
+        freeWorkoutLimit: 15,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };

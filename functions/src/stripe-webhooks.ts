@@ -156,8 +156,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       currentPeriodStart: extendedSubscription.current_period_start * 1000,
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
-      // Ensure free workout limit is set to 10
-      freeWorkoutLimit: 10,
+      // Ensure free workout limit is set to 15
+      freeWorkoutLimit: 15,
     };
 
     // Only add canceledAt if it exists
@@ -205,7 +205,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
       // Ensure free workout limit is preserved
-      freeWorkoutLimit: 10,
+      freeWorkoutLimit: 15,
     };
 
     // Only add canceledAt if it exists
@@ -292,7 +292,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
       // Ensure free workout limit is set
-      freeWorkoutLimit: 10,
+      freeWorkoutLimit: 15,
     };
 
     // Only add canceledAt if it exists
@@ -318,7 +318,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       await updateUserSubscription(uid, {
         status: subscription.status as UserSubscriptionData['status'],
         customerId: subscription.customer as string,
-        freeWorkoutLimit: 10
+        freeWorkoutLimit: 15
       });
       console.log('✅ Fallback update completed with status:', subscription.status);
     } catch (fallbackError) {

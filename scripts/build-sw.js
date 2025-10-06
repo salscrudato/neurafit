@@ -2,10 +2,9 @@
  * Build script for generating service worker with Workbox - Production Ready
  *
  * This script:
- * 1. Reads the sw-template.js file
- * 2. Uses workbox-build to inject precache manifest
- * 3. Bundles Workbox runtime with advanced strategies
- * 4. Outputs to dist/sw.js with optimizations
+ * 1. Uses workbox-build to generate a complete service worker
+ * 2. Bundles Workbox runtime with the service worker
+ * 3. Outputs to dist/sw.js with optimizations
  *
  * Features:
  * - Precaches app shell and static assets
@@ -17,7 +16,7 @@
  * - Offline support for shell + last workout
  */
 
-import { injectManifest } from 'workbox-build';
+import { generateSW } from 'workbox-build';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -30,10 +29,7 @@ async function buildServiceWorker() {
     console.log('🔨 Building production service worker with Workbox...');
     console.log('   📦 Features: precaching, offline support, smart caching strategies');
 
-    const { count, size, warnings } = await injectManifest({
-      // Source service worker file (template)
-      swSrc: join(rootDir, 'public/sw-template.js'),
-
+    const { count, size, warnings } = await generateSW({
       // Output service worker file
       swDest: join(rootDir, 'dist/sw.js'),
 
@@ -60,7 +56,6 @@ async function buildServiceWorker() {
       globIgnores: [
         // Service worker itself
         '**/sw.js',
-        '**/sw-template.js',
         // Workbox runtime (bundled separately)
         '**/workbox-*.js',
         // Source maps (too large, not needed for runtime)
@@ -73,20 +68,85 @@ async function buildServiceWorker() {
       ],
 
       // Maximum file size to precache (2MB)
-      // Files larger than this will be lazy-loaded
       maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
 
-      // Manifest transforms (optional: modify manifest entries)
-      manifestTransforms: [
-        // Add revision info based on file size and timestamp
-        (manifestEntries) => {
-          const manifest = manifestEntries.map(entry => {
-            // Add custom metadata if needed
-            return entry;
-          });
-          return { manifest };
+      // Runtime caching strategies
+      runtimeCaching: [
+        // Cache Google Fonts CSS with stale-while-revalidate
+        {
+          urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'google-fonts-stylesheets',
+            expiration: {
+              maxEntries: 20,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+          },
+        },
+        // Cache Google Fonts files with cache-first
+        {
+          urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'google-fonts-webfonts',
+            expiration: {
+              maxEntries: 30,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+        // Cache other Google APIs with stale-while-revalidate
+        {
+          urlPattern: /^https:\/\/.*\.googleapis\.com\/.*/,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'google-apis',
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 60 * 24, // 24 hours
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+        // Cache Firebase API calls
+        {
+          urlPattern: /^https:\/\/.*\.firebaseio\.com\/.*/,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'firebase-api',
+            networkTimeoutSeconds: 10,
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 5, // 5 minutes
+            },
+          },
+        },
+        // Cache images with cache-first
+        {
+          urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'images',
+            expiration: {
+              maxEntries: 100,
+              maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+            },
+          },
         },
       ],
+
+      // Skip waiting and claim clients immediately
+      skipWaiting: true,
+      clientsClaim: true,
+
+      // Navigation preload
+      navigationPreload: true,
     });
 
     console.log(`✅ Service worker built successfully!`);

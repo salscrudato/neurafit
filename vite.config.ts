@@ -28,8 +28,8 @@ export default defineConfig(({ mode }) => {
       extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
       // Prefer ESM over CJS
       mainFields: ['module', 'jsnext:main', 'jsnext', 'main'],
-      // Handle CommonJS default exports
-      dedupe: ['react', 'react-dom'],
+      // Dedupe React to prevent multiple instances
+      dedupe: ['react', 'react-dom', 'react-is', 'scheduler'],
     },
 
     // Plugins
@@ -94,40 +94,25 @@ export default defineConfig(({ mode }) => {
         output: {
           // Optimized manual chunks for better caching
           manualChunks: (id: string) => {
-            // Core React libraries - rarely changes
-            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            // Core React libraries - must be loaded first
+            // Include all React-related packages to prevent duplication
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/scheduler/') ||
+              id.includes('node_modules/react-is/')
+            ) {
               return 'vendor-react'
             }
 
             // React Router - changes with route updates
-            if (id.includes('node_modules/react-router-dom/')) {
+            if (id.includes('node_modules/react-router-dom/') || id.includes('node_modules/react-router/')) {
               return 'vendor-router'
             }
 
-            // Firebase - split by service for optimal caching
+            // Firebase - keep all Firebase packages together to avoid circular dependencies
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
-              // Firebase core (app initialization)
-              if (id.includes('/app') || id.includes('@firebase/app')) {
-                return 'firebase-core'
-              }
-              // Firebase Auth
-              if (id.includes('/auth') || id.includes('@firebase/auth')) {
-                return 'firebase-auth'
-              }
-              // Firebase Firestore
-              if (id.includes('/firestore') || id.includes('@firebase/firestore')) {
-                return 'firebase-firestore'
-              }
-              // Firebase Functions
-              if (id.includes('/functions') || id.includes('@firebase/functions')) {
-                return 'firebase-functions'
-              }
-              // Firebase Analytics
-              if (id.includes('/analytics') || id.includes('@firebase/analytics')) {
-                return 'firebase-analytics'
-              }
-              // Other Firebase services (component, util, etc.)
-              return 'firebase-other'
+              return 'firebase'
             }
 
             // Stripe - payment processing
@@ -228,12 +213,18 @@ export default defineConfig(({ mode }) => {
       include: [
         'react',
         'react-dom',
+        'react-dom/client',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
         'react-router-dom',
         'zustand',
         'immer',
         // Include Sentry to fix module resolution issues
         '@sentry/react',
         'hoist-non-react-statics',
+        // Include React-dependent packages
+        '@stripe/react-stripe-js',
+        '@tanstack/react-query',
       ],
       exclude: [],
       // Force CommonJS dependencies to be pre-bundled as ESM

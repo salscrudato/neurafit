@@ -88,7 +88,7 @@ export function AppProvider({ children }: AppProviderProps) {
                   // Validate subscription data integrity
                   const validatedSubscription = {
                     ...profileData.subscription,
-                    freeWorkoutLimit: profileData.subscription.freeWorkoutLimit || 10,
+                    freeWorkoutLimit: profileData.subscription.freeWorkoutLimit || 15,
                     workoutCount: profileData.subscription.workoutCount || 0,
                     freeWorkoutsUsed: profileData.subscription.freeWorkoutsUsed || 0,
                     updatedAt: profileData.subscription.updatedAt || Date.now(),
@@ -101,7 +101,7 @@ export function AppProvider({ children }: AppProviderProps) {
                     status: 'incomplete',
                     workoutCount: 0,
                     freeWorkoutsUsed: 0,
-                    freeWorkoutLimit: 10,
+                    freeWorkoutLimit: 15,
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                   };

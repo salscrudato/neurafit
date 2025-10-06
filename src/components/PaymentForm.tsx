@@ -22,17 +22,14 @@ interface PaymentFormInnerProps {
   onSuccess: () => void
   onError: (_error: string) => void
   onCancel: () => void
-  subscriptionId: string
 }
 
-function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSubscriptionId }: PaymentFormInnerProps) {
+function PaymentFormInner({ onSuccess, onError, onCancel }: PaymentFormInnerProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string>('')
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info'>('info')
-  const [activationMethod, setActivationMethod] = useState<string>('')
-  const [localSubscriptionId] = useState<string>('')
 
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -44,12 +41,11 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
 
     setLoading(true)
     setMessage('')
-    setActivationMethod('')
 
     // Track subscription attempt
     trackSubscriptionStarted()
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
+    const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/profile?payment=success`,
@@ -103,7 +99,7 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
       return
     }
 
-    // Payment succeeded - now use robust activation
+    // Payment succeeded - now activate subscription
     setMessage('Payment successful! Activating subscription...')
     setMessageType('success')
 
@@ -111,20 +107,15 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
     trackSubscriptionCompleted('stripe_payment_' + Date.now())
 
     try {
-      // Extract subscription ID from payment intent metadata or use stored value
-      const currentSubscriptionId = propSubscriptionId || localSubscriptionId || (paymentIntent as { metadata?: { subscription_id?: string } })?.metadata?.subscription_id || ''
+      console.log('🚀 Payment successful, refreshing subscription data...')
 
-      if (!currentSubscriptionId) {
-        throw new Error('No subscription ID found')
-      }
+      // Wait a moment for webhook to process
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-      console.log(`🚀 Starting activation for subscription: ${currentSubscriptionId}`)
-
-      // Simplified activation - just refresh subscription data
+      // Refresh subscription data from Firestore
       await subscriptionService.getSubscription()
 
       setMessage('Subscription activated successfully!')
-      setActivationMethod('direct')
       setMessageType('success')
 
       console.log('✅ Subscription activated successfully')
@@ -134,7 +125,7 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
         onSuccess()
       }, 1500)
     } catch (error) {
-      console.error('Error during robust subscription activation:', error)
+      console.error('Error during subscription activation:', error)
       setMessage('Payment processed! Your subscription will be activated shortly.')
       setMessageType('info')
 
@@ -175,11 +166,6 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId: propSu
             {messageType === 'success' && <CheckCircle className="w-4 h-4" />}
             <div className="flex-1">
               {message}
-              {activationMethod && (
-                <div className="text-xs opacity-75 mt-1">
-                  Activated via: {activationMethod}
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -229,12 +215,19 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
   const [clientSecret, setClientSecret] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [_subscriptionId, _setSubscriptionId] = useState<string>('')
+  const initializingRef = React.useRef(false)
+  const initializedRef = React.useRef(false)
+  const onErrorRef = React.useRef(onError)
+
+  // Keep the error callback ref up to date
+  React.useEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
 
   useEffect(() => {
     // Prevent multiple initializations
-    if (clientSecret || error) {
-      console.log('🚫 Skipping initialization - already have clientSecret or error')
+    if (initializedRef.current || initializingRef.current) {
+      console.log('🚫 Skipping initialization - already initialized or in progress')
       return
     }
 
@@ -242,29 +235,31 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
       try {
         if (!priceId) {
           setError('No price ID provided')
-          onError('No price ID provided')
+          onErrorRef.current('No price ID provided')
           setLoading(false)
           return
         }
 
+        initializingRef.current = true
         setLoading(true)
         const result = await subscriptionService.createPaymentIntent(priceId)
         if (result) {
           setClientSecret(result.clientSecret)
-          // Note: subscriptionId is handled by the backend
+          initializedRef.current = true
           console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}`)
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
         setError(errorMessage)
-        onError(errorMessage)
+        onErrorRef.current(errorMessage)
       } finally {
         setLoading(false)
+        initializingRef.current = false
       }
     }
 
     initializePayment()
-  }, [priceId, onError, clientSecret, error]) // Include all dependencies
+  }, [priceId]) // Only depend on priceId
 
   if (loading) {
     return (
@@ -291,19 +286,24 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
             onClick={() => {
               setError('')
               setLoading(true)
+              initializedRef.current = false
+              initializingRef.current = false
               // Retry initialization
               const initializePayment = async () => {
                 try {
+                  initializingRef.current = true
                   const result = await subscriptionService.createPaymentIntent(priceId)
                   if (result) {
                     setClientSecret(result.clientSecret)
+                    initializedRef.current = true
                   }
                 } catch (err) {
                   const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'
                   setError(errorMessage)
-                  onError(errorMessage)
+                  onErrorRef.current(errorMessage)
                 } finally {
                   setLoading(false)
+                  initializingRef.current = false
                 }
               }
               initializePayment()
@@ -337,6 +337,7 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
     )
   }
 
+  // Create options once with clientSecret - don't change it after Elements is mounted
   const options = {
     clientSecret,
     appearance: STRIPE_CONFIG.appearance,
@@ -348,7 +349,6 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
         onSuccess={onSuccess}
         onError={onError}
         onCancel={onCancel}
-        subscriptionId={_subscriptionId}
       />
     </Elements>
   )

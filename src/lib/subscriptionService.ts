@@ -293,7 +293,7 @@ class SubscriptionService {
     }
 
     // Validate free workout limits
-    if (subscription.freeWorkoutLimit !== 10) {
+    if (subscription.freeWorkoutLimit !== 15) {
       console.warn('Subscription has incorrect free workout limit:', subscription.freeWorkoutLimit)
     }
 
@@ -441,16 +441,16 @@ export const canGenerateWorkout = (subscription?: UserSubscription): boolean => 
 
   // Free tier - check usage
   const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 10
+  const limit = subscription.freeWorkoutLimit || 15
   return used < limit
 }
 
 export const getRemainingFreeWorkouts = (subscription?: UserSubscription): number => {
-  if (!subscription) return 10
+  if (!subscription) return 15
   if (subscription.status === 'active' || subscription.status === 'trialing') return Infinity
 
   const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 10
+  const limit = subscription.freeWorkoutLimit || 15
   return Math.max(0, limit - used)
 }
 
