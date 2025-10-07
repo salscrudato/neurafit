@@ -434,43 +434,14 @@ class SubscriptionService {
 export const subscriptionService = new SubscriptionService()
 
 // Utility functions for subscription logic
-export const canGenerateWorkout = (subscription?: UserSubscription): boolean => {
-  if (!subscription) return true // Allow free workouts
-
-  // Active subscription = unlimited workouts, BUT check if period has ended
-  const isActive = subscription.status === 'active' || subscription.status === 'trialing'
-  const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
-
-  if (isActive || isIncompleteWithPayment) {
-    // Verify the subscription period hasn't ended (30 days)
-    if (subscription.currentPeriodEnd && !isNaN(subscription.currentPeriodEnd)) {
-      const now = Date.now()
-      if (now > subscription.currentPeriodEnd) {
-        // Subscription period has ended, treat as expired
-        console.warn('Subscription period has ended but status is still active')
-        return false
-      }
-    }
-    return true
-  }
-
-  // Free tier - check usage
-  const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 15
-  return used < limit
+export const canGenerateWorkout = (_subscription?: UserSubscription): boolean => {
+  // UNLIMITED FREE WORKOUTS: All users can generate workouts regardless of subscription status
+  return true
 }
 
-export const getRemainingFreeWorkouts = (subscription?: UserSubscription): number => {
-  if (!subscription) return 50
-
-  const isActive = subscription.status === 'active' || subscription.status === 'trialing'
-  const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
-
-  if (isActive || isIncompleteWithPayment) return Infinity
-
-  const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 50
-  return Math.max(0, limit - used)
+export const getRemainingFreeWorkouts = (_subscription?: UserSubscription): number => {
+  // UNLIMITED FREE WORKOUTS: Always return Infinity
+  return Infinity
 }
 
 export const hasUnlimitedWorkouts = (subscription?: UserSubscription): boolean => {

@@ -135,22 +135,14 @@ export function isSubscriptionActive(subscription?: UserSubscription): boolean {
   return true
 }
 
-export function canGenerateWorkout(subscription?: UserSubscription): boolean {
-  if (!subscription) return false
-  
-  // If user has active subscription, they can generate unlimited workouts
-  if (isSubscriptionActive(subscription)) {
-    return true
-  }
-  
-  // If no active subscription, check free workout limit
-  return subscription.freeWorkoutsUsed < subscription.freeWorkoutLimit
+export function canGenerateWorkout(_subscription?: UserSubscription): boolean {
+  // UNLIMITED FREE WORKOUTS: All users can generate workouts regardless of subscription status
+  return true
 }
 
-export function getRemainingFreeWorkouts(subscription?: UserSubscription): number {
-  if (!subscription) return FREE_WORKOUT_LIMIT
-  if (isSubscriptionActive(subscription)) return Infinity
-  return Math.max(0, subscription.freeWorkoutLimit - subscription.freeWorkoutsUsed)
+export function getRemainingFreeWorkouts(_subscription?: UserSubscription): number {
+  // UNLIMITED FREE WORKOUTS: Always return Infinity
+  return Infinity
 }
 
 export function formatPrice(priceInCents: number, currency: string = 'usd'): string {

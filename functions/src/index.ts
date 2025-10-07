@@ -85,9 +85,9 @@ export const generateWorkout = onRequest(
           const { getFirestore } = await import('firebase-admin/firestore');
           const db = getFirestore();
 
-          // Run subscription check and adaptive state fetch in parallel
+          // Run subscription initialization and adaptive state fetch in parallel
           const [subscriptionResult, adaptiveResult] = await Promise.allSettled([
-            // Subscription check
+            // Subscription initialization (no limits enforced - unlimited free workouts)
             (async () => {
               const userDoc = await db.collection('users').doc(uid).get();
               const userData = userDoc.data();
@@ -110,23 +110,10 @@ export const generateWorkout = onRequest(
                 );
 
                 console.log('Initialized subscription data for new user:', uid);
-                return null; // New user, no limits
-              } else {
-                const isActive = subscription.status === 'active' || subscription.status === 'trialing';
-                const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0;
-                const freeWorkoutLimit = subscription.freeWorkoutLimit || 50;
-
-                // Check if user can generate workout
-                if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {
-                  return {
-                    error: 'Subscription required',
-                    message: 'You\'ve used all your free workouts. Please subscribe to continue.',
-                    freeWorkoutsUsed,
-                    freeWorkoutLimit,
-                  };
-                }
-                return null; // User can generate workout
               }
+
+              // UNLIMITED FREE WORKOUTS: Always allow workout generation
+              return null;
             })(),
             // Adaptive personalization (only if no targetIntensity provided)
             !targetIntensity ? (async () => {
@@ -143,14 +130,10 @@ export const generateWorkout = onRequest(
             })() : Promise.resolve(null)
           ]);
 
-          // Handle subscription check result
-          if (subscriptionResult.status === 'fulfilled' && subscriptionResult.value) {
-            res.status(402).json(subscriptionResult.value);
-            return;
-          }
+          // Handle subscription initialization result (no limits enforced)
           if (subscriptionResult.status === 'rejected') {
-            console.error('Error checking subscription:', subscriptionResult.reason);
-            // Continue with workout generation if subscription check fails
+            console.error('Error initializing subscription:', subscriptionResult.reason);
+            // Continue with workout generation even if subscription initialization fails
           }
 
           // Handle adaptive personalization result
