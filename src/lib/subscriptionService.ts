@@ -296,7 +296,7 @@ class SubscriptionService {
     }
 
     // Validate free workout limits
-    if (subscription.freeWorkoutLimit !== 15) {
+    if (subscription.freeWorkoutLimit !== 50) {
       console.warn('Subscription has incorrect free workout limit:', subscription.freeWorkoutLimit)
     }
 
@@ -461,7 +461,7 @@ export const canGenerateWorkout = (subscription?: UserSubscription): boolean => 
 }
 
 export const getRemainingFreeWorkouts = (subscription?: UserSubscription): number => {
-  if (!subscription) return 15
+  if (!subscription) return 50
 
   const isActive = subscription.status === 'active' || subscription.status === 'trialing'
   const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
@@ -469,7 +469,7 @@ export const getRemainingFreeWorkouts = (subscription?: UserSubscription): numbe
   if (isActive || isIncompleteWithPayment) return Infinity
 
   const used = subscription.freeWorkoutsUsed || 0
-  const limit = subscription.freeWorkoutLimit || 15
+  const limit = subscription.freeWorkoutLimit || 50
   return Math.max(0, limit - used)
 }
 

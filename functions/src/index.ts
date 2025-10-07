@@ -28,6 +28,8 @@ export const generateWorkout = onRequest(
       'http://localhost:5173', // local dev
       'https://neurafit-ai-2025.web.app', // Firebase Hosting
       'https://neurafit-ai-2025.firebaseapp.com',
+      'https://neurastack.ai', // Custom domain
+      'https://www.neurastack.ai', // Custom domain with www
     ],
     region: 'us-central1',
     secrets: [openaiApiKey],
@@ -97,7 +99,7 @@ export const generateWorkout = onRequest(
                   status: 'incomplete',
                   workoutCount: 0,
                   freeWorkoutsUsed: 0,
-                  freeWorkoutLimit: 5,
+                  freeWorkoutLimit: 50,
                   createdAt: Date.now(),
                   updatedAt: Date.now(),
                 };
@@ -112,7 +114,7 @@ export const generateWorkout = onRequest(
               } else {
                 const isActive = subscription.status === 'active' || subscription.status === 'trialing';
                 const freeWorkoutsUsed = subscription.freeWorkoutsUsed || 0;
-                const freeWorkoutLimit = subscription.freeWorkoutLimit || 15;
+                const freeWorkoutLimit = subscription.freeWorkoutLimit || 50;
 
                 // Check if user can generate workout
                 if (!isActive && freeWorkoutsUsed >= freeWorkoutLimit) {

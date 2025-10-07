@@ -157,7 +157,7 @@ export const verifySubscriptionStatus = onCall(
         currentPeriodStart: extendedSubscription.current_period_start * 1000,
         currentPeriodEnd: extendedSubscription.current_period_end * 1000,
         cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
-        freeWorkoutLimit: 15,
+        freeWorkoutLimit: 50,
       };
 
       // Only add canceledAt if it exists

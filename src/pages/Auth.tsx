@@ -2,20 +2,29 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../lib/firebase'
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
-import { Zap, Brain, Target, Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult
+} from 'firebase/auth'
+import { Zap, Brain, Target, Shield, Smartphone } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
+import PhoneAuthModal from '../components/PhoneAuthModal'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
+
+  // Phone authentication state
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [phoneStep, setPhoneStep] = useState<'phone' | 'code'>('phone')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
 
   // Initialize component and apply performance optimizations
   useEffect(() => {
@@ -26,6 +35,59 @@ export default function Auth() {
       document.documentElement.style.setProperty('--animation-duration', '0.01ms')
     }
   }, [])
+
+  // Initialize reCAPTCHA when phone modal opens
+  useEffect(() => {
+    if (showPhoneModal && phoneStep === 'phone' && !recaptchaVerifier) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        try {
+          const container = document.getElementById('recaptcha-container')
+          if (!container) {
+            console.error('reCAPTCHA container not found')
+            return
+          }
+
+          const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => {
+              // reCAPTCHA solved - automatically proceeds
+              console.log('reCAPTCHA verified')
+            },
+            'expired-callback': () => {
+              setPhoneError('Verification expired. Please try again.')
+            }
+          })
+
+          // Render the reCAPTCHA
+          verifier.render().then(() => {
+            console.log('reCAPTCHA rendered successfully')
+            setRecaptchaVerifier(verifier)
+          }).catch((error) => {
+            console.error('Error rendering reCAPTCHA:', error)
+            setPhoneError('Failed to initialize verification. Please refresh and try again.')
+          })
+        } catch (error) {
+          console.error('Error initializing reCAPTCHA:', error)
+          setPhoneError('Failed to initialize verification. Please refresh and try again.')
+        }
+      }, 100)
+
+      return () => clearTimeout(timer)
+    }
+
+    // Cleanup reCAPTCHA when modal closes
+    if (!showPhoneModal && recaptchaVerifier) {
+      try {
+        recaptchaVerifier.clear()
+      } catch (error) {
+        console.error('Error clearing reCAPTCHA:', error)
+      }
+      setRecaptchaVerifier(null)
+    }
+
+    return undefined
+  }, [showPhoneModal, phoneStep, recaptchaVerifier])
 
   const googleLogin = async () => {
     setLoading(true)
@@ -80,96 +142,127 @@ export default function Auth() {
     }
   }
 
-  const validateForm = () => {
-    let isValid = true
-    setEmailError('')
-    setPasswordError('')
-
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!email) {
-      setEmailError('Email is required')
-      isValid = false
-    } else if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address')
-      isValid = false
-    }
-
-    // Validate password
-    if (!password) {
-      setPasswordError('Password is required')
-      isValid = false
-    } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters')
-      isValid = false
-    }
-
-    // Validate password confirmation for signup
-    if (authMode === 'signup' && password !== confirmPassword) {
-      setPasswordError('Passwords do not match')
-      isValid = false
-    }
-
-    return isValid
+  const handlePhoneSignIn = () => {
+    setShowPhoneModal(true)
+    setPhoneStep('phone')
+    setPhoneError('')
+    setPhoneNumber('')
   }
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!validateForm()) return
-
+  const handlePhoneSubmit = async (phone: string) => {
     setLoading(true)
+    setPhoneError('')
 
     try {
-      // Firebase auth is ready synchronously
+      // Clean phone number - remove formatting
+      const cleanedPhone = phone.replace(/\D/g, '')
 
-      if (authMode === 'signup') {
-        await createUserWithEmailAndPassword(auth, email, password)
-        trackUserSignUp('email')
-      } else {
-        await signInWithEmailAndPassword(auth, email, password)
-        trackUserLogin('email')
+      // Validate phone number format (US numbers - should be 10 digits)
+      if (cleanedPhone.length !== 10) {
+        setPhoneError('Please enter a valid 10-digit US phone number')
+        setLoading(false)
+        return
       }
-      // Success - AppProvider will handle navigation
+
+      // Automatically prepend +1 for US numbers
+      const formattedPhone = `+1${cleanedPhone}`
+
+      // Check if recaptchaVerifier is ready, if not try to proceed anyway
+      // (Firebase will use test phone numbers if configured)
+      if (!recaptchaVerifier) {
+        console.warn('reCAPTCHA not initialized, attempting to use test phone numbers')
+      }
+
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        formattedPhone,
+        recaptchaVerifier || new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
+      )
+      setConfirmationResult(confirmation)
+      setPhoneNumber(phone)
+      setPhoneStep('code')
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
-      console.error('Email auth error:', firebaseError)
+      console.error('Phone sign-in error:', firebaseError)
 
-      // Handle specific Firebase errors
       switch (firebaseError.code) {
-        case 'auth/email-already-in-use':
-          setEmailError('An account with this email already exists')
-          break
-        case 'auth/weak-password':
-          setPasswordError('Password is too weak')
-          break
-        case 'auth/user-not-found':
-          setEmailError('No account found with this email')
-          break
-        case 'auth/wrong-password':
-          setPasswordError('Incorrect password')
-          break
-        case 'auth/invalid-email':
-          setEmailError('Invalid email address')
+        case 'auth/invalid-phone-number':
+          setPhoneError('Invalid phone number format')
           break
         case 'auth/too-many-requests':
-          setPasswordError('Too many failed attempts. Please try again later.')
+          setPhoneError('Too many attempts. Please try again later.')
+          break
+        case 'auth/quota-exceeded':
+          setPhoneError('SMS quota exceeded. Please try again later.')
+          break
+        case 'auth/invalid-app-credential':
+          setPhoneError('Please add test phone numbers in Firebase Console. Use: (555) 123-4567 with code 123456')
+          break
+        case 'auth/captcha-check-failed':
+          setPhoneError('Verification failed. Please add test phone numbers in Firebase Console.')
           break
         default:
-          setPasswordError('Authentication failed. Please try again.')
+          setPhoneError(`Failed to send verification code. ${firebaseError.message || 'Please try again.'}`)
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const toggleAuthMode = () => {
-    setAuthMode(authMode === 'signin' ? 'signup' : 'signin')
-    setEmail('')
-    setPassword('')
-    setConfirmPassword('')
-    setEmailError('')
-    setPasswordError('')
+  const handleCodeSubmit = async (code: string) => {
+    setLoading(true)
+    setPhoneError('')
+
+    try {
+      if (!confirmationResult) {
+        setPhoneError('Verification session expired. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const result = await confirmationResult.confirm(code)
+      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
+
+      if (isNewUser) {
+        trackUserSignUp('phone')
+      } else {
+        trackUserLogin('phone')
+      }
+
+      // Success - close modal and AppProvider will handle navigation
+      setShowPhoneModal(false)
+      setPhoneStep('phone')
+      setPhoneNumber('')
+      setConfirmationResult(null)
+    } catch (error) {
+      const firebaseError = error as { code?: string; message?: string }
+      console.error('Code verification error:', firebaseError)
+
+      switch (firebaseError.code) {
+        case 'auth/invalid-verification-code':
+          setPhoneError('Invalid verification code. Please try again.')
+          break
+        case 'auth/code-expired':
+          setPhoneError('Verification code expired. Please request a new one.')
+          break
+        default:
+          setPhoneError('Failed to verify code. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClosePhoneModal = () => {
+    setShowPhoneModal(false)
+    setPhoneStep('phone')
+    setPhoneNumber('')
+    setPhoneError('')
+    setConfirmationResult(null)
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear()
+      setRecaptchaVerifier(null)
+    }
   }
 
   return (
@@ -252,138 +345,22 @@ export default function Auth() {
             )}
           </button>
 
-          {/* Enhanced Divider */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200/60"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <span className="px-6 py-2 bg-gradient-to-r from-slate-50/80 via-white to-slate-50/80 backdrop-blur-sm text-gray-500 font-medium text-sm rounded-full border border-gray-100/50 shadow-sm">
-                or continue with email
-              </span>
-            </div>
-          </div>
+          {/* Phone Sign-In Button */}
+          <button
+            onClick={handlePhoneSignIn}
+            disabled={loading}
+            className="group relative w-full bg-white/80 backdrop-blur-sm border border-gray-200/80 text-gray-700 px-6 py-4 sm:py-4 rounded-2xl font-semibold hover:bg-white hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98] overflow-hidden touch-manipulation min-h-[48px]"
+            aria-label="Sign in with Phone"
+            type="button"
+          >
+            {/* Subtle gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-          {/* Enhanced Email/Password Form */}
-          <form onSubmit={handleEmailAuth} className="space-y-5" role="form" aria-label="Email and password authentication form">
-            {/* Enhanced Email Input */}
-            <div className="group">
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className={`w-full pl-12 pr-4 py-4 rounded-2xl border font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md touch-manipulation min-h-[48px] text-base ${
-                    emailError
-                      ? 'border-red-300 bg-red-50/50 focus:ring-red-500/20 focus:border-red-500 animate-shake'
-                      : 'border-gray-200/80 hover:border-gray-300'
-                  }`}
-                  disabled={loading}
-                  aria-invalid={emailError ? 'true' : 'false'}
-                  aria-describedby={emailError ? 'email-error' : undefined}
-                />
-                {/* Focus ring enhancement */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              </div>
-              {emailError && (
-                <p id="email-error" className="mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
-                  <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                  {emailError}
-                </p>
-              )}
-            </div>
-
-            {/* Enhanced Password Input */}
-            <div className="group">
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className={`w-full pl-12 pr-12 py-4 rounded-2xl border font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md touch-manipulation min-h-[48px] text-base ${
-                    passwordError
-                      ? 'border-red-300 bg-red-50/50 focus:ring-red-500/20 focus:border-red-500 animate-shake'
-                      : 'border-gray-200/80 hover:border-gray-300'
-                  }`}
-                  disabled={loading}
-                  aria-invalid={passwordError ? 'true' : 'false'}
-                  aria-describedby={passwordError ? 'password-error' : undefined}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg p-1 transition-all duration-200 hover:scale-110"
-                  disabled={loading}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-                {/* Focus ring enhancement */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              </div>
-              {passwordError && (
-                <p id="password-error" className="mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
-                  <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                  {passwordError}
-                </p>
-              )}
-            </div>
-
-            {/* Enhanced Confirm Password Input (only for signup) */}
-            {authMode === 'signup' && (
-              <div className="group animate-fade-in-up">
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300"
-                    disabled={loading}
-                  />
-                  {/* Focus ring enhancement */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                </div>
-              </div>
-            )}
-
-            {/* Enhanced Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
-            >
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
-
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                {loading && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                )}
-                {loading ? 'Please wait...' : (authMode === 'signup' ? 'Create Account' : 'Sign In')}
-              </span>
-            </button>
-
-            {/* Enhanced Toggle Auth Mode */}
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={toggleAuthMode}
-                disabled={loading}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-all duration-200 disabled:opacity-60 hover:bg-blue-50 px-3 py-1.5 rounded-lg"
-              >
-                {authMode === 'signup'
-                  ? 'Already have an account? Sign in'
-                  : "Don't have an account? Sign up"
-                }
-              </button>
-            </div>
-          </form>
+            <Smartphone className="h-5 w-5 text-gray-600 transition-transform duration-300 group-hover:scale-110 relative z-10" />
+            <span className="transition-colors duration-300 group-hover:text-gray-800 relative z-10">
+              Continue with Phone
+            </span>
+          </button>
         </div>
 
         {/* Enhanced Why Choose NeuraFit Section */}
@@ -448,6 +425,21 @@ export default function Auth() {
           </p>
         </div>
       </div>
+
+      {/* Phone Authentication Modal */}
+      <PhoneAuthModal
+        isOpen={showPhoneModal}
+        onClose={handleClosePhoneModal}
+        onSubmitPhone={handlePhoneSubmit}
+        onSubmitCode={handleCodeSubmit}
+        step={phoneStep}
+        loading={loading}
+        error={phoneError}
+        phoneNumber={phoneNumber}
+      />
+
+      {/* Invisible reCAPTCHA container */}
+      <div id="recaptcha-container"></div>
     </div>
 
   )

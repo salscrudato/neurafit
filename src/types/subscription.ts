@@ -109,7 +109,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   }
 ]
 
-export const FREE_WORKOUT_LIMIT = 15
+export const FREE_WORKOUT_LIMIT = 50
 
 // Helper functions
 export function isSubscriptionActive(subscription?: UserSubscription): boolean {

@@ -89,7 +89,7 @@ export async function createOrGetCustomer(
       status: 'incomplete',
       workoutCount: 0,
       freeWorkoutsUsed: 0,
-      freeWorkoutLimit: 15,
+      freeWorkoutLimit: 50,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -490,7 +490,7 @@ export async function incrementWorkoutCount(uid: string): Promise<void> {
         status: 'incomplete',
         workoutCount: 1,
         freeWorkoutsUsed: 1,
-        freeWorkoutLimit: 15,
+        freeWorkoutLimit: 50,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };

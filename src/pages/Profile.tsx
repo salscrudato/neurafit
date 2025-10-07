@@ -268,7 +268,7 @@ export default function Profile() {
 
               <div className="pt-2 border-t border-gray-200">
                 <p className="text-sm text-gray-600">
-                  <strong>Free workouts remaining:</strong> {remainingFreeWorkouts} of 15
+                  <strong>Free workouts remaining:</strong> {remainingFreeWorkouts} of 50
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
                   Total generated: {subscription?.workoutCount || 0}

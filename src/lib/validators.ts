@@ -59,13 +59,29 @@ export const validateUserProfile = (profile: Record<string, unknown>): Validatio
   if (!profile['personal']) {
     errors.push('Personal information is required')
   } else {
-    const { height, weight } = profile['personal'] as { height?: number; weight?: number }
+    const { height, weight } = profile['personal'] as { height?: string | number; weight?: string | number }
 
-    if (!height || isNaN(parseFloat(height as unknown as string))) {
+    // Height can be a range string (e.g., "<5'0", "5'0–5'5", ">6'5") or a number
+    if (!height) {
+      errors.push('Height is required')
+    } else if (typeof height === 'string') {
+      // Validate it's a non-empty string (range values like "<5'0" are valid)
+      if (height.trim() === '') {
+        errors.push('Valid height is required')
+      }
+    } else if (typeof height === 'number' && (isNaN(height) || height <= 0)) {
       errors.push('Valid height is required')
     }
 
-    if (!weight || isNaN(parseFloat(weight as unknown as string))) {
+    // Weight can be a range string (e.g., "<120lb", "120–149", "240+lb") or a number
+    if (!weight) {
+      errors.push('Weight is required')
+    } else if (typeof weight === 'string') {
+      // Validate it's a non-empty string (range values like "<120lb" are valid)
+      if (weight.trim() === '') {
+        errors.push('Valid weight is required')
+      }
+    } else if (typeof weight === 'number' && (isNaN(weight) || weight <= 0)) {
       errors.push('Valid weight is required')
     }
   }

@@ -165,8 +165,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       currentPeriodStart: extendedSubscription.current_period_start * 1000,
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
-      // Ensure free workout limit is set to 15
-      freeWorkoutLimit: 15,
+      // Ensure free workout limit is set to 50
+      freeWorkoutLimit: 50,
     };
 
     // Only add canceledAt if it exists
@@ -223,7 +223,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
       // Ensure free workout limit is preserved
-      freeWorkoutLimit: 15,
+      freeWorkoutLimit: 50,
     };
 
     // Only add canceledAt if it exists
@@ -298,7 +298,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       currentPeriodEnd: extendedSubscription.current_period_end * 1000,
       cancelAtPeriodEnd: extendedSubscription.cancel_at_period_end,
       // Ensure free workout limit is set
-      freeWorkoutLimit: 15,
+      freeWorkoutLimit: 50,
     };
 
     // Only add canceledAt if it exists
