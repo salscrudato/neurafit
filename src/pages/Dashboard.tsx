@@ -180,13 +180,13 @@ export default function Dashboard() {
               <div className="h-6 sm:h-7 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-xl w-40"></div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-28 sm:h-32 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-depth-md backdrop-blur-xl border border-white/70 border-inner"></div>
+                  <div key={i} className="h-[88px] sm:h-[104px] bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-depth-md backdrop-blur-xl border border-white/70 border-inner"></div>
                 ))}
               </div>
             </div>
 
             {/* Compact profile settings skeleton */}
-            <div className="h-20 sm:h-24 bg-tint-slate backdrop-blur-xl rounded-2xl shadow-depth-md border border-white/70 border-inner"></div>
+            <div className="h-[88px] sm:h-[104px] bg-tint-slate backdrop-blur-xl rounded-2xl shadow-depth-md border border-white/70 border-inner"></div>
           </div>
         </div>
       </div>
@@ -290,17 +290,17 @@ export default function Dashboard() {
             <Card
               variant="elevated"
               rounded="2xl"
-              className="relative p-4 sm:p-5 border border-white/70 bg-tint-blue backdrop-blur-xl shadow-depth-md hover:shadow-blue-depth transition-all duration-300 active:scale-[0.98] border-inner"
+              className="relative p-5 sm:p-6 border border-white/70 bg-tint-blue backdrop-blur-xl shadow-depth-md hover:shadow-blue-depth transition-all duration-300 active:scale-[0.98] border-inner"
             >
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                  <Zap className="h-6 w-6 sm:h-7 sm:w-7" />
+              <div className="flex items-center gap-4 sm:gap-5">
+                <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                  <Zap className="h-7 w-7 sm:h-8 sm:w-8" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 leading-tight">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1.5 leading-tight">
                     Generate Workout
                   </h3>
-                  <p className="text-slate-600/90 text-xs sm:text-sm leading-snug">
+                  <p className="text-slate-600/90 text-sm sm:text-base leading-snug">
                     AI-tailored plans for your goals
                   </p>
                 </div>
@@ -322,17 +322,17 @@ export default function Dashboard() {
             <Card
               variant="elevated"
               rounded="2xl"
-              className="relative p-4 sm:p-5 border border-white/70 bg-tint-slate backdrop-blur-xl shadow-depth-md hover:shadow-slate-depth transition-all duration-300 active:scale-[0.98] border-inner"
+              className="relative p-5 sm:p-6 border border-white/70 bg-tint-slate backdrop-blur-xl shadow-depth-md hover:shadow-slate-depth transition-all duration-300 active:scale-[0.98] border-inner"
             >
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-md">
-                  <History className="h-6 w-6 sm:h-7 sm:w-7" />
+              <div className="flex items-center gap-4 sm:gap-5">
+                <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-md">
+                  <History className="h-7 w-7 sm:h-8 sm:w-8" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 leading-tight">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1.5 leading-tight">
                     Workout History
                   </h3>
-                  <p className="text-slate-600/90 text-xs sm:text-sm leading-snug">
+                  <p className="text-slate-600/90 text-sm sm:text-base leading-snug">
                     Review and track progress
                   </p>
                 </div>
@@ -353,14 +353,14 @@ export default function Dashboard() {
       {/* Compact Profile Settings */}
       <section className="relative mx-auto max-w-6xl px-3 sm:px-4 mt-6 sm:mt-8 animate-stagger-4">
         <div className="group relative cursor-pointer" onClick={() => nav('/profile')}>
-          <div className="relative bg-tint-slate backdrop-blur-xl rounded-2xl p-4 sm:p-5 border border-white/70 shadow-depth-md hover:shadow-depth-lg transition-all duration-300 active:scale-[0.98] border-inner">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-md flex-shrink-0">
-                <UserIcon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+          <div className="relative bg-tint-slate backdrop-blur-xl rounded-2xl p-5 sm:p-6 border border-white/70 shadow-depth-md hover:shadow-depth-lg transition-all duration-300 active:scale-[0.98] border-inner">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-md flex-shrink-0">
+                <UserIcon className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 leading-tight">Profile Settings</h3>
-                <p className="text-slate-600/90 text-xs sm:text-sm leading-snug">Update goals & equipment</p>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1.5 leading-tight">Profile Settings</h3>
+                <p className="text-slate-600/90 text-sm sm:text-base leading-snug">Update goals & equipment</p>
               </div>
               <Button
                 size="sm"
