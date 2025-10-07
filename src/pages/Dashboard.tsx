@@ -3,7 +3,6 @@ import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, query, orderBy, getDocs } from 'firebase/firestore'
-import type { User } from 'firebase/auth'
 import { convertToDate } from '../utils/timestamp'
 import { logger } from '../lib/logger'
 import {
@@ -96,7 +95,6 @@ const calculateDashboardStats = (workouts: WorkoutItem[]): DashboardStats => {
 
 export default function Dashboard() {
   const nav = useNavigate()
-  const [user, setUser] = useState<User | null>(null)
   const [workouts, setWorkouts] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -106,17 +104,6 @@ export default function Dashboard() {
 
   // Prefetch likely next routes on idle
   usePrefetchOnIdle(['/generate', '/history', '/profile'], 3000)
-
-  // Get current user
-  useEffect(() => {
-    setUser(auth.currentUser)
-  }, [])
-
-  // Memoize first name extraction
-  const firstName = useMemo(() => {
-    const n = user?.displayName || user?.email || user?.phoneNumber || 'Athlete'
-    return String(n).split(' ')[0]
-  }, [user])
 
   // Memoize dashboard stats calculation
   const dashboardStats = useMemo(() => {
@@ -167,42 +154,39 @@ export default function Dashboard() {
         </div>
 
         <AppHeader />
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-6 sm:pt-8">
-          <div className="animate-pulse space-y-10 sm:space-y-12">
-            {/* Enhanced hero skeleton */}
-            <div className="h-48 sm:h-52 bg-tint-blue backdrop-blur-xl rounded-3xl shadow-depth-xl border border-white/70 border-inner">
-              <div className="p-6 sm:p-8 md:p-12 space-y-6">
-                <div className="h-8 sm:h-10 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-2xl w-3/4"></div>
-                <div className="h-6 bg-gradient-to-r from-slate-200/40 to-slate-300/30 rounded-xl w-full max-w-2xl"></div>
+        <div className="relative mx-auto max-w-6xl px-3 sm:px-4 pt-4 sm:pt-6">
+          <div className="animate-pulse space-y-4 sm:space-y-6">
+            {/* Compact hero skeleton */}
+            <div className="h-32 sm:h-36 bg-tint-blue backdrop-blur-xl rounded-2xl shadow-depth-lg border border-white/70 border-inner">
+              <div className="p-4 sm:p-6 space-y-3">
+                <div className="h-7 sm:h-8 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-xl w-2/3"></div>
+                <div className="h-5 bg-gradient-to-r from-slate-200/40 to-slate-300/30 rounded-lg w-full max-w-xl"></div>
               </div>
             </div>
 
-            {/* Enhanced motivational banner skeleton */}
-            <div className="h-32 sm:h-36 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-3xl shadow-depth-lg backdrop-blur-xl border border-white/70 border-inner">
-              <div className="p-6 sm:p-8 flex items-center gap-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-slate-200/60 to-slate-300/40 rounded-2xl"></div>
-                <div className="flex-1 space-y-3">
-                  <div className="h-6 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-xl w-48"></div>
-                  <div className="h-4 bg-gradient-to-r from-slate-200/40 to-slate-300/30 rounded-lg w-64"></div>
+            {/* Compact motivational banner skeleton */}
+            <div className="h-24 sm:h-28 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-depth-md backdrop-blur-xl border border-white/70 border-inner">
+              <div className="p-4 sm:p-5 flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-slate-200/60 to-slate-300/40 rounded-xl"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-lg w-40"></div>
+                  <div className="h-4 bg-gradient-to-r from-slate-200/40 to-slate-300/30 rounded-md w-48"></div>
                 </div>
               </div>
             </div>
 
-            {/* Enhanced quick actions skeleton */}
-            <div className="space-y-8 sm:space-y-10">
-              <div className="space-y-4 text-center sm:text-left">
-                <div className="h-8 sm:h-10 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-2xl w-56 mx-auto sm:mx-0"></div>
-                <div className="h-6 bg-gradient-to-r from-slate-200/40 to-slate-300/30 rounded-xl w-80 mx-auto sm:mx-0"></div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+            {/* Compact quick actions skeleton */}
+            <div className="space-y-4 sm:space-y-5">
+              <div className="h-6 sm:h-7 bg-gradient-to-r from-slate-200/60 to-slate-300/40 rounded-xl w-40"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-40 sm:h-44 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-3xl shadow-depth-lg backdrop-blur-xl border border-white/70 border-inner"></div>
+                  <div key={i} className="h-28 sm:h-32 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-depth-md backdrop-blur-xl border border-white/70 border-inner"></div>
                 ))}
               </div>
             </div>
 
-            {/* Enhanced profile settings skeleton */}
-            <div className="h-24 sm:h-28 bg-tint-slate backdrop-blur-xl rounded-3xl shadow-depth-lg border border-white/70 border-inner"></div>
+            {/* Compact profile settings skeleton */}
+            <div className="h-20 sm:h-24 bg-tint-slate backdrop-blur-xl rounded-2xl shadow-depth-md border border-white/70 border-inner"></div>
           </div>
         </div>
       </div>
@@ -240,47 +224,46 @@ export default function Dashboard() {
 
       <AppHeader />
 
-      {/* Hero Section with enhanced visual hierarchy and staggered animation */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-6 sm:pt-8 animate-stagger-1">
-        <div className="group relative rounded-3xl border border-white/70 bg-tint-blue backdrop-blur-xl p-6 sm:p-8 md:p-12 overflow-hidden shadow-depth-xl hover:shadow-depth-xl transition-all duration-500 hover:scale-[1.003] border-inner">
-          {/* Enhanced background elements with better positioning */}
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-3xl group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
-          <div className="absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-slate-400/10 via-gray-400/5 to-blue-400/5 opacity-40 blur-2xl group-hover:opacity-60 transition-all duration-700" />
+      {/* Compact Hero Section - Mobile Optimized */}
+      <section className="relative mx-auto max-w-6xl px-3 sm:px-4 pt-4 sm:pt-6 animate-stagger-1">
+        <div className="group relative rounded-2xl border border-white/70 bg-tint-blue backdrop-blur-xl p-4 sm:p-6 overflow-hidden shadow-depth-lg hover:shadow-depth-lg transition-all duration-300 border-inner">
+          {/* Simplified background elements */}
+          <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-2xl" />
 
           {/* Subtle inner glow */}
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" />
 
-          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between">
-            <div className="flex-1 space-y-6">
-              <div className="flex flex-col gap-3">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-[1.1] sm:leading-tight">
-                  Welcome back, {firstName}.
+          <div className="relative">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight mb-2">
+                  Welcome Back
                 </h1>
-                {hasUnlimitedWorkouts && (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full shadow-lg w-fit">
-                    <Crown className="w-5 h-5 text-amber-900" />
-                    <span className="text-sm font-bold text-amber-900">Pro</span>
-                  </div>
-                )}
+                <p className="text-slate-600/90 text-sm sm:text-base leading-relaxed font-medium">
+                  {dashboardStats?.totalWorkouts === 0
+                    ? "Ready to start your fitness journey?"
+                    : "Keep up the momentum!"
+                  }
+                </p>
               </div>
-              <p className="text-slate-600/90 max-w-2xl text-base sm:text-lg lg:text-xl leading-relaxed font-medium">
-                {dashboardStats?.totalWorkouts === 0
-                  ? "Ready to start your fitness journey? Generate your first AI-powered workout below."
-                  : "Keep up the momentum! Your personalized workouts are getting smarter with every session."
-                }
-              </p>
+              {hasUnlimitedWorkouts && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full shadow-md flex-shrink-0">
+                  <Crown className="w-4 h-4 text-amber-900" />
+                  <span className="text-xs font-bold text-amber-900">Pro</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Motivational Banner with improved spacing and staggered animation */}
+      {/* Compact Motivational Banner */}
       {dashboardStats && dashboardStats.totalWorkouts > 0 && (
-        <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-10 animate-stagger-2">
+        <section className="relative mx-auto max-w-6xl px-3 sm:px-4 mt-4 sm:mt-5 animate-stagger-2">
           <DeferredRender
-            minHeight="144px"
+            minHeight="112px"
             placeholder={
-              <div className="h-36 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-3xl shadow-depth-lg backdrop-blur-xl border border-white/70 animate-pulse" />
+              <div className="h-28 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-depth-md backdrop-blur-xl border border-white/70 animate-pulse" />
             }
           >
             <MotivationalBanner
@@ -293,49 +276,40 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Quick Actions with enhanced typography, spacing, and staggered animation */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-16 sm:mt-20 animate-stagger-3">
-        <div className="mb-10 sm:mb-12 text-center sm:text-left">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent mb-4 tracking-tight leading-tight">
-            Quick Actions
-          </h2>
-          <p className="text-slate-600/80 text-lg sm:text-xl font-medium leading-relaxed max-w-2xl">
-            Everything you need to stay on track
-          </p>
-        </div>
+      {/* Compact Quick Actions */}
+      <section className="relative mx-auto max-w-6xl px-3 sm:px-4 mt-6 sm:mt-8 animate-stagger-3">
+        <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3 sm:mb-4 tracking-tight">
+          Quick Actions
+        </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           <div
             className="group relative cursor-pointer"
             onClick={() => nav('/generate')}
           >
-            {/* Enhanced glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/15 via-indigo-500/10 to-purple-500/5 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100" />
             <Card
               variant="elevated"
-              rounded="3xl"
-              className="relative p-6 sm:p-8 lg:p-10 border border-white/70 bg-tint-blue backdrop-blur-xl shadow-depth-lg hover:shadow-blue-depth transition-all duration-500 group-hover:scale-[1.015] active:scale-[0.995] group-hover:border-blue-200/60 group-hover:-translate-y-1 border-inner"
+              rounded="2xl"
+              className="relative p-4 sm:p-5 border border-white/70 bg-tint-blue backdrop-blur-xl shadow-depth-md hover:shadow-blue-depth transition-all duration-300 active:scale-[0.98] border-inner"
             >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-                <div className="flex items-start space-x-5 flex-1">
-                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-depth-md group-hover:shadow-blue-depth group-hover:scale-110 transition-all duration-500">
-                    <Zap className="h-8 w-8" />
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 group-hover:text-blue-900 transition-colors duration-300 leading-tight">
-                      Generate Workout
-                    </h3>
-                    <p className="text-slate-600/90 leading-relaxed text-base sm:text-lg font-medium">
-                      AI-tailored plans from goals, experience, equipment & injuries.
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                  <Zap className="h-6 w-6 sm:h-7 sm:w-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 leading-tight">
+                    Generate Workout
+                  </h3>
+                  <p className="text-slate-600/90 text-xs sm:text-sm leading-snug">
+                    AI-tailored plans for your goals
+                  </p>
                 </div>
                 <Button
                   size="sm"
-                  className="ml-0 sm:ml-4 self-start sm:self-center haptic-feedback"
+                  className="haptic-feedback flex-shrink-0"
                   onClick={() => nav('/generate')}
                 >
-                  Start Now
+                  Start
                 </Button>
               </div>
             </Card>
@@ -345,34 +319,30 @@ export default function Dashboard() {
             className="group relative cursor-pointer"
             onClick={() => nav('/history')}
           >
-            {/* Enhanced glow effect for history card */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-500/15 via-gray-500/10 to-slate-400/5 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100" />
             <Card
               variant="elevated"
-              rounded="3xl"
-              className="relative p-6 sm:p-8 lg:p-10 border border-white/70 bg-tint-slate backdrop-blur-xl shadow-depth-lg hover:shadow-slate-depth transition-all duration-500 group-hover:scale-[1.015] active:scale-[0.995] group-hover:border-slate-300/60 group-hover:-translate-y-1 border-inner"
+              rounded="2xl"
+              className="relative p-4 sm:p-5 border border-white/70 bg-tint-slate backdrop-blur-xl shadow-depth-md hover:shadow-slate-depth transition-all duration-300 active:scale-[0.98] border-inner"
             >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-                <div className="flex items-start space-x-5 flex-1">
-                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-depth-md group-hover:shadow-slate-depth group-hover:scale-110 transition-all duration-500">
-                    <History className="h-8 w-8" />
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 group-hover:text-slate-700 transition-colors duration-300 leading-tight">
-                      Workout History
-                    </h3>
-                    <p className="text-slate-600/90 leading-relaxed text-base sm:text-lg font-medium">
-                      Auto-saved sessions to review, repeat, and track progress.
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-md">
+                  <History className="h-6 w-6 sm:h-7 sm:w-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 leading-tight">
+                    Workout History
+                  </h3>
+                  <p className="text-slate-600/90 text-xs sm:text-sm leading-snug">
+                    Review and track progress
+                  </p>
                 </div>
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="ml-0 sm:ml-4 self-start sm:self-center haptic-feedback"
+                  className="haptic-feedback flex-shrink-0"
                   onClick={() => nav('/history')}
                 >
-                  View History
+                  View
                 </Button>
               </div>
             </Card>
@@ -380,36 +350,33 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Profile Settings - Enhanced compact design with staggered animation */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-16 sm:mt-20 animate-stagger-4">
+      {/* Compact Profile Settings */}
+      <section className="relative mx-auto max-w-6xl px-3 sm:px-4 mt-6 sm:mt-8 animate-stagger-4">
         <div className="group relative cursor-pointer" onClick={() => nav('/profile')}>
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-400/10 via-gray-400/5 to-slate-300/5 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100" />
-          <div className="relative bg-tint-slate backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/70 shadow-depth-lg hover:shadow-depth-xl transition-all duration-500 group-hover:scale-[1.008] active:scale-[0.998] group-hover:-translate-y-0.5 border-inner">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-depth-md group-hover:shadow-slate-depth group-hover:scale-110 transition-all duration-500">
-                  <UserIcon className="h-7 w-7 text-white" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-slate-700 transition-colors duration-300">Profile Settings</h3>
-                  <p className="text-slate-600/90 text-sm sm:text-base font-medium">Update goals, equipment, or injuries</p>
-                </div>
+          <div className="relative bg-tint-slate backdrop-blur-xl rounded-2xl p-4 sm:p-5 border border-white/70 shadow-depth-md hover:shadow-depth-lg transition-all duration-300 active:scale-[0.98] border-inner">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-md flex-shrink-0">
+                <UserIcon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1 leading-tight">Profile Settings</h3>
+                <p className="text-slate-600/90 text-xs sm:text-sm leading-snug">Update goals & equipment</p>
               </div>
               <Button
                 size="sm"
                 variant="outline"
-                className="self-start sm:self-center haptic-feedback"
+                className="haptic-feedback flex-shrink-0"
                 onClick={() => nav('/profile')}
               >
-                Edit Profile
+                Edit
               </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Subscription Status with improved spacing and staggered animation */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-12 sm:mt-16 mb-16 sm:mb-20 animate-stagger-5">
+      {/* Compact Subscription Status */}
+      <section className="relative mx-auto max-w-6xl px-3 sm:px-4 mt-6 sm:mt-8 mb-8 sm:mb-12 animate-stagger-5">
         <SubscriptionManager mode="status" />
       </section>
 
