@@ -14,16 +14,13 @@ import { SubscriptionManager } from '../components/SubscriptionManager'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 
-// Top 18 most common workout types organized by popularity
+// Top 14 most common workout types organized by popularity
 const TYPES = [
   'Full Body',        // Most popular - comprehensive workout
   'Upper Body',       // Very popular - convenient split
   'Lower Body',       // Very popular - leg day
   'Cardio',          // High demand - heart health
-  'HIIT',            // Trending - time efficient
   'Core Focus',      // Popular - aesthetic goals
-  'Strength',        // Classic - powerlifting focus
-  'Circuit',         // Popular - variety and intensity
   'Push',            // Popular split - chest/shoulders/triceps
   'Pull',            // Popular split - back/biceps
   'Legs/Glutes',     // Specific lower body focus
@@ -33,11 +30,10 @@ const TYPES = [
   'Arms',            // Popular aesthetic focus
   'Yoga',            // Mind-body connection - flexibility and mindfulness
   'Pilates',         // Mind-body connection - core strength and stability
-  'Functional'       // Movement-based training
 ] as const
 
-// Top 8 most common workout durations (optimized for user preferences)
-const DUR = [15, 20, 30, 45, 60, 75, 90, 120] as const
+// Top 6 most common workout durations (optimized for user preferences)
+const DUR = [15, 30, 45, 60, 75, 90] as const
 
 // Profile type moved to types file for better organization
 // type Profile = {
@@ -397,7 +393,7 @@ export default function Generate() {
               <h3 className="font-semibold text-gray-900">Duration</h3>
               {duration && <span className="text-xs text-gray-500">{duration} min</span>}
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {DUR.map((m) => (
                 <button
                   key={m}

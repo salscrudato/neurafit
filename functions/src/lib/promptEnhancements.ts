@@ -131,26 +131,10 @@ export function generateExerciseSelectionGuidelines(context: PromptContext): str
   }
 
   // Workout type specific guidelines
-  if (context.workoutType?.toLowerCase().includes('hiit')) {
-    guidelines.push(
-      'HIIT STRUCTURE: Alternate high-intensity work with active recovery.',
-      'Use 20-45 second work intervals with 10-30 second rest periods.',
-      'Include explosive movements and compound exercises.'
-    );
-  }
-
-  if (context.workoutType?.toLowerCase().includes('strength')) {
-    guidelines.push(
-      'STRENGTH STRUCTURE: Build around major compound movements.',
-      'Use progressive loading with adequate rest between exercises.',
-      'Include accessory work to support main lifts.'
-    );
-  }
-
   if (context.workoutType?.toLowerCase().includes('cardio')) {
     guidelines.push(
       'CARDIO STRUCTURE: Maintain elevated heart rate throughout session.',
-      'Use circuit training or interval methods.',
+      'Use interval methods for variety.',
       'Include both steady-state and interval components.'
     );
   }

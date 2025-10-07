@@ -178,17 +178,14 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Comprehensive workout type context for all 18 common types
+      // Comprehensive workout type context for all 14 common types
       const getWorkoutTypeContext = (type: string) => {
         const contexts = {
           'Full Body': 'Focus: Total body conditioning. Style: 6-12 reps, compound movements. Equipment: Mixed.',
           'Upper Body': 'Focus: Chest, back, shoulders, arms. Style: 6-15 reps, push/pull balance. Equipment: Weights preferred.',
           'Lower Body': 'Focus: Legs, glutes, calves. Style: 8-15 reps, squats/lunges/deadlifts. Equipment: Weights preferred.',
           'Cardio': 'Focus: Cardiovascular endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
-          'HIIT': 'Focus: Fat burning, conditioning. Style: 30s work/15s rest intervals, explosive movements. Equipment: Minimal.',
           'Core Focus': 'Focus: Abdominals, obliques, stability. Style: 10-20 reps, isometric holds. Equipment: Bodyweight.',
-          'Strength': 'Focus: Maximum strength, power. Style: 3-8 reps, heavy compound movements. Equipment: Weights required.',
-          'Circuit': 'Focus: Conditioning, variety. Style: 8-15 reps, minimal rest between exercises. Equipment: Mixed.',
           'Push': 'Focus: Chest, shoulders, triceps. Style: 6-12 reps, pressing movements. Equipment: Weights preferred.',
           'Pull': 'Focus: Back, biceps, rear delts. Style: 6-12 reps, pulling movements. Equipment: Weights preferred.',
           'Legs/Glutes': 'Focus: Lower body power, shape. Style: 8-15 reps, hip-dominant movements. Equipment: Weights preferred.',
@@ -198,7 +195,6 @@ export const generateWorkout = onRequest(
           'Arms': 'Focus: Biceps, triceps, forearms. Style: 8-15 reps, isolation movements. Equipment: Weights preferred.',
           'Yoga': 'Focus: Flexibility, mindfulness, balance. Style: 30-90s holds, flowing sequences. Equipment: Bodyweight only.',
           'Pilates': 'Focus: Core strength, stability, control. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
-          'Functional': 'Focus: Real-world movement patterns. Style: 8-15 reps, multi-plane movements. Equipment: Mixed.'
         };
         return contexts[type as keyof typeof contexts] || contexts['Full Body'];
       };
@@ -222,14 +218,14 @@ ${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
         : '';
 
       // Streamlined prompt optimized for speed while maintaining quality
-      const prompt = `Create a ${duration}-min ${workoutType || 'Strength'} workout for ${experience || 'Beginner'} level.
+      const prompt = `Create a ${duration}-min ${workoutType || 'Full Body'} workout for ${experience || 'Beginner'} level.
 
-SPECS: Equipment: ${filteredEquipment.join(', ') || 'bodyweight'} | Goals: ${filteredGoals.join(', ') || 'fitness'} | Type: ${workoutType || 'Strength'}
-${getWorkoutTypeContext(workoutType || 'Strength')}${injuryContext}${intensityContext}
+SPECS: Equipment: ${filteredEquipment.join(', ') || 'bodyweight'} | Goals: ${filteredGoals.join(', ') || 'fitness'} | Type: ${workoutType || 'Full Body'}
+${getWorkoutTypeContext(workoutType || 'Full Body')}${injuryContext}${intensityContext}
 
 RULES:
 1. CREATE new exercises dynamically (no preset lists)
-2. Match ${workoutType || 'Strength'} workout type exactly
+2. Match ${workoutType || 'Full Body'} workout type exactly
 3. Include 7-8 exercises: 2 warm-up, 4-5 main, 1-2 cool-down
 4. Descriptions: 100+ chars with form cues and breathing
 
