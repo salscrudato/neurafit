@@ -23,7 +23,7 @@ type Plan = { exercises: Exercise[] }
 
 export default function Preview() {
   const nav = useNavigate()
-  const { hasUnlimitedWorkouts, remainingFreeWorkouts } = useSubscription()
+  const { hasUnlimitedWorkouts } = useSubscription()
 
   // Parse saved data and calculate exercises before early return - memoized to prevent unnecessary re-renders
   const { saved, parsedData, exercises } = useMemo(() => {
@@ -82,14 +82,10 @@ export default function Preview() {
                 <span className="font-semibold">{totalSets}</span>
               </CompactBadge>
 
-              {hasUnlimitedWorkouts ? (
+              {hasUnlimitedWorkouts && (
                 <CompactBadge variant="pro">
                   <Crown className="h-3 w-3" />
                   Pro
-                </CompactBadge>
-              ) : (
-                <CompactBadge variant="free">
-                  <span className="font-semibold">{remainingFreeWorkouts - 1}</span> left
                 </CompactBadge>
               )}
             </div>
@@ -245,13 +241,12 @@ function CompactBadge({
   variant = 'primary'
 }: {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'pro' | 'free'
+  variant?: 'primary' | 'secondary' | 'pro'
 }) {
   const variants = {
     primary: "inline-flex items-center gap-2 rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 text-blue-700 shadow-sm shadow-blue-100/40 text-sm font-medium",
     secondary: "inline-flex items-center gap-2 rounded-xl border border-slate-200/50 bg-gradient-to-r from-slate-50 to-gray-50 px-3 py-2 text-slate-700 shadow-sm shadow-slate-100/40 text-sm font-medium",
-    pro: "inline-flex items-center gap-2 rounded-xl border border-yellow-300/50 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-2 text-white font-semibold shadow-sm shadow-yellow-500/20 text-sm",
-    free: "inline-flex items-center gap-2 rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50 to-green-50 px-3 py-2 text-emerald-700 shadow-sm shadow-emerald-100/40 text-sm font-medium"
+    pro: "inline-flex items-center gap-2 rounded-xl border border-yellow-300/50 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-2 text-white font-semibold shadow-sm shadow-yellow-500/20 text-sm"
   }
 
   return (

@@ -58,7 +58,7 @@ export default function Generate() {
   const { preloadedData } = useWorkoutPreload()
 
   // Subscription hooks
-  const { canGenerateWorkout, remainingFreeWorkouts, hasUnlimitedWorkouts, subscription } = useSubscription()
+  const { canGenerateWorkout, hasUnlimitedWorkouts, subscription } = useSubscription()
 
   // Handle preloaded data and navigation
   useEffect(() => {
@@ -227,97 +227,56 @@ export default function Generate() {
 
       <AppHeader />
 
-      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-8 pt-4 sm:pt-5">
-        {/* Compact Hero Section */}
-        <section className="group relative rounded-2xl border border-white/80 bg-gradient-to-br from-white/98 via-white/95 to-white/90 backdrop-blur-xl p-4 sm:p-5 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.002] hover:-translate-y-1">
-          {/* Background elements */}
-          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-3xl group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
-          <div className="absolute -left-16 -bottom-16 h-40 w-40 rounded-full bg-gradient-to-tr from-slate-400/10 via-gray-400/5 to-blue-400/5 opacity-40 blur-2xl group-hover:opacity-60 transition-all duration-700" />
+      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-16 pt-6 sm:pt-8">
+        {/* Enhanced Hero Section */}
+        <section className="group relative rounded-3xl border border-white/70 bg-gradient-to-br from-white/98 via-white/95 to-white/90 backdrop-blur-xl p-6 sm:p-8 md:p-12 overflow-hidden shadow-2xl shadow-slate-200/50 hover:shadow-3xl hover:shadow-slate-300/30 transition-all duration-700 hover:scale-[1.005] hover:-translate-y-1">
+          {/* Enhanced background elements */}
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-3xl group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
+          <div className="absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-slate-400/10 via-gray-400/5 to-blue-400/5 opacity-40 blur-2xl group-hover:opacity-60 transition-all duration-700" />
 
           {/* Subtle inner glow */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" />
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" />
 
-          <div className="relative space-y-3 sm:space-y-4">
-            <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
+          <div className="relative space-y-6 sm:space-y-8">
+            <div className="space-y-4 sm:space-y-6">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-[1.1] sm:leading-tight">
                 AI Workout Generator
               </h1>
-              <h2 className="text-base sm:text-lg font-semibold text-slate-700/90 leading-tight tracking-tight">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700/90 leading-tight tracking-tight">
                 Create Custom Fitness Plans
               </h2>
             </div>
 
-            <p className="text-slate-600/90 text-sm sm:text-base leading-snug font-medium max-w-4xl">
+            <p className="text-slate-600/90 text-base sm:text-lg lg:text-xl leading-relaxed font-medium max-w-4xl">
               Generate <strong className="text-slate-800 font-semibold">personalized workout plans</strong> instantly with advanced AI technology.
               Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by OpenAI's GPT-4.1-nano for ultra-fast generation.
             </p>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-xl border border-blue-200/30 backdrop-blur-sm">
-              <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
-              <span className="text-blue-700 font-semibold text-xs sm:text-sm">Get your custom training plan in 30 seconds!</span>
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-2xl border border-blue-200/30 backdrop-blur-sm">
+              <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
+              <span className="text-blue-700 font-semibold text-sm sm:text-base">Get your custom training plan in 30 seconds!</span>
             </div>
 
-            {/* Compact benefit highlights */}
-            <div className="flex flex-wrap gap-3 sm:gap-4">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-700/90 font-medium">
-                <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/30"></div>
+            {/* Enhanced benefit highlights */}
+            <div className="flex flex-wrap gap-4 sm:gap-6">
+              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/30"></div>
                 <span>Personalized for your goals</span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-700/90 font-medium">
-                <div className="w-2.5 h-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30"></div>
+              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30"></div>
                 <span>Equipment-based customization</span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-700/90 font-medium">
-                <div className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/30"></div>
+              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/30"></div>
                 <span>Injury-safe modifications</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Compact Subscription Status */}
-        <SubscriptionManager mode="status" className="mt-5 sm:mt-6" />
-
-        {/* Compact Legacy Subscription Status - keeping for users with more than 1 workout remaining */}
-        {!hasUnlimitedWorkouts && remainingFreeWorkouts > 1 && (
-          <section className="mt-5 sm:mt-6">
-            <div className="group relative rounded-2xl border border-blue-200/60 bg-gradient-to-br from-blue-50/80 via-blue-50/60 to-white/90 backdrop-blur-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
-              <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-blue-400/20 to-indigo-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
-
-              <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 group-hover:scale-110 transition-all duration-500">
-                    <span className="text-white font-bold text-base">{remainingFreeWorkouts}</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="font-bold text-base sm:text-lg text-gray-900 leading-tight">
-                      {remainingFreeWorkouts} free workout{remainingFreeWorkouts === 1 ? '' : 's'} remaining
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600/90 font-medium">
-                      Upgrade to Pro for unlimited AI-powered workouts
-                    </div>
-                    {/* Progress bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-indigo-600 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${((50 - remainingFreeWorkouts) / 50) * 100}%` }}
-                      />
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {50 - remainingFreeWorkouts} of 50 free workouts used
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowUpgradePrompt(true)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 text-sm self-start sm:self-center"
-                >
-                  $10/month
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Enhanced Subscription Status */}
+        <SubscriptionManager mode="status" className="mt-8 sm:mt-10" />
 
         {/* Subscription Upgrade Modal */}
         {showUpgradePrompt && (
@@ -331,26 +290,26 @@ export default function Generate() {
           />
         )}
 
-        {/* Compact Intensity Calibration Indicator */}
+        {/* Enhanced Intensity Calibration Indicator */}
         {preloadedData.targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
-          <section className="mt-5 sm:mt-6">
-            <div className="group relative rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-white/90 backdrop-blur-xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
+          <section className="mt-8 sm:mt-10">
+            <div className="group relative rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-indigo-200/30 hover:shadow-2xl hover:shadow-indigo-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
               <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-indigo-400/20 to-purple-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
 
-              <div className="relative flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-110 transition-all duration-500">
-                  <Brain className="h-6 w-6 text-white" />
+              <div className="relative flex items-center gap-5">
+                <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-110 transition-all duration-500">
+                  <Brain className="h-7 w-7 text-white" />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="font-bold text-base sm:text-lg text-gray-900 leading-tight">
+                <div className="flex-1 space-y-2">
+                  <div className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
                     Intensity: {preloadedData.targetIntensity > 1.0 ? '+' : ''}{Math.round((preloadedData.targetIntensity - 1.0) * 100)}%
                   </div>
                   {preloadedData.progressionNote && (
-                    <div className="text-xs sm:text-sm text-gray-600/90 font-medium capitalize leading-snug">
+                    <div className="text-sm sm:text-base text-gray-600/90 font-medium capitalize leading-relaxed">
                       {preloadedData.progressionNote}
                     </div>
                   )}
-                  <div className="text-xs text-indigo-600/80 font-medium">
+                  <div className="text-xs sm:text-sm text-indigo-600/80 font-medium">
                     AI-adjusted based on your recent workout feedback
                   </div>
                 </div>
@@ -359,21 +318,21 @@ export default function Generate() {
           </section>
         )}
 
-        {/* Compact Options */}
-        <section className="mt-5 space-y-4">
+        {/* Options */}
+        <section className="mt-8 space-y-6">
           {/* Type */}
-          <div className="rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 shadow-sm">
-            <div className="mb-2.5 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Workout Type</h3>
+          <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Workout Type</h3>
               {type && <span className="text-xs text-gray-500">Selected: {type}</span>}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {TYPES.map((t) => (
                 <button
                   key={t}
                   onClick={() => setType(t)}
                   className={[
-                    'rounded-lg border px-2.5 py-2 text-left transition-all duration-200 text-xs sm:text-sm font-medium',
+                    'rounded-xl border px-3 py-2.5 text-left transition-all duration-200 text-sm font-medium',
                     type === t
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
                       : 'bg-white/70 border-gray-200 hover:border-blue-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
@@ -386,11 +345,11 @@ export default function Generate() {
           </div>
 
           {/* Duration and Equipment */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Duration */}
-            <div className="rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 shadow-sm">
-            <div className="mb-2.5 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Duration</h3>
+            <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Duration</h3>
               {duration && <span className="text-xs text-gray-500">{duration} min</span>}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -399,7 +358,7 @@ export default function Generate() {
                   key={m}
                   onClick={() => setDuration(m)}
                   className={[
-                    'rounded-lg border px-2.5 py-2 text-xs sm:text-sm font-medium transition-all duration-200',
+                    'rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200',
                     duration === m
                       ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-500 shadow-md scale-[1.02]'
                       : 'bg-white/70 border-gray-200 hover:border-emerald-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
@@ -413,9 +372,9 @@ export default function Generate() {
             </div>
 
             {/* Equipment */}
-            <div className="rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 shadow-sm">
-              <div className="mb-2.5 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Available Equipment</h3>
+            <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Available Equipment</h3>
                 {equipment.length > 0 && <span className="text-xs text-gray-500">{equipment.length} selected</span>}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -430,7 +389,7 @@ export default function Generate() {
                       )
                     }}
                     className={[
-                      'rounded-lg border px-2.5 py-2 text-xs sm:text-sm font-medium transition-all duration-200 text-left',
+                      'rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200 text-left',
                       equipment.includes(eq)
                         ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white border-orange-500 shadow-md scale-[1.02]'
                         : 'bg-white/70 border-gray-200 hover:border-orange-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
@@ -447,7 +406,7 @@ export default function Generate() {
 
         {/* Error */}
         {error && (
-          <div className="mt-4">
+          <div className="mt-6">
             <SubscriptionManager
               mode="error"
               error={error}
@@ -461,36 +420,36 @@ export default function Generate() {
           </div>
         )}
 
-        {/* Compact Generate CTA */}
-        <div className="mt-5 flex justify-center sm:justify-end">
+        {/* Generate CTA */}
+        <div className="mt-8 flex justify-center sm:justify-end">
           <button
             onClick={generate}
             disabled={disabled}
             className={[
-              'rounded-xl px-6 py-3 font-semibold transition-all duration-300 shadow-sm touch-manipulation min-h-[48px] w-full sm:w-auto text-sm sm:text-base',
+              'rounded-xl px-8 py-4 font-semibold transition-all duration-300 shadow-sm touch-manipulation min-h-[56px] w-full sm:w-auto',
               disabled
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95'
             ].join(' ')}
           >
             {loading || showProgressiveLoading ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <div className="absolute inset-0 w-4 h-4 border border-white/20 rounded-full animate-pulse"></div>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 w-5 h-5 border border-white/20 rounded-full animate-pulse"></div>
                 </div>
                 <span className="font-semibold">Generating AI Workout…</span>
               </div>
             ) : preloadedData.isLoading ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 </div>
                 <span className="font-semibold">Loading Profile…</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Brain className="w-5 h-5" />
                 <span className="font-semibold">Generate Workout</span>
               </div>
             )}
