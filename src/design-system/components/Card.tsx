@@ -1,7 +1,36 @@
 import React, { forwardRef, memo, type HTMLAttributes } from 'react'
-import { type VariantProps } from 'class-variance-authority'
+import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
-import { cardVariants } from '../variants/cardVariants'
+
+// Inline card variants (moved from ../variants/cardVariants.ts)
+const cardVariants = cva(
+  'bg-white border border-gray-200 shadow-sm transition-all duration-200',
+  {
+    variants: {
+      variant: {
+        default: '',
+        elevated: 'shadow-lg',
+        interactive: 'cursor-pointer hover:shadow-md hover:border-gray-300',
+      },
+      size: {
+        sm: 'p-4',
+        md: 'p-6',
+        lg: 'p-8',
+      },
+      rounded: {
+        sm: 'rounded-lg',
+        md: 'rounded-xl',
+        lg: 'rounded-2xl',
+        '2xl': 'rounded-2xl',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'md',
+      rounded: 'md',
+    },
+  }
+)
 
 export interface CardProps
   extends HTMLAttributes<HTMLDivElement>,
