@@ -1,6 +1,6 @@
 /**
- * Professional exercise validation and safety checking system
- * Ensures AI-generated workouts meet fitness industry standards
+ * Safety-critical exercise validation system
+ * Ensures AI-generated workouts are safe and structurally complete
  */
 
 export interface ExerciseValidationResult {
@@ -33,6 +33,7 @@ export interface WorkoutPlan {
 }
 
 // Exercise contraindications based on common injuries
+// These are safety-critical patterns that should be avoided with specific injuries
 const INJURY_CONTRAINDICATIONS: Record<string, string[]> = {
   knee: [
     'deep squat',
@@ -72,7 +73,8 @@ const INJURY_CONTRAINDICATIONS: Record<string, string[]> = {
 };
 
 /**
- * Validates a complete workout plan for safety and quality
+ * Validates a workout plan for safety-critical issues
+ * Focuses on injury contraindications and structural completeness
  */
 export function validateWorkoutPlan(
   plan: WorkoutPlan,
@@ -90,15 +92,16 @@ export function validateWorkoutPlan(
     suggestions: [],
   };
 
+  // Check for empty workout
   if (!plan.exercises || plan.exercises.length === 0) {
     result.errors.push('Workout must contain at least one exercise');
     result.isValid = false;
     return result;
   }
 
-  // Validate individual exercises
+  // Validate each exercise for required fields
   plan.exercises.forEach((exercise, index) => {
-    const exerciseResult = validateExercise(exercise, userProfile);
+    const exerciseResult = validateExercise(exercise);
 
     if (!exerciseResult.isValid) {
       result.isValid = false;
@@ -107,33 +110,19 @@ export function validateWorkoutPlan(
     exerciseResult.errors.forEach((error) =>
       result.errors.push(`Exercise ${index + 1} (${exercise.name}): ${error}`),
     );
-    exerciseResult.warnings.forEach((warning) =>
-      result.warnings.push(`Exercise ${index + 1} (${exercise.name}): ${warning}`),
-    );
-    exerciseResult.suggestions.forEach((suggestion) =>
-      result.suggestions.push(`Exercise ${index + 1} (${exercise.name}): ${suggestion}`),
-    );
   });
 
-  // Validate workout structure
-  validateWorkoutStructure(plan, userProfile, result);
-
-  // Check for injury contraindications
+  // CRITICAL: Check for injury contraindications
   validateInjuryCompliance(plan, userProfile.injuries || [], result);
-
-  // Validate time feasibility
-  validateTimeFeasibility(plan, userProfile.duration, result);
 
   return result;
 }
 
 /**
- * Validates an individual exercise
+ * Validates an individual exercise for required fields
+ * Ensures the AI response is structurally complete
  */
-function validateExercise(
-  exercise: Exercise,
-  userProfile: { experience?: string; goals?: string[] },
-): ExerciseValidationResult {
+function validateExercise(exercise: Exercise): ExerciseValidationResult {
   const result: ExerciseValidationResult = {
     isValid: true,
     errors: [],
@@ -162,110 +151,15 @@ function validateExercise(
     result.isValid = false;
   }
 
-  // Rest period validation with exercise-specific requirements
-  const exerciseName = exercise.name.toLowerCase();
-  let minRestSeconds = 30; // Default minimum
-  const maxRestSeconds = 300;
-
-  // Determine minimum rest based on exercise type
-  if (
-    exerciseName.includes('squat') ||
-    exerciseName.includes('deadlift') ||
-    exerciseName.includes('press') ||
-    exerciseName.includes('row')
-  ) {
-    minRestSeconds = 120; // Compound movements need more rest
-  } else if (
-    exerciseName.includes('curl') ||
-    exerciseName.includes('extension') ||
-    exerciseName.includes('raise') ||
-    exerciseName.includes('fly')
-  ) {
-    minRestSeconds = 60; // Isolation exercises
-  } else if (exerciseName.includes('warm') || exerciseName.includes('mobility')) {
-    minRestSeconds = 15; // Warm-up movements
-  } else if (exerciseName.includes('plank') || exerciseName.includes('hold')) {
-    minRestSeconds = 45; // Isometric exercises
-  }
-
-  if (exercise.restSeconds < minRestSeconds) {
-    result.warnings.push(
-      `Rest period may be short: ${exercise.restSeconds}s (typical minimum ${minRestSeconds}s for this exercise type)`,
-    );
-  } else if (exercise.restSeconds > maxRestSeconds) {
-    result.warnings.push(`Rest period very long: ${exercise.restSeconds}s (consider ${maxRestSeconds}s maximum)`);
-  }
-
-  // Form tips validation
-  if (!exercise.formTips || exercise.formTips.length === 0) {
-    result.warnings.push('Form tips are highly recommended for exercise safety');
-  } else if (exercise.formTips.length > 3) {
-    result.suggestions.push('Consider limiting form tips to 3 most critical points for clarity');
-  }
-
-  // Safety tips validation
-  if (!exercise.safetyTips || exercise.safetyTips.length === 0) {
-    result.warnings.push('Safety tips are essential for injury prevention');
-  } else if (exercise.safetyTips.length > 3) {
-    result.suggestions.push('Consider limiting safety tips to 3 most important points');
-  }
-
-  // Experience-appropriate difficulty
-  if (userProfile.experience?.toLowerCase() === 'beginner' && exercise.difficulty === 'advanced') {
-    result.warnings.push('Advanced exercise may be too challenging for beginner');
+  if (exercise.restSeconds === undefined || exercise.restSeconds === null) {
+    result.errors.push('Rest period is required');
+    result.isValid = false;
   }
 
   return result;
 }
 
-/**
- * Validates overall workout structure and programming
- */
-function validateWorkoutStructure(
-  plan: WorkoutPlan,
-  userProfile: { duration: number; goals?: string[] },
-  result: ExerciseValidationResult,
-): void {
-  const exercises = plan.exercises;
-  const hasWarmup = exercises.some(
-    (ex) => ex.name.toLowerCase().includes('warm') || ex.name.toLowerCase().includes('mobility') || ex.difficulty === 'beginner',
-  );
 
-  const hasCooldown = exercises.some(
-    (ex) =>
-      ex.name.toLowerCase().includes('cool') ||
-      ex.name.toLowerCase().includes('stretch') ||
-      ex.name.toLowerCase().includes('recovery'),
-  );
-
-  // Warm-up validation
-  if (!hasWarmup && userProfile.duration >= 20) {
-    result.warnings.push('Workouts 20+ minutes should include warm-up exercises');
-  }
-
-  // Cool-down validation
-  if (!hasCooldown && userProfile.duration >= 30) {
-    result.warnings.push('Workouts 30+ minutes should include cool-down/stretching');
-  }
-
-  // Movement pattern balance
-  const muscleGroups = exercises
-    .flatMap((ex) => ex.muscleGroups || [])
-    .reduce((acc, group) => {
-      acc[group] = (acc[group] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-  const pushMovements = (muscleGroups['chest'] || 0) + (muscleGroups['shoulders'] || 0);
-  const pullMovements = (muscleGroups['back'] || 0) + (muscleGroups['biceps'] || 0);
-
-  if (pushMovements > 0 && pullMovements === 0) {
-    result.warnings.push('Consider adding pulling movements to balance push exercises');
-  }
-  if (pullMovements > 0 && pushMovements === 0) {
-    result.warnings.push('Consider adding pushing movements to balance pull exercises');
-  }
-}
 
 /**
  * Validates compliance with injury limitations
@@ -296,51 +190,3 @@ function validateInjuryCompliance(
   });
 }
 
-/**
- * Validates workout fits within time constraints
- */
-function validateTimeFeasibility(
-  plan: WorkoutPlan,
-  targetDuration: number,
-  result: ExerciseValidationResult,
-): void {
-  let estimatedTime = 0;
-
-  plan.exercises.forEach((exercise) => {
-    // Estimate work time (assuming 3 seconds per rep average)
-    let workTime = 0;
-    if (typeof exercise.reps === 'string') {
-      if (exercise.reps.includes('s')) {
-        workTime = parseInt(exercise.reps) || 30;
-      } else if (exercise.reps.includes('-')) {
-        // Handle ranges like "8-12"
-        const [minReps, maxReps] = exercise.reps.split('-').map(Number);
-        workTime = ((minReps || 0) + (maxReps || 0)) / 2 * 3;
-      } else {
-        workTime = 30; // Default for time-based
-      }
-    } else {
-      workTime = exercise.reps * 3; // 3 seconds per rep estimate
-    }
-
-    const totalWorkTime = workTime * exercise.sets;
-    const totalRestTime = exercise.restSeconds * (exercise.sets - 1);
-
-    estimatedTime += totalWorkTime + totalRestTime;
-  });
-
-  // Convert to minutes
-  estimatedTime = Math.ceil(estimatedTime / 60);
-
-  if (estimatedTime > targetDuration * 1.2) {
-    result.warnings.push(
-      `Estimated workout time (${estimatedTime}min) exceeds target duration (${targetDuration}min) by >20%`,
-    );
-  }
-
-  if (estimatedTime < targetDuration * 0.7) {
-    result.suggestions.push(
-      `Workout may be shorter than expected (${estimatedTime}min vs ${targetDuration}min target)`,
-    );
-  }
-}

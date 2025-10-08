@@ -2,8 +2,9 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import type { Request, Response } from 'express';
 import OpenAI from 'openai';
-import { getAdaptiveState, calculateRecentCompletionRate, generateProgressionNote } from './lib/personalization';
 import { incrementWorkoutCount } from './lib/stripe';
+import { getProgrammingRecommendations } from './lib/exerciseDatabase';
+import { generateProfessionalPromptEnhancement } from './lib/promptEnhancements';
 
 // Export subscription functions
 export { stripeWebhook } from './stripe-webhooks';
@@ -21,6 +22,8 @@ const openaiApiKey = defineSecret('OPENAI_API_KEY');
 
 /**
  * AI-powered workout generator function
+ * - Preserves existing input/output schema for frontend compatibility
+ * - Adds structured, evidence-based prompt scaffolding for higher quality plans
  */
 export const generateWorkout = onRequest(
   {
@@ -56,14 +59,14 @@ export const generateWorkout = onRequest(
         experience,
         goals,
         equipment,
-        // personalInfo, // Removed for streamlined prompt
+        // personalInfo, // intentionally omitted from prompt
         injuries,
         workoutType,
         duration,
         uid,
         targetIntensity,
         progressionNote,
-      } = req.body as {
+      } = (req.body as {
         experience?: string;
         goals?: string | string[];
         equipment?: string | string[];
@@ -74,84 +77,46 @@ export const generateWorkout = onRequest(
         uid?: string;
         targetIntensity?: number;
         progressionNote?: string;
-      } || {};
+      }) || {};
 
-      // Run subscription check and adaptive personalization in parallel if uid is provided
+      // Use intensity values from frontend (calculated by useWorkoutPreload hook)
       let finalTargetIntensity = targetIntensity || 1.0;
       let finalProgressionNote = progressionNote || '';
 
+      // Initialize subscription data for new users if uid is provided
       if (uid) {
         try {
           const { getFirestore } = await import('firebase-admin/firestore');
           const db = getFirestore();
 
-          // Run subscription initialization and adaptive state fetch in parallel
-          const [subscriptionResult, adaptiveResult] = await Promise.allSettled([
-            // Subscription initialization (no limits enforced - unlimited free workouts)
-            (async () => {
-              const userDoc = await db.collection('users').doc(uid).get();
-              const userData = userDoc.data();
-              const subscription = userData?.subscription as { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number } | undefined;
+          const userDoc = await db.collection('users').doc(uid).get();
+          const userData = userDoc.data();
+          const subscription = userData?.subscription as
+            | { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number }
+            | undefined;
 
-              // Initialize subscription data for new users
-              if (!subscription) {
-                const initialSubscriptionData = {
-                  status: 'incomplete',
-                  workoutCount: 0,
-                  freeWorkoutsUsed: 0,
-                  freeWorkoutLimit: 50,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                };
+          if (!subscription) {
+            const initialSubscriptionData = {
+              status: 'incomplete',
+              workoutCount: 0,
+              freeWorkoutsUsed: 0,
+              freeWorkoutLimit: 50,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
 
-                await db.collection('users').doc(uid).set(
-                  { subscription: initialSubscriptionData },
-                  { merge: true },
-                );
+            await db.collection('users').doc(uid).set(
+              { subscription: initialSubscriptionData },
+              { merge: true },
+            );
 
-                console.log('Initialized subscription data for new user:', uid);
-              }
-
-              // UNLIMITED FREE WORKOUTS: Always allow workout generation
-              return null;
-            })(),
-            // Adaptive personalization (only if no targetIntensity provided)
-            !targetIntensity ? (async () => {
-              const adaptiveState = await getAdaptiveState(uid);
-              let recentCompletion = adaptiveState.recentCompletionRate;
-              if (recentCompletion === undefined) {
-                recentCompletion = await calculateRecentCompletionRate(uid);
-              }
-              return {
-                difficultyScalar: adaptiveState.difficultyScalar,
-                lastFeedback: adaptiveState.lastFeedback,
-                recentCompletion,
-              };
-            })() : Promise.resolve(null),
-          ]);
-
-          // Handle subscription initialization result (no limits enforced)
-          if (subscriptionResult.status === 'rejected') {
-            console.error('Error initializing subscription:', subscriptionResult.reason);
-            // Continue with workout generation even if subscription initialization fails
+            console.log('Initialized subscription data for new user:', uid);
           }
-
-          // Handle adaptive personalization result
-          if (adaptiveResult.status === 'fulfilled' && adaptiveResult.value) {
-            finalTargetIntensity = adaptiveResult.value.difficultyScalar;
-            finalProgressionNote = generateProgressionNote(1.0, finalTargetIntensity, adaptiveResult.value.lastFeedback);
-          } else if (adaptiveResult.status === 'rejected') {
-            console.error('Error fetching adaptive state:', adaptiveResult.reason);
-            // Continue with defaults
-          }
-
         } catch (error) {
-          console.error('Error in parallel database operations:', error);
-          // Continue with workout generation if database operations fail
+          console.error('Error initializing subscription:', error);
+          // Continue with workout generation even if subscription initialization fails
         }
       }
-
-      // Streamlined prompt - removed unused imports
 
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
@@ -161,56 +126,79 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Comprehensive workout type context for all 14 common types
+      // Workout type context
       const getWorkoutTypeContext = (type: string) => {
-        const contexts = {
+        const contexts: Record<string, string> = {
           'Full Body': 'Focus: Total body conditioning. Style: 6-12 reps, compound movements. Equipment: Mixed.',
           'Upper Body': 'Focus: Chest, back, shoulders, arms. Style: 6-15 reps, push/pull balance. Equipment: Weights preferred.',
           'Lower Body': 'Focus: Legs, glutes, calves. Style: 8-15 reps, squats/lunges/deadlifts. Equipment: Weights preferred.',
-          'Cardio': 'Focus: Cardiovascular endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
+          Cardio: 'Focus: Cardiovascular endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
           'Core Focus': 'Focus: Abdominals, obliques, stability. Style: 10-20 reps, isometric holds. Equipment: Bodyweight.',
-          'Push': 'Focus: Chest, shoulders, triceps. Style: 6-12 reps, pressing movements. Equipment: Weights preferred.',
-          'Pull': 'Focus: Back, biceps, rear delts. Style: 6-12 reps, pulling movements. Equipment: Weights preferred.',
+          Push: 'Focus: Chest, shoulders, triceps. Style: 6-12 reps, pressing movements. Equipment: Weights preferred.',
+          Pull: 'Focus: Back, biceps, rear delts. Style: 6-12 reps, pulling movements. Equipment: Weights preferred.',
           'Legs/Glutes': 'Focus: Lower body power, shape. Style: 8-15 reps, hip-dominant movements. Equipment: Weights preferred.',
           'Chest/Triceps': 'Focus: Chest development, tricep strength. Style: 6-15 reps, pressing focus. Equipment: Weights preferred.',
           'Back/Biceps': 'Focus: Back width/thickness, bicep size. Style: 6-15 reps, pulling focus. Equipment: Weights preferred.',
-          'Shoulders': 'Focus: Deltoid development, stability. Style: 8-15 reps, multi-angle pressing. Equipment: Weights preferred.',
-          'Arms': 'Focus: Biceps, triceps, forearms. Style: 8-15 reps, isolation movements. Equipment: Weights preferred.',
-          'Yoga': 'Focus: Flexibility, mindfulness, balance. Style: 30-90s holds, flowing sequences. Equipment: Bodyweight only.',
-          'Pilates': 'Focus: Core strength, stability, control. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
+          Shoulders: 'Focus: Deltoid development, stability. Style: 8-15 reps, multi-angle pressing. Equipment: Weights preferred.',
+          Arms: 'Focus: Biceps, triceps, forearms. Style: 8-15 reps, isolation movements. Equipment: Weights preferred.',
+          Yoga: 'Focus: Flexibility, mindfulness, balance. Style: 30-90s holds, flowing sequences. Equipment: Bodyweight only.',
+          Pilates: 'Focus: Core strength, stability, control. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
         };
-        return contexts[type as keyof typeof contexts] || contexts['Full Body'];
+        return contexts[type] || contexts['Full Body'];
       };
 
       // Build injury context if injuries are present
-      const injuryContext = injuries?.list && injuries.list.length > 0
-        ? `\n\nIMPORTANT - INJURY CONSIDERATIONS:
+      const injuryContext =
+        injuries?.list && injuries.list.length > 0
+          ? `\n\nIMPORTANT - INJURY CONSIDERATIONS:
 - User has reported injuries: ${injuries.list.join(', ')}
 ${injuries.notes ? `- Additional notes: ${injuries.notes}` : ''}
 - Avoid exercises that stress these areas
 - Provide modifications when appropriate
 - Prioritize safety over intensity`
-        : '';
+          : '';
 
       // Build intensity context if provided
-      const intensityContext = finalTargetIntensity !== 1.0 || finalProgressionNote
-        ? `\n\nINTENSITY GUIDANCE:
+      const intensityContext =
+        finalTargetIntensity !== 1.0 || finalProgressionNote
+          ? `\n\nINTENSITY GUIDANCE:
 - Target intensity scalar: ${finalTargetIntensity.toFixed(2)}x baseline
 ${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
 - Adjust sets, reps, or rest periods accordingly`
-        : '';
+          : '';
 
-      // Streamlined prompt optimized for speed while maintaining quality
+      // Quality standards and injury-specific safety guidance
+      const qualityGuidelines = generateProfessionalPromptEnhancement({
+        injuries: injuries?.list,
+      });
+
+      // Evidence-based programming ranges for the primary goal
+      const programming = getProgrammingRecommendations(filteredGoals, experience || '');
+      const programmingContext = `\n\nPROGRAMMING GUIDELINES: Sets ${programming.sets?.[0]}-${programming.sets?.[1]}, Reps ${programming.reps?.[0]}-${programming.reps?.[1]}, Rest ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s (Intensity: ${programming.intensity}).`;
+
+      // Calculate recommended exercise count based on duration
+      // Formula: ~3-4 minutes per exercise (including rest periods)
+      const minExercises = Math.max(3, Math.floor((duration || 30) / 5));
+      const maxExercises = Math.max(4, Math.ceil((duration || 30) / 3));
+      const durationGuidance = `\n\nDURATION CONSTRAINT:
+- Total workout time: ${duration} minutes
+- Recommended exercise count: ${minExercises}-${maxExercises} exercises
+- Account for rest periods between sets (${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s per set)
+- Ensure the workout fits within the time limit including warm-up considerations`;
+
+      // Structured prompt (keeps original schema & single-session format)
       const prompt = `Create a ${duration}-min ${workoutType || 'Full Body'} workout for ${experience || 'Beginner'} level.
 
 SPECS: Equipment: ${filteredEquipment.join(', ') || 'bodyweight'} | Goals: ${filteredGoals.join(', ') || 'fitness'} | Type: ${workoutType || 'Full Body'}
 ${getWorkoutTypeContext(workoutType || 'Full Body')}${injuryContext}${intensityContext}
 
+${qualityGuidelines}${programmingContext}${durationGuidance}
+
 RULES:
-1. CREATE new exercises dynamically (no preset lists)
-2. Match ${workoutType || 'Full Body'} workout type exactly
-3. Include 7-8 exercises: 2 warm-up, 4-5 main, 1-2 cool-down
-4. Descriptions: 100+ chars with form cues and breathing
+1. Use evidence-based exercises and standard variations (no fictitious movement names)
+2. Match the requested workout type exactly
+3. Descriptions: 100+ chars with setup, execution cues, and breathing
+4. CRITICAL: Generate the appropriate number of exercises to fit within ${duration} minutes
 
 JSON OUTPUT (no markdown):
 {
@@ -233,16 +221,17 @@ JSON OUTPUT (no markdown):
   }
 }`.trim();
 
-      // Use GPT-4.1-nano for ultra-fast generation (<10s target) with low latency
+      // Use GPT-4.1-nano for ultra-fast generation with low latency
       console.log('⚡ Using GPT-4.1-nano for ultra-fast workout generation');
       const completion = await client.chat.completions.create({
         model: 'gpt-4.1-nano',
-        temperature: 0.4, // Slightly higher for more creative exercise selection
-        max_tokens: 1500, // Optimized for speed while maintaining quality
+        temperature: 0.4, // Balanced creativity
+        max_tokens: 2500, // Sufficient for complete workouts with 6-8 exercises
         messages: [
           {
             role: 'system',
-            content: 'You are an expert certified personal trainer (NASM-CPT, CSCS) with 10+ years of experience. Create dynamic, varied workouts tailored to each request. Generate exercises creatively based on the workout type - never use a preset list. Output only valid JSON with no markdown formatting or code blocks.',
+            content:
+              'You are an expert certified personal trainer (NASM-CPT, CSCS) with 10+ years of experience. Create dynamic, varied workouts tailored to each request. Use real, evidence-based exercises and standard variations. Output only valid JSON with no markdown formatting or code blocks.',
           },
           { role: 'user', content: prompt },
         ],
@@ -251,7 +240,7 @@ JSON OUTPUT (no markdown):
       const text = completion.choices?.[0]?.message?.content ?? '';
 
       // Clean JSON text by removing markdown code blocks if present
-      const cleanedText = text.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+      const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
 
       // Validate JSON output
       try {
@@ -282,7 +271,7 @@ JSON OUTPUT (no markdown):
         const userProfileForValidation = {
           experience,
           injuries: injuries?.list || [],
-          duration: duration || 30, // Default to 30 minutes if not specified
+          duration: duration || 30,
           goals: filteredGoals,
           equipment: filteredEquipment,
           workoutType,
@@ -301,7 +290,7 @@ JSON OUTPUT (no markdown):
           console.info('Workout validation warnings:', validationResult.warnings);
         }
 
-        // Reject workouts with critical safety issues or very low quality
+        // Reject workouts with critical safety issues
         if (!validationResult.isValid) {
           console.error('Generated workout failed safety validation:', validationResult.errors);
           res.status(502).json({
@@ -312,7 +301,7 @@ JSON OUTPUT (no markdown):
           return;
         }
 
-        // Warn about low-quality workouts but don't reject (for now)
+        // Warn about low-quality workouts but don't reject
         if (qualityScore.overall < 60) {
           console.warn('Generated workout has low quality score:', qualityScore.overall, qualityScore.feedback);
         }
@@ -342,7 +331,7 @@ JSON OUTPUT (no markdown):
             await incrementWorkoutCount(uid);
           } catch (error) {
             console.error('Error incrementing workout count:', error);
-            // Don't fail the request if workout count increment fails
+            // Do not fail the request if workout count increment fails
           }
         }
 
