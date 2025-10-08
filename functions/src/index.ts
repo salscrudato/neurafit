@@ -21,6 +21,81 @@ export {
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
 
 /**
+ * Simple rule-based quality scoring for workouts
+ */
+function calculateWorkoutQuality(
+  workout: {
+    exercises: Array<{
+      name: string;
+      description: string;
+      sets: number;
+      reps: number | string;
+      formTips: string[];
+      safetyTips: string[];
+      restSeconds: number;
+      usesWeight: boolean;
+      muscleGroups?: string[];
+      difficulty?: string;
+    }>;
+    workoutSummary?: {
+      totalVolume: string;
+      primaryFocus: string;
+      expectedRPE: string;
+    };
+  },
+  userProfile: {
+    experience?: string;
+    injuries?: string[];
+    duration: number;
+    goals?: string[];
+    equipment?: string[];
+    workoutType?: string;
+  },
+): { overall: number; grade: string } {
+  let score = 100;
+
+  // Check exercise count appropriateness (3-4 min per exercise)
+  const expectedMin = Math.max(3, Math.floor(userProfile.duration / 5));
+  const expectedMax = Math.max(4, Math.ceil(userProfile.duration / 3));
+  const exerciseCount = workout.exercises.length;
+
+  if (exerciseCount < expectedMin - 1 || exerciseCount > expectedMax + 2) {
+    score -= 10;
+  }
+
+  // Check for complete exercise data
+  workout.exercises.forEach((ex) => {
+    if (!ex.description || ex.description.length < 50) score -= 5;
+    if (!ex.formTips || ex.formTips.length < 2) score -= 3;
+    if (!ex.safetyTips || ex.safetyTips.length < 1) score -= 3;
+    if (!ex.muscleGroups || ex.muscleGroups.length === 0) score -= 2;
+  });
+
+  // Check for workout summary
+  if (!workout.workoutSummary) {
+    score -= 5;
+  }
+
+  // Ensure score is within bounds
+  score = Math.max(0, Math.min(100, score));
+
+  // Assign grade
+  let grade = 'F';
+  if (score >= 95) grade = 'A+';
+  else if (score >= 90) grade = 'A';
+  else if (score >= 85) grade = 'A-';
+  else if (score >= 80) grade = 'B+';
+  else if (score >= 75) grade = 'B';
+  else if (score >= 70) grade = 'B-';
+  else if (score >= 65) grade = 'C+';
+  else if (score >= 60) grade = 'C';
+  else if (score >= 55) grade = 'C-';
+  else if (score >= 50) grade = 'D';
+
+  return { overall: score, grade };
+}
+
+/**
  * AI-powered workout generator function
  * - Preserves existing input/output schema for frontend compatibility
  * - Adds structured, evidence-based prompt scaffolding for higher quality plans
@@ -61,13 +136,14 @@ export const generateWorkout = onRequest(
         experience,
         goals,
         equipment,
-        // personalInfo, // intentionally omitted from prompt
+        personalInfo,
         injuries,
         workoutType,
         duration,
         uid,
         targetIntensity,
         progressionNote,
+        recentWorkouts,
       } = (req.body as {
         experience?: string;
         goals?: string | string[];
@@ -79,6 +155,7 @@ export const generateWorkout = onRequest(
         uid?: string;
         targetIntensity?: number;
         progressionNote?: string;
+        recentWorkouts?: Array<{ workoutType: string; timestamp: number; exercises: Array<{ name: string }> }>;
       }) || {};
 
       // Use intensity values from frontend (calculated by useWorkoutPreload hook)
@@ -128,36 +205,196 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Workout type context
+      // Enhanced workout type context with specific exercise examples
       const getWorkoutTypeContext = (type: string) => {
         const contexts: Record<string, string> = {
-          'Full Body': 'Focus: Total body conditioning. Style: 6-12 reps, compound movements. Equipment: Mixed.',
-          'Upper Body': 'Focus: Chest, back, shoulders, arms. Style: 6-15 reps, push/pull balance. Equipment: Weights preferred.',
-          'Lower Body': 'Focus: Legs, glutes, calves. Style: 8-15 reps, squats/lunges/deadlifts. Equipment: Weights preferred.',
-          Cardio: 'Focus: Cardiovascular endurance. Style: Time-based, continuous movement. Equipment: Bodyweight preferred.',
-          'Core Focus': 'Focus: Abdominals, obliques, stability. Style: 10-20 reps, isometric holds. Equipment: Bodyweight.',
-          Push: 'Focus: Chest, shoulders, triceps. Style: 6-12 reps, pressing movements. Equipment: Weights preferred.',
-          Pull: 'Focus: Back, biceps, rear delts. Style: 6-12 reps, pulling movements. Equipment: Weights preferred.',
-          'Legs/Glutes': 'Focus: Lower body power, shape. Style: 8-15 reps, hip-dominant movements. Equipment: Weights preferred.',
-          'Chest/Triceps': 'Focus: Chest development, tricep strength. Style: 6-15 reps, pressing focus. Equipment: Weights preferred.',
-          'Back/Biceps': 'Focus: Back width/thickness, bicep size. Style: 6-15 reps, pulling focus. Equipment: Weights preferred.',
-          Shoulders: 'Focus: Deltoid development, stability. Style: 8-15 reps, multi-angle pressing. Equipment: Weights preferred.',
-          Arms: 'Focus: Biceps, triceps, forearms. Style: 8-15 reps, isolation movements. Equipment: Weights preferred.',
-          Yoga: 'Focus: Flexibility, mindfulness, balance. Style: 30-90s holds, flowing sequences. Equipment: Bodyweight only.',
-          Pilates: 'Focus: Core strength, stability, control. Style: 8-15 controlled reps, precise movements. Equipment: Bodyweight.',
+          'Full Body':
+            'Focus: Total body conditioning with balanced muscle group coverage.\nMovement Patterns: Squat, hinge, push, pull, carry.\nExample Exercises: Squats, deadlifts, push-ups, rows, lunges, planks.\nProgramming: 6-12 reps, compound movements prioritized, 2-3 exercises per major muscle group.',
+          'Upper Body':
+            'Focus: Chest, back, shoulders, arms with push/pull balance.\nMovement Patterns: Horizontal push/pull, vertical push/pull, isolation.\nExample Exercises: Bench press, rows, shoulder press, pull-ups, dips, bicep curls, tricep extensions.\nProgramming: 6-15 reps, balance pushing and pulling movements 1:1 ratio.',
+          'Lower Body':
+            'Focus: Legs, glutes, calves with knee and hip dominant movements.\nMovement Patterns: Squat, hinge, lunge, single-leg, calf.\nExample Exercises: Squats, deadlifts, lunges, leg press, Romanian deadlifts, calf raises, glute bridges.\nProgramming: 8-15 reps, prioritize compound movements, include unilateral work.',
+          Cardio:
+            'Focus: Cardiovascular endurance and metabolic conditioning.\nMovement Patterns: Continuous movement, intervals, circuits.\nExample Exercises: Jumping jacks, burpees, mountain climbers, high knees, jump rope, running in place.\nProgramming: Time-based (30-60s work periods), minimal rest (15-30s), bodyweight preferred.',
+          'Core Focus':
+            'Focus: Abdominals, obliques, lower back, stability.\nMovement Patterns: Anti-extension, anti-rotation, anti-lateral flexion.\nExample Exercises: Planks, dead bugs, bird dogs, pallof press, Russian twists, bicycle crunches.\nProgramming: 10-20 reps or 30-60s holds, focus on control and stability.',
+          Push:
+            'Focus: Chest, shoulders, triceps with pressing movements.\nMovement Patterns: Horizontal press, vertical press, isolation.\nExample Exercises: Bench press, shoulder press, push-ups, dips, chest flyes, lateral raises, tricep extensions.\nProgramming: 6-12 reps, multiple pressing angles, finish with isolation work.',
+          Pull:
+            'Focus: Back, biceps, rear delts with pulling movements.\nMovement Patterns: Horizontal pull, vertical pull, isolation.\nExample Exercises: Pull-ups, rows, lat pulldowns, face pulls, bicep curls, rear delt flyes.\nProgramming: 6-12 reps, balance horizontal and vertical pulling, include rear delt work.',
+          'Legs/Glutes':
+            'Focus: Lower body power, glute development, leg strength.\nMovement Patterns: Hip hinge, squat, lunge, hip thrust.\nExample Exercises: Hip thrusts, Romanian deadlifts, Bulgarian split squats, goblet squats, glute bridges, step-ups.\nProgramming: 8-15 reps, emphasize hip-dominant movements, include glute activation.',
+          'Chest/Triceps':
+            'Focus: Chest development and tricep strength.\nMovement Patterns: Horizontal press, incline press, tricep extension.\nExample Exercises: Bench press, incline press, push-ups, chest flyes, tricep dips, overhead extensions, close-grip press.\nProgramming: 6-15 reps, multiple chest angles, finish with tricep isolation.',
+          'Back/Biceps':
+            'Focus: Back width/thickness and bicep size.\nMovement Patterns: Vertical pull, horizontal pull, bicep curl.\nExample Exercises: Pull-ups, rows, lat pulldowns, face pulls, bicep curls, hammer curls, concentration curls.\nProgramming: 6-15 reps, prioritize compound pulling, finish with bicep isolation.',
+          Shoulders:
+            'Focus: Deltoid development (front, side, rear) and shoulder stability.\nMovement Patterns: Vertical press, lateral raise, rear delt work.\nExample Exercises: Shoulder press, lateral raises, front raises, rear delt flyes, face pulls, Arnold press.\nProgramming: 8-15 reps, hit all three deltoid heads, include rotator cuff work.',
+          Arms:
+            'Focus: Biceps, triceps, forearms with isolation movements.\nMovement Patterns: Elbow flexion, elbow extension, grip work.\nExample Exercises: Bicep curls, hammer curls, tricep extensions, dips, close-grip press, wrist curls.\nProgramming: 8-15 reps, balance bicep and tricep volume, include different curl/extension variations.',
+          Yoga:
+            'Focus: Flexibility, mindfulness, balance, breath control.\nMovement Patterns: Flowing sequences, static holds, balance poses.\nExample Exercises: Sun salutations, warrior poses, downward dog, child\'s pose, tree pose, pigeon pose.\nProgramming: 30-90s holds, flowing transitions, focus on breath and alignment.',
+          Pilates:
+            'Focus: Core strength, stability, control, mind-body connection.\nMovement Patterns: Controlled movements, core engagement, precise execution.\nExample Exercises: Hundred, roll-ups, leg circles, single leg stretch, plank variations, side-lying leg lifts.\nProgramming: 8-15 controlled reps, emphasis on core engagement and breathing.',
         };
         return contexts[type] || contexts['Full Body'];
       };
 
-      // Build injury context if injuries are present
+      // Build comprehensive injury context with explicit contraindications
+      const getInjuryContraindications = (injuryList: string[]) => {
+        const contraindications: Record<string, { avoid: string[]; alternatives: string[] }> = {
+          knee: {
+            avoid: [
+              'deep squats',
+              'lunges',
+              'Bulgarian split squats',
+              'jump squats',
+              'box jumps',
+              'burpees',
+              'pistol squats',
+              'jumping lunges',
+              'plyometric exercises',
+            ],
+            alternatives: [
+              'glute bridges',
+              'hip thrusts',
+              'wall sits (limited depth)',
+              'leg press (if available)',
+              'step-ups (low height)',
+              'seated leg extensions (light weight)',
+            ],
+          },
+          'lower back': {
+            avoid: [
+              'deadlifts',
+              'Romanian deadlifts',
+              'good mornings',
+              'bent-over rows',
+              'overhead press',
+              'sit-ups',
+              'Russian twists',
+              'toe touches',
+              'supermans',
+              'hyperextensions',
+            ],
+            alternatives: [
+              'glute bridges',
+              'bird dogs',
+              'dead bugs',
+              'planks',
+              'side planks',
+              'cable rows (supported)',
+              'chest-supported rows',
+              'pallof press',
+            ],
+          },
+          shoulder: {
+            avoid: [
+              'overhead press',
+              'military press',
+              'behind-the-neck press',
+              'upright rows',
+              'lateral raises (if painful)',
+              'handstand push-ups',
+              'dips (if painful)',
+              'pull-ups (if impingement)',
+            ],
+            alternatives: [
+              'landmine press',
+              'neutral grip dumbbell press',
+              'push-ups (modified)',
+              'cable chest press',
+              'face pulls',
+              'band pull-aparts',
+              'scapular wall slides',
+            ],
+          },
+          ankle: {
+            avoid: [
+              'jumping exercises',
+              'box jumps',
+              'burpees',
+              'calf raises',
+              'running',
+              'sprinting',
+              'agility drills',
+              'jump rope',
+            ],
+            alternatives: [
+              'seated exercises',
+              'swimming motions',
+              'upper body focus',
+              'core work',
+              'seated bike (if tolerated)',
+              'resistance band exercises',
+            ],
+          },
+          wrist: {
+            avoid: [
+              'push-ups',
+              'planks',
+              'handstands',
+              'burpees',
+              'mountain climbers',
+              'front squats',
+              'clean and jerk',
+            ],
+            alternatives: [
+              'forearm planks',
+              'push-ups on fists or handles',
+              'dumbbell exercises',
+              'cable exercises',
+              'machine exercises',
+              'leg-focused movements',
+            ],
+          },
+          neck: {
+            avoid: [
+              'overhead press',
+              'behind-the-neck movements',
+              'headstands',
+              'neck bridges',
+              'heavy shrugs',
+              'upright rows',
+            ],
+            alternatives: [
+              'neutral spine exercises',
+              'supported movements',
+              'machine-based exercises',
+              'gentle mobility work',
+            ],
+          },
+        };
+
+        let context = '';
+        injuryList.forEach((injury) => {
+          const injuryKey = injury.toLowerCase();
+          const contraInfo = contraindications[injuryKey];
+          if (contraInfo) {
+            context += `\n\n⚠️ ${injury.toUpperCase()} INJURY - CRITICAL SAFETY REQUIREMENTS:
+DO NOT INCLUDE ANY OF THESE EXERCISES:
+${contraInfo.avoid.map((ex) => `  ❌ ${ex}`).join('\n')}
+
+SAFE ALTERNATIVES TO USE INSTEAD:
+${contraInfo.alternatives.map((ex) => `  ✅ ${ex}`).join('\n')}`;
+          }
+        });
+        return context;
+      };
+
       const injuryContext =
         injuries?.list && injuries.list.length > 0
-          ? `\n\nIMPORTANT - INJURY CONSIDERATIONS:
-- User has reported injuries: ${injuries.list.join(', ')}
-${injuries.notes ? `- Additional notes: ${injuries.notes}` : ''}
-- Avoid exercises that stress these areas
-- Provide modifications when appropriate
-- Prioritize safety over intensity`
+          ? `\n\n🚨 CRITICAL - INJURY CONSIDERATIONS:
+User has reported injuries: ${injuries.list.join(', ')}
+${injuries.notes ? `Additional context: ${injuries.notes}` : ''}
+
+MANDATORY REQUIREMENTS:
+1. STRICTLY AVOID all contraindicated exercises listed below
+2. Use ONLY the safe alternatives provided for each injury
+3. Prioritize safety over workout variety or intensity
+4. Include modifications and regression options in safety tips
+5. If unsure about an exercise, choose a safer alternative
+${getInjuryContraindications(injuries.list)}`
           : '';
 
       // Build intensity context if provided
@@ -169,6 +406,40 @@ ${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
 - Adjust sets, reps, or rest periods accordingly`
           : '';
 
+      // Build personal info context for better personalization
+      const personalContext = personalInfo
+        ? `\n\nPERSONAL PROFILE:
+- Gender: ${personalInfo.sex || 'Not specified'}
+- Height: ${personalInfo.height || personalInfo.heightRange || 'Not specified'}
+- Weight: ${personalInfo.weight || personalInfo.weightRange || 'Not specified'}
+
+PERSONALIZATION CONSIDERATIONS:
+- Adjust exercise selection based on body mechanics and anthropometry
+- Consider joint stress and loading appropriate for body weight
+- Tailor intensity recommendations to individual capacity
+- Select exercises that accommodate body proportions and leverage`
+        : '';
+
+      // Build workout history context for progression
+      const workoutHistoryContext =
+        recentWorkouts && recentWorkouts.length > 0
+          ? `\n\nRECENT WORKOUT HISTORY:
+${recentWorkouts
+  .slice(0, 3)
+  .map(
+    (w, i) =>
+      `${i + 1}. ${w.workoutType} (${Math.floor((Date.now() - w.timestamp) / (1000 * 60 * 60 * 24))} days ago)
+   Exercises: ${w.exercises.map((e) => e.name).join(', ')}`,
+  )
+  .join('\n')}
+
+PROGRESSION GUIDANCE:
+- Provide variety by avoiding exact repetition of recent exercises
+- Progress difficulty appropriately based on workout frequency
+- Consider exercise variations that build on previous movements
+- Maintain consistency with user's training patterns while adding novelty`
+          : '';
+
       // Quality standards and injury-specific safety guidance
       const qualityGuidelines = generateProfessionalPromptEnhancement({
         injuries: injuries?.list,
@@ -176,7 +447,24 @@ ${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
 
       // Evidence-based programming ranges for the primary goal
       const programming = getProgrammingRecommendations(filteredGoals, experience || '');
-      const programmingContext = `\n\nPROGRAMMING GUIDELINES: Sets ${programming.sets?.[0]}-${programming.sets?.[1]}, Reps ${programming.reps?.[0]}-${programming.reps?.[1]}, Rest ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s (Intensity: ${programming.intensity}).`;
+      const programmingContext = `\n\nEVIDENCE-BASED PROGRAMMING GUIDELINES:
+Goal-Specific Parameters:
+- Sets: ${programming.sets?.[0]}-${programming.sets?.[1]}
+- Reps: ${programming.reps?.[0]}-${programming.reps?.[1]}
+- Rest: ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]} seconds
+- Intensity: ${programming.intensity}
+
+CRITICAL REST PERIOD REQUIREMENTS (MUST FOLLOW):
+- Compound movements (squats, deadlifts, presses, rows): 120-180 seconds minimum
+- Isolation movements (curls, extensions, raises, flyes): 60-90 seconds
+- Plyometric/cardio exercises (jumps, sprints, burpees): 45-90 seconds
+- Core/stability exercises (planks, holds): 45-60 seconds
+- DO NOT use rest periods shorter than these minimums - adequate rest is essential for safety and performance
+
+REP FORMAT STANDARDS:
+- Use ranges for strength/hypertrophy: "6-8", "8-12", "10-15"
+- Use time for isometric holds: "30s", "45s", "60s" (NOT "Hold for 30 seconds")
+- Use "each side" or "per leg" for unilateral exercises: "10-12 each side"`;
 
       // Calculate recommended exercise count based on duration
       // Formula: ~3-4 minutes per exercise (including rest periods)
@@ -188,38 +476,88 @@ ${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
 - Account for rest periods between sets (${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s per set)
 - Ensure the workout fits within the time limit including warm-up considerations`;
 
-      // Structured prompt (keeps original schema & single-session format)
-      const prompt = `Create a ${duration}-min ${workoutType || 'Full Body'} workout for ${experience || 'Beginner'} level.
+      // Structured prompt with enhanced organization and requirements
+      const warmupRequirement =
+        (duration || 30) >= 20
+          ? `\n\nWARM-UP REQUIREMENT:
+- Include 1-2 dynamic warm-up exercises at the beginning (e.g., arm circles, leg swings, cat-cow, inchworms)
+- These should be low-intensity, mobility-focused movements
+- Mark these as difficulty: "beginner" regardless of user's experience level
+- Use 1 set of 8-12 reps or 30-45s holds for warm-up exercises`
+          : '';
 
-SPECS: Equipment: ${filteredEquipment.join(', ') || 'bodyweight'} | Goals: ${filteredGoals.join(', ') || 'fitness'} | Type: ${workoutType || 'Full Body'}
-${getWorkoutTypeContext(workoutType || 'Full Body')}${injuryContext}${intensityContext}
+      const prompt = `You are creating a personalized ${duration}-minute ${workoutType || 'Full Body'} workout for a ${experience || 'Beginner'} level client.
 
-${qualityGuidelines}${programmingContext}${durationGuidance}
+═══════════════════════════════════════════════════════════════
+CLIENT PROFILE
+═══════════════════════════════════════════════════════════════
+Experience Level: ${experience || 'Beginner'}
+Primary Goals: ${filteredGoals.join(', ') || 'General Fitness'}
+Available Equipment: ${filteredEquipment.join(', ') || 'Bodyweight only'}
+Workout Type: ${workoutType || 'Full Body'}
+Duration: ${duration} minutes
+${getWorkoutTypeContext(workoutType || 'Full Body')}${personalContext}${injuryContext}${intensityContext}${workoutHistoryContext}
 
-RULES:
-1. Use evidence-based exercises and standard variations (no fictitious movement names)
-2. Match the requested workout type exactly
-3. Descriptions: 100+ chars with setup, execution cues, and breathing
-4. CRITICAL: Generate the appropriate number of exercises to fit within ${duration} minutes
+═══════════════════════════════════════════════════════════════
+PROGRAMMING REQUIREMENTS
+═══════════════════════════════════════════════════════════════
+${programmingContext}${durationGuidance}${warmupRequirement}
 
-JSON OUTPUT (no markdown):
+═══════════════════════════════════════════════════════════════
+QUALITY STANDARDS
+═══════════════════════════════════════════════════════════════
+${qualityGuidelines}
+
+Exercise Descriptions Must Include:
+- Setup position and starting posture
+- Step-by-step execution with key movement cues
+- Breathing pattern (exhale on exertion, inhale on return)
+- Minimum 100 characters with clear, instructional language
+
+Form Tips (minimum 3 per exercise):
+- Address the most common technique errors
+- Provide specific, actionable cues
+- Focus on joint alignment and muscle activation
+
+Safety Tips (minimum 2 per exercise):
+- Include injury prevention guidance
+- Provide modification options for different fitness levels
+- Specify when to stop or reduce intensity
+
+═══════════════════════════════════════════════════════════════
+CRITICAL RULES - MUST FOLLOW
+═══════════════════════════════════════════════════════════════
+1. ✅ Use ONLY real, evidence-based exercises with standard names
+2. ✅ Match the requested workout type exactly
+3. ✅ Generate ${minExercises}-${maxExercises} exercises to fit within ${duration} minutes
+4. ✅ Follow the rest period requirements strictly (compound: 120-180s, isolation: 60-90s)
+5. ✅ If injuries are present, STRICTLY AVOID all contraindicated exercises
+6. ✅ Use proper rep format: ranges like "8-12" or time like "30s" (NOT "Hold for 30 seconds")
+7. ✅ Set difficulty to "${(experience || 'beginner').toLowerCase()}" for all exercises
+8. ✅ Include usesWeight: true for exercises using dumbbells, barbells, kettlebells, or resistance bands
+9. ✅ Include usesWeight: false for bodyweight-only exercises
+10. ✅ EVERY exercise MUST have sets (number 1-10) and reps (string like "8-12" or "30s") - NO EXCEPTIONS
+
+═══════════════════════════════════════════════════════════════
+JSON OUTPUT SCHEMA (no markdown, no code blocks, no explanatory text)
+═══════════════════════════════════════════════════════════════
 {
   "exercises": [{
     "name": "Exercise Name",
-    "description": "Step-by-step with breathing cues",
+    "description": "Setup, execution, breathing cues (100+ chars)",
     "sets": 3,
     "reps": "8-12",
     "formTips": ["tip1", "tip2", "tip3"],
     "safetyTips": ["safety1", "safety2"],
-    "restSeconds": 60,
+    "restSeconds": 120,
     "usesWeight": true,
     "muscleGroups": ["muscle1", "muscle2"],
     "difficulty": "${(experience || 'beginner').toLowerCase()}"
   }],
   "workoutSummary": {
-    "totalVolume": "volume estimate",
-    "primaryFocus": "focus areas",
-    "expectedRPE": "intensity"
+    "totalVolume": "Total sets and reps estimate",
+    "primaryFocus": "Primary muscle groups and movement patterns",
+    "expectedRPE": "Expected difficulty on 1-10 scale"
   }
 }`.trim();
 
@@ -233,7 +571,7 @@ JSON OUTPUT (no markdown):
           {
             role: 'system',
             content:
-              'You are an expert certified personal trainer (NASM-CPT, CSCS) with 10+ years of experience. Create dynamic, varied workouts tailored to each request. Use real, evidence-based exercises and standard variations. Output only valid JSON with no markdown formatting or code blocks.',
+              'You are an elite certified personal trainer (NASM-CPT, CSCS, ACSM-CEP) with 15+ years of experience in exercise science, biomechanics, and periodization. You specialize in creating highly personalized, evidence-based workout programs that are safe, effective, and tailored to individual needs. You have extensive experience working with clients of all fitness levels and injury histories.\n\nCORE PRINCIPLES:\n1. Safety First - Never compromise client safety for intensity or variety\n2. Evidence-Based Programming - Use scientifically validated set/rep/rest schemes\n3. Injury Prevention - Strictly avoid contraindicated exercises and provide safe alternatives\n4. Progressive Overload - Design workouts that challenge clients appropriately for their level\n5. Movement Quality - Emphasize proper form and technique in all exercises\n\nOUTPUT REQUIREMENTS:\n- Output ONLY valid JSON with no markdown formatting, code blocks, or explanatory text\n- Follow the exact schema provided in the user prompt\n- Ensure all exercises are real, evidence-based movements with standard names\n- Provide comprehensive descriptions, form tips, and safety guidance for each exercise',
           },
           { role: 'user', content: prompt },
         ],
@@ -266,9 +604,8 @@ JSON OUTPUT (no markdown):
           };
         };
 
-        // Professional workout validation and quality scoring
+        // Professional workout validation with rule-based scoring
         const { validateWorkoutPlan } = await import('./lib/exerciseValidation');
-        const { scoreWorkoutQuality } = await import('./lib/workoutQualityScorer');
 
         const userProfileForValidation = {
           experience,
@@ -280,11 +617,8 @@ JSON OUTPUT (no markdown):
         };
 
         const validationResult = validateWorkoutPlan(json, userProfileForValidation);
-        const qualityScore = scoreWorkoutQuality(json, userProfileForValidation);
 
-        // Log validation and quality metrics for monitoring
-        console.info('Workout Quality Score:', qualityScore.overall, qualityScore.breakdown);
-
+        // Log validation metrics for monitoring
         if (validationResult.errors.length > 0) {
           console.warn('Workout validation errors:', validationResult.errors);
         }
@@ -292,7 +626,7 @@ JSON OUTPUT (no markdown):
           console.info('Workout validation warnings:', validationResult.warnings);
         }
 
-        // Reject workouts with critical safety issues
+        // Reject workouts with critical safety issues (from rule-based validation)
         if (!validationResult.isValid) {
           console.error('Generated workout failed safety validation:', validationResult.errors);
           res.status(502).json({
@@ -303,10 +637,9 @@ JSON OUTPUT (no markdown):
           return;
         }
 
-        // Warn about low-quality workouts but don't reject
-        if (qualityScore.overall < 60) {
-          console.warn('Generated workout has low quality score:', qualityScore.overall, qualityScore.feedback);
-        }
+        // Simple rule-based quality score
+        const qualityScore = calculateWorkoutQuality(json, userProfileForValidation);
+        console.info('Workout Quality Score:', qualityScore.overall, 'Grade:', qualityScore.grade);
 
         // Add metadata to response including validation and quality results
         const response = {
@@ -320,9 +653,8 @@ JSON OUTPUT (no markdown):
             },
             qualityScore: {
               overall: qualityScore.overall,
-              breakdown: qualityScore.breakdown,
-              feedback: qualityScore.feedback,
-              recommendations: qualityScore.recommendations,
+              grade: qualityScore.grade,
+              method: 'rule-based',
             },
           },
         };
