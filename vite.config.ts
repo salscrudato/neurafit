@@ -53,6 +53,11 @@ export default defineConfig(({ mode }) => {
       host: 'localhost',
       // Enable CORS for development
       cors: true,
+      // Disable COOP in development to allow Firebase Auth popups
+      headers: {
+        'Cross-Origin-Opener-Policy': 'unsafe-none',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      },
     },
 
     // Build configuration
