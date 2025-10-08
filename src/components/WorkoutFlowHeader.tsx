@@ -64,7 +64,9 @@ export default function WorkoutFlowHeader({
       nav('/')
       setIsMenuOpen(false)
     } catch (e) {
-      console.error('Sign out failed', e)
+      if (import.meta.env.MODE === 'development') {
+        console.error('Sign out failed', e)
+      }
       alert('Sign out failed. Please try again.')
     }
   }

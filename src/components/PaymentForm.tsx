@@ -109,8 +109,10 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId }: Paym
     trackSubscriptionCompleted('stripe_payment_' + Date.now())
 
     try {
-      console.log('🚀 Payment successful!')
-      console.log('📊 Subscription ID:', subscriptionId)
+      if (import.meta.env.MODE === 'development') {
+        console.log('🚀 Payment successful!')
+        console.log('📊 Subscription ID:', subscriptionId)
+      }
 
       setMessage('Payment successful! Your Pro subscription is now active!')
       setMessageType('success')
@@ -121,7 +123,9 @@ function PaymentFormInner({ onSuccess, onError, onCancel, subscriptionId }: Paym
       // Refresh subscription data
       await subscriptionService.getSubscription()
 
-      console.log('✅ Subscription activated successfully')
+      if (import.meta.env.MODE === 'development') {
+        console.log('✅ Subscription activated successfully')
+      }
 
       setTimeout(() => {
         onSuccess()
@@ -229,7 +233,9 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
   useEffect(() => {
     // Prevent multiple initializations
     if (initializedRef.current || initializingRef.current) {
-      console.log('🚫 Skipping initialization - already initialized or in progress')
+      if (import.meta.env.MODE === 'development') {
+        console.log('🚫 Skipping initialization - already initialized or in progress')
+      }
       return
     }
 
@@ -251,7 +257,9 @@ export function PaymentForm({ priceId, onSuccess, onError, onCancel }: PaymentFo
             setSubscriptionId(result.subscriptionId)
           }
           initializedRef.current = true
-          console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}, Subscription ID: ${result.subscriptionId || 'N/A'}`)
+          if (import.meta.env.MODE === 'development') {
+            console.log(`✅ Payment initialized - Client Secret: ${result.clientSecret}, Subscription ID: ${result.subscriptionId || 'N/A'}`)
+          }
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to initialize payment'

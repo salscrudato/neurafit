@@ -21,6 +21,7 @@ import {
 } from '../../lib/weightHistory'
 import { useBounce, useShake } from '../../hooks/useMicroInteractions'
 import { useNavigate } from 'react-router-dom'
+import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
 
 type ExerciseT = {
   name: string
@@ -39,6 +40,9 @@ type PlanT = { exercises: ExerciseT[] }
 
 export default function Exercise() {
   const nav = useNavigate()
+
+  // Scroll to top on mount and route changes
+  useWorkoutScrollToTop()
 
   // All hooks must be called at the top level
   const [i, setI] = useState(0)        // exercise index
@@ -171,15 +175,11 @@ export default function Exercise() {
     }).length
   }, [weightState.data, list])
 
-  // Early returns after all hooks are called
-  if (!saved) return <EmptyState />
-  if (list.length === 0) return <EmptyState />
-
-  const workoutWeights = weightState.data
-
   // Update weight for current exercise and set with optimistic updates
   // RULE 3: If a set is complete and a weight is entered, the set should be marked as complete and the weight should be stored and displayed
-  const updateWeight = (weight: number | null) => {
+  // This must be defined before early returns to satisfy React hooks rules
+  const updateWeight = useCallback((weight: number | null) => {
+    const workoutWeights = weightState.data
     const action = createWeightUpdateAction(
       i,
       setNo,
@@ -196,13 +196,19 @@ export default function Exercise() {
         sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
 
         if (import.meta.env.MODE === 'development') {
-          console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex.name}:`, weightValue)
+          console.log(`[WEIGHT] Weight entered for set ${setNumber} of ${ex?.name}:`, weightValue)
         }
       }
     )
 
     weightState.executeOptimisticUpdate(action)
-  }
+  }, [i, setNo, weightState, ex?.name])
+
+  // Early returns after all hooks are called
+  if (!saved) return <EmptyState />
+  if (list.length === 0) return <EmptyState />
+
+  const workoutWeights = weightState.data
 
 
 

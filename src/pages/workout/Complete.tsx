@@ -8,11 +8,16 @@ import { trackAdaptiveFeedback, trackCustomEvent } from '../../lib/firebase-anal
 import { Bed, ThumbsUp, Flame, CheckCircle } from 'lucide-react'
 import { trackWorkoutCompleted } from '../../lib/firebase-analytics'
 import { logger } from '../../lib/logger'
+import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
 
 type FeedbackSignal = 'easy' | 'right' | 'hard'
 
 export default function Complete() {
   const nav = useNavigate()
+
+  // Scroll to top on mount and route changes
+  useWorkoutScrollToTop()
+
   const [workoutSaved, setWorkoutSaved] = useState(false)
   const [workoutId, setWorkoutId] = useState<string | null>(null)
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)

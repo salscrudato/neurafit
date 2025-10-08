@@ -1,18 +1,20 @@
 // src/pages/Generate.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { auth } from '../lib/firebase'
 import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
 import { trackCustomEvent } from '../lib/firebase-analytics'
-import { Brain } from 'lucide-react'
+import { Brain, Clock } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/Loading'
 import { useSubscription } from '../hooks/useSubscription'
 import { subscriptionService } from '../lib/subscriptionService'
 import { SubscriptionManager } from '../components/SubscriptionManager'
 import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
 import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
+import { WorkoutGenerationError, TimeoutError, ErrorHandler, retryWithBackoff } from '../lib/errors'
+import { dedupedFetch } from '../lib/requestManager'
 
 // Top 14 most common workout types organized by popularity
 const TYPES = [
@@ -53,6 +55,10 @@ export default function Generate() {
   const [showProgressiveLoading, setShowProgressiveLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const [showSlowConnectionWarning, setShowSlowConnectionWarning] = useState(false)
+
+  // Abort controller for request cancellation
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Use pre-loaded data hook
   const { preloadedData } = useWorkoutPreload()
@@ -75,7 +81,11 @@ export default function Generate() {
           nav('/onboarding')
           return
         } else {
-          console.error('Error with preloaded data:', preloadedData.error)
+          const error = ErrorHandler.normalize(preloadedData.error, {
+            component: 'Generate',
+            action: 'loadProfile'
+          })
+          ErrorHandler.handle(error)
           nav('/')
           return
         }
@@ -87,6 +97,15 @@ export default function Generate() {
       }
     }
   }, [nav, preloadedData])
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   const disabled = !type || !duration || loading || showProgressiveLoading || preloadedData.isLoading || !preloadedData.profile
 
@@ -104,6 +123,14 @@ export default function Generate() {
     setLoading(true)
     setShowProgressiveLoading(true)
 
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController()
+
     const uid = auth.currentUser?.uid
 
     const payload = {
@@ -120,69 +147,142 @@ export default function Generate() {
     }
 
     const url = import.meta.env['VITE_WORKOUT_FN_URL'] as string
-    const controller = new AbortController()
 
-    const fetchOnce = async () => {
-      const t = setTimeout(() => controller.abort(), 60_000) // 60s timeout
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const plan = await res.json()
-        if (!plan?.exercises || !Array.isArray(plan.exercises)) {
-          throw new Error('Invalid AI response')
-        }
-
-        // Log telemetry for workout generation with intensity
-        if (uid && isAdaptivePersonalizationEnabled()) {
-          trackCustomEvent('workout_generated_with_intensity', {
-            target_intensity: preloadedData.targetIntensity,
-            workout_type: type,
-            duration,
-            has_progression_note: Boolean(preloadedData.progressionNote)
-          })
-        }
-
-        // Track workout generation in Firebase Analytics
-        trackWorkoutGenerated(String(hasUnlimitedWorkouts), subscription?.workoutCount || 0)
-
-        sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan, type, duration }))
-
-        // Navigate immediately when workout is ready
-        if (import.meta.env.MODE === 'development') {
-          console.log('[GENERATE] Workout generated successfully, navigating to preview')
-        }
-        setLoading(false)
-        setShowProgressiveLoading(false)
-        nav('/workout/preview')
-      } finally {
-        clearTimeout(t)
-      }
-    }
-
-    // small retry (2 attempts total) for transient failures
     try {
-      await fetchOnce()
-      // Success - loading states cleared in fetchOnce
-    } catch {
-      try {
-        await new Promise(r => setTimeout(r, 1000)) // Brief delay before retry
-        await fetchOnce()
-        // Success on retry - loading states cleared in fetchOnce
-      } catch (e2) {
-        // Clear loading states on error
-        setLoading(false)
-        setShowProgressiveLoading(false)
+      // Use retry with backoff for better error handling
+      const result = await retryWithBackoff(
+        async () => {
+          const TIMEOUT_WARNING = 30_000 // Show warning at 30s
+          const TIMEOUT_ABORT = 60_000   // Abort at 60s
 
-        const error = e2 as { message?: string; status?: number; name?: string }
-        // Check if it's a subscription error (402 Payment Required)
-        if (error?.message?.includes('Subscription required') || error?.status === 402) {
-          // Before showing upgrade prompt, try refreshing subscription status
-          // This handles cases where payment was completed but subscription status hasn't synced yet
+          const warningTimer = setTimeout(() => {
+            setShowSlowConnectionWarning(true)
+          }, TIMEOUT_WARNING)
+
+          const abortTimer = setTimeout(() => {
+            abortControllerRef.current?.abort()
+          }, TIMEOUT_ABORT)
+
+          try {
+            // Use deduplicated fetch to prevent duplicate requests
+            const cacheKey = `workout-${type}-${duration}-${equipment.join(',')}`
+
+            const plan = await dedupedFetch(
+              cacheKey,
+              async () => {
+                const res = await fetch(url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                  signal: abortControllerRef.current?.signal,
+                })
+
+                if (!res.ok) {
+                  if (res.status === 402) {
+                    throw new WorkoutGenerationError(
+                      'Subscription required',
+                      'You need an active subscription to generate workouts.',
+                      { component: 'Generate', action: 'generateWorkout', userId: uid },
+                      undefined,
+                      false // Not retryable
+                    )
+                  }
+
+                  // 502 Bad Gateway - server error, should retry
+                  // 503 Service Unavailable - temporary, should retry
+                  // 504 Gateway Timeout - timeout, should retry
+                  const shouldRetry = [502, 503, 504].includes(res.status)
+
+                  throw new WorkoutGenerationError(
+                    `HTTP ${res.status}`,
+                    res.status === 502
+                      ? 'The workout generation service is temporarily unavailable. Please try again in a moment.'
+                      : 'Failed to generate workout. Please try again.',
+                    { component: 'Generate', action: 'generateWorkout', userId: uid },
+                    undefined,
+                    shouldRetry
+                  )
+                }
+
+                const plan = await res.json()
+
+                if (!plan?.exercises || !Array.isArray(plan.exercises)) {
+                  throw new WorkoutGenerationError(
+                    'Invalid AI response',
+                    'Received invalid workout data. Please try again.',
+                    { component: 'Generate', action: 'generateWorkout', userId: uid }
+                  )
+                }
+
+                return plan
+              },
+              { cacheTTL: 0 } // Don't cache workout generation
+            )
+
+            return plan
+          } finally {
+            clearTimeout(warningTimer)
+            clearTimeout(abortTimer)
+          }
+        },
+        {
+          maxRetries: 2,
+          baseDelay: 1000,
+          onRetry: (attempt, error) => {
+            if (import.meta.env.MODE === 'development') {
+              console.log(`Retry attempt ${attempt} after error:`, error.message)
+            }
+          }
+        }
+      )
+
+      // Log telemetry for workout generation with intensity
+      if (uid && isAdaptivePersonalizationEnabled()) {
+        trackCustomEvent('workout_generated_with_intensity', {
+          target_intensity: preloadedData.targetIntensity,
+          workout_type: type,
+          duration,
+          has_progression_note: Boolean(preloadedData.progressionNote)
+        })
+      }
+
+      // Track workout generation in Firebase Analytics
+      trackWorkoutGenerated(String(hasUnlimitedWorkouts), subscription?.workoutCount || 0)
+
+      sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan: result, type, duration }))
+
+      // Navigate immediately when workout is ready
+      if (import.meta.env.MODE === 'development') {
+        console.log('[GENERATE] Workout generated successfully, navigating to preview')
+      }
+
+      setLoading(false)
+      setShowProgressiveLoading(false)
+      setShowSlowConnectionWarning(false)
+      nav('/workout/preview')
+
+    } catch (error) {
+      // Clear loading states
+      setLoading(false)
+      setShowProgressiveLoading(false)
+      setShowSlowConnectionWarning(false)
+
+      // Handle abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        const timeoutError = new TimeoutError(
+          'Request timed out',
+          'The server took too long to respond. Please try again.',
+          { component: 'Generate', action: 'generateWorkout', userId: uid }
+        )
+        ErrorHandler.handle(timeoutError)
+        setError(timeoutError.userMessage)
+        return
+      }
+
+      // Handle subscription errors
+      if (error instanceof WorkoutGenerationError && error.code === 'WORKOUT_GENERATION_ERROR') {
+        if (error.message.includes('Subscription required')) {
+          // Try refreshing subscription status
           try {
             if (import.meta.env.MODE === 'development') {
               console.log('🔄 Payment required error - checking for recent subscription updates...')
@@ -200,19 +300,26 @@ export default function Generate() {
               return
             }
           } catch (refreshError) {
-            console.error('Error refreshing subscription data:', refreshError)
+            ErrorHandler.handle(refreshError as Error, {
+              component: 'Generate',
+              action: 'refreshSubscription'
+            })
           }
 
           setShowUpgradePrompt(true)
           return
         }
-
-        setError(
-          error?.name === 'AbortError'
-            ? 'The server took too long to respond. Please try again.'
-            : ((e2 as Error)?.message || 'Failed to generate. Please try again.')
-        )
       }
+
+      // Handle all other errors
+      const appError = ErrorHandler.normalize(error, {
+        component: 'Generate',
+        action: 'generateWorkout',
+        userId: uid
+      })
+
+      ErrorHandler.handle(appError)
+      setError(appError.userMessage)
     }
   }
 
@@ -277,6 +384,27 @@ export default function Generate() {
 
         {/* Enhanced Subscription Status */}
         <SubscriptionManager mode="status" className="mt-8 sm:mt-10" />
+
+        {/* Slow Connection Warning */}
+        {showSlowConnectionWarning && (
+          <div className="fixed inset-x-0 top-20 z-50 flex justify-center px-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 shadow-lg max-w-md animate-slide-in-up">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <Clock className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-yellow-800 mb-1">
+                    Taking longer than usual
+                  </h3>
+                  <p className="text-sm text-yellow-700">
+                    Your connection may be slow. We're still working on your workout...
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Subscription Upgrade Modal */}
         {showUpgradePrompt && (

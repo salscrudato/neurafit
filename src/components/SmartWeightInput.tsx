@@ -1,5 +1,5 @@
 // src/components/SmartWeightInput.tsx
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { TrendingUp, TrendingDown, Minus, Plus, RotateCcw, Zap } from 'lucide-react'
 
 interface WeightHistory {
@@ -20,7 +20,7 @@ interface SmartWeightInputProps {
   targetReps?: number | string
 }
 
-export function SmartWeightInput({
+export const SmartWeightInput = React.memo(function SmartWeightInput({
   exerciseName,
   setNumber,
   currentWeight,
@@ -32,6 +32,12 @@ export function SmartWeightInput({
   const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
+
+  // Sync input value when currentWeight changes externally
+  useEffect(() => {
+    setInputValue(currentWeight?.toString() || '')
+  }, [currentWeight])
 
   // Calculate smart suggestions based on previous weights
   const suggestions = useMemo(() => {
@@ -96,7 +102,17 @@ export function SmartWeightInput({
   // Quick increment buttons
   const quickIncrements = [2.5, 5, 10, 25]
 
-  const handleSubmit = async () => {
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    const timer = debounceTimerRef.current
+    return () => {
+      if (timer) {
+        clearTimeout(timer)
+      }
+    }
+  }, [])
+
+  const handleSubmit = useCallback(async () => {
     const weight = inputValue.trim() === '' ? null : parseFloat(inputValue)
     if (weight !== null && (isNaN(weight) || weight < 0)) return
 
@@ -108,33 +124,33 @@ export function SmartWeightInput({
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [inputValue, onWeightChange])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSubmit()
       ;(e.target as HTMLInputElement).blur()
     } else if (e.key === 'Escape') {
       setShowSuggestions(false)
     }
-  }
+  }, [handleSubmit])
 
-  const handleSuggestionClick = (weight: number) => {
+  const handleSuggestionClick = useCallback((weight: number) => {
     setInputValue(weight.toString())
     onWeightChange(weight)
     setShowSuggestions(false)
-  }
+  }, [onWeightChange])
 
-  const adjustWeight = (delta: number) => {
+  const adjustWeight = useCallback((delta: number) => {
     const current = parseFloat(inputValue) || 0
     const newWeight = Math.max(0, current + delta)
     setInputValue(newWeight.toString())
-  }
+  }, [inputValue])
 
-  const resetWeight = () => {
+  const resetWeight = useCallback(() => {
     setInputValue('')
     onWeightChange(null)
-  }
+  }, [onWeightChange])
 
   // Get trend indicator
   const getTrendIndicator = () => {
@@ -296,4 +312,19 @@ export function SmartWeightInput({
       </button>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-render prevention
+  return (
+    prevProps.exerciseName === nextProps.exerciseName &&
+    prevProps.setNumber === nextProps.setNumber &&
+    prevProps.currentWeight === nextProps.currentWeight &&
+    prevProps.isOptimistic === nextProps.isOptimistic &&
+    prevProps.targetReps === nextProps.targetReps &&
+    // Deep comparison for previousWeights array
+    (prevProps.previousWeights?.length || 0) === (nextProps.previousWeights?.length || 0) &&
+    (prevProps.previousWeights || []).every((prev, idx) => {
+      const next = (nextProps.previousWeights || [])[idx]
+      return next && prev.weight === next.weight && prev.timestamp === next.timestamp
+    })
+  )
+})

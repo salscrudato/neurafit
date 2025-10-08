@@ -6,13 +6,12 @@ import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper'
 import { SubscriptionManager } from './components/SubscriptionManager';
 import { UpdateToast } from './hooks/useUpdateToast';
 import { logger } from './lib/logger';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 
-// Eager-loaded critical pages
-import Auth from './pages/Auth';
-import Dashboard from './pages/Dashboard';
-
-// Lazy-loaded non-critical pages
+// Lazy-loaded pages for optimal code splitting
+const Auth = lazy(() => import('./pages/Auth'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Generate = lazy(() => import('./pages/Generate'));
 const Preview = lazy(() => import('./pages/workout/Preview'));
@@ -74,6 +73,9 @@ function AppContent() {
   return (
     <ErrorBoundary level="critical">
       <div className="min-h-screen">
+        {/* Offline Indicator */}
+        <OfflineIndicator />
+
         <main id="main-content" role="main" tabIndex={-1}>
         <Routes>
           {/* Public legal pages */}
@@ -87,7 +89,7 @@ function AppContent() {
           <Route path="/onboarding" element={<AuthRoute lazy><Onboarding /></AuthRoute>} />
 
           {/* Protected routes: require completed profile */}
-          <Route path="/dashboard" element={<ProfileRoute><Dashboard /></ProfileRoute>} />
+          <Route path="/dashboard" element={<ProfileRoute lazy><Dashboard /></ProfileRoute>} />
           <Route path="/generate" element={<ProfileRoute lazy><Generate /></ProfileRoute>} />
           <Route path="/workout/preview" element={<ProfileRoute lazy><Preview /></ProfileRoute>} />
           <Route path="/workout/run" element={<ProfileRoute lazy><Exercise /></ProfileRoute>} />

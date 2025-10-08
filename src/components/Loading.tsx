@@ -26,17 +26,16 @@ export const LoadingSpinner = memo(({
   }
 
   const spinner = (
-    <div className={`flex flex-col items-center justify-center gap-3 ${className}`} role="status" aria-live="polite">
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
       <Loader2
         className={`${sizeClasses[size]} animate-spin text-blue-600`}
         aria-hidden="true"
       />
       {text && (
-        <p className="text-gray-600 font-medium" aria-label={text}>
+        <p className="text-gray-600 font-medium">
           {text}
         </p>
       )}
-      <span className="sr-only">Loading...</span>
     </div>
   )
 
@@ -45,16 +44,19 @@ export const LoadingSpinner = memo(({
       <div
         className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50"
         role="status"
-        aria-label="Loading"
+        aria-live="polite"
+        aria-busy="true"
       >
         {spinner}
+        <span className="sr-only">{text || 'Loading, please wait...'}</span>
       </div>
     )
   }
 
   return (
-    <div role="status" aria-label="Loading">
+    <div role="status" aria-live="polite" aria-busy="true">
       {spinner}
+      <span className="sr-only">{text || 'Loading...'}</span>
     </div>
   )
 })

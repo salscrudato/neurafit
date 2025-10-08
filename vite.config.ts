@@ -110,9 +110,30 @@ export default defineConfig(({ mode }) => {
               return 'vendor-router'
             }
 
-            // Firebase - keep all Firebase packages together to avoid circular dependencies
+            // Firebase - split by service for better tree-shaking and caching
+            // Auth is used on most pages
+            if (id.includes('node_modules/firebase/auth') || id.includes('node_modules/@firebase/auth')) {
+              return 'firebase-auth'
+            }
+            // Firestore is used throughout the app
+            if (id.includes('node_modules/firebase/firestore') || id.includes('node_modules/@firebase/firestore')) {
+              return 'firebase-firestore'
+            }
+            // Functions only used for workout generation
+            if (id.includes('node_modules/firebase/functions') || id.includes('node_modules/@firebase/functions')) {
+              return 'firebase-functions'
+            }
+            // Analytics is optional and can be loaded separately
+            if (id.includes('node_modules/firebase/analytics') || id.includes('node_modules/@firebase/analytics')) {
+              return 'firebase-analytics'
+            }
+            // Core Firebase SDK
+            if (id.includes('node_modules/firebase/app') || id.includes('node_modules/@firebase/app')) {
+              return 'firebase-core'
+            }
+            // Catch any remaining Firebase packages
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
-              return 'firebase'
+              return 'firebase-misc'
             }
 
             // Stripe - payment processing

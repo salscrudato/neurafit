@@ -36,6 +36,8 @@ export const generateWorkout = onRequest(
     ],
     region: 'us-central1',
     secrets: [openaiApiKey],
+    timeoutSeconds: 300, // 5 minutes - enough for OpenAI API calls
+    memory: '1GiB', // Increased memory for better performance
   },
   async (req: Request, res: Response): Promise<void> => {
     // Handle preflight

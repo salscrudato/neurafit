@@ -1,5 +1,5 @@
 // src/components/WorkoutProgress.tsx
-import React from 'react'
+import React, { memo } from 'react'
 import { CheckCircle, Clock, Zap, Flame, Rocket, Sparkles, Target, PartyPopper } from 'lucide-react'
 
 interface CircularProgressProps {
@@ -10,12 +10,12 @@ interface CircularProgressProps {
   children?: React.ReactNode
 }
 
-export function CircularProgress({ 
-  progress, 
-  size = 120, 
-  strokeWidth = 8, 
+export const CircularProgress = memo(function CircularProgress({
+  progress,
+  size = 120,
+  strokeWidth = 8,
   className = '',
-  children 
+  children
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
@@ -58,7 +58,7 @@ export function CircularProgress({
       </div>
     </div>
   )
-}
+})
 
 interface WorkoutProgressHeaderProps {
   currentExercise: number
@@ -69,7 +69,7 @@ interface WorkoutProgressHeaderProps {
   exerciseName: string
 }
 
-export function WorkoutProgressHeader({
+export const WorkoutProgressHeader = memo(function WorkoutProgressHeader({
   currentExercise,
   totalExercises,
   currentSet,
@@ -128,7 +128,7 @@ export function WorkoutProgressHeader({
       </div>
     </div>
   )
-}
+})
 
 interface SetProgressIndicatorProps {
   currentSet: number
@@ -137,7 +137,7 @@ interface SetProgressIndicatorProps {
   skippedSets: number[]
 }
 
-export function SetProgressIndicator({
+export const SetProgressIndicator = memo(function SetProgressIndicator({
   currentSet,
   totalSets,
   completedSets,
@@ -178,7 +178,7 @@ export function SetProgressIndicator({
       })}
     </div>
   )
-}
+})
 
 interface MotivationalMessageProps {
   progress: number

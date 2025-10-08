@@ -1,5 +1,5 @@
 // src/components/ProgressiveOverloadTracker.tsx
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { TrendingUp, Target, Award, Calendar } from 'lucide-react'
 
 interface WorkoutSession {
@@ -27,7 +27,7 @@ interface ProgressMetrics {
   recommendations: string[]
 }
 
-export function ProgressiveOverloadTracker({
+export const ProgressiveOverloadTracker = React.memo(function ProgressiveOverloadTracker({
   exerciseName,
   recentSessions,
   currentWeight,
@@ -271,4 +271,16 @@ export function ProgressiveOverloadTracker({
       )}
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-render prevention
+  return (
+    prevProps.exerciseName === nextProps.exerciseName &&
+    prevProps.currentWeight === nextProps.currentWeight &&
+    prevProps.targetReps === nextProps.targetReps &&
+    prevProps.recentSessions.length === nextProps.recentSessions.length &&
+    // Compare first and last session dates as a quick check
+    prevProps.recentSessions[0]?.date === nextProps.recentSessions[0]?.date &&
+    prevProps.recentSessions[prevProps.recentSessions.length - 1]?.date ===
+      nextProps.recentSessions[nextProps.recentSessions.length - 1]?.date
+  )
+})

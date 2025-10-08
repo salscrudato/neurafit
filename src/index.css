@@ -77,6 +77,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Enable momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Improve scroll performance */
+  scroll-behavior: smooth;
+}
+
+/* Smooth scrolling for all scrollable elements */
+* {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Better button and input styling */
@@ -92,6 +101,39 @@ input,
 textarea {
   -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve touch feedback for interactive elements */
+button:active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Prevent text selection on interactive elements during touch */
+button,
+a,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* Prevents double-tap zoom */
+}
+
+/* Allow text selection in inputs */
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Touch-friendly minimum tap target sizes */
+button,
+a {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 /* Prevent iOS zoom on input focus while maintaining accessibility */
@@ -119,6 +161,20 @@ textarea {
 
 .pulse-subtle {
   animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Shimmer effect for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }
 
 /* Enhanced animations for premium feel */
@@ -164,6 +220,7 @@ textarea {
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+  will-change: transform;
 }
 
 .animate-glow {
@@ -172,10 +229,12 @@ textarea {
 
 .animate-slide-in-up {
   animation: slide-in-up 0.5s ease-out;
+  will-change: transform, opacity;
 }
 
 .animate-slide-up {
   animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 @keyframes loading-progress {
@@ -280,7 +339,8 @@ textarea {
   max-width: 80%;
 }
 
-@media screen and (orientation: landscape) and (max-width: 768px) {
+/* Only show landscape warning on phones, not tablets */
+@media screen and (orientation: landscape) and (max-width: 667px) and (max-height: 414px) {
   .landscape-warning::before,
   .landscape-warning::after {
     display: block;

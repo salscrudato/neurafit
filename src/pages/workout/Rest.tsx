@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { EnhancedRestTimer } from '../../components/EnhancedRestTimer'
 import { logger } from '../../lib/logger'
+import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
 
 export default function Rest() {
   const nav = useNavigate()
+
+  // Scroll to top on mount and route changes
+  useWorkoutScrollToTop()
 
   // Retrieve initial rest time, default to 60 seconds if not set
   const initial = useMemo(() => {

@@ -1,4 +1,5 @@
 // src/components/MotivationalBanner.tsx
+import { memo, useMemo } from 'react'
 import { Trophy, Target, Zap, TrendingUp, Award } from 'lucide-react'
 
 interface MotivationalBannerProps {
@@ -8,13 +9,15 @@ interface MotivationalBannerProps {
   consistencyScore: number
 }
 
-export function MotivationalBanner({ 
-  totalWorkouts, 
-  weeklyWorkouts, 
-  streak, 
-  consistencyScore 
+export const MotivationalBanner = memo(function MotivationalBanner({
+  totalWorkouts,
+  weeklyWorkouts,
+  streak,
+  consistencyScore
 }: MotivationalBannerProps) {
-  const getMotivationalMessage = () => {
+  // Memoize the motivational message calculation
+  const motivation = useMemo(() => {
+    const getMotivationalMessage = () => {
     if (streak >= 7) {
       return {
         icon: Trophy,
@@ -64,7 +67,9 @@ export function MotivationalBanner({
     }
   }
 
-  const motivation = getMotivationalMessage()
+    return getMotivationalMessage()
+  }, [totalWorkouts, weeklyWorkouts, streak, consistencyScore])
+
   const Icon = motivation.icon
 
   return (
@@ -90,14 +95,14 @@ export function MotivationalBanner({
       </div>
     </div>
   )
-}
+})
 
 interface WeeklyGoalProgressProps {
   currentWorkouts: number
   goalWorkouts?: number
 }
 
-export function WeeklyGoalProgress({ currentWorkouts, goalWorkouts = 3 }: WeeklyGoalProgressProps) {
+export const WeeklyGoalProgress = memo(function WeeklyGoalProgress({ currentWorkouts, goalWorkouts = 3 }: WeeklyGoalProgressProps) {
   const progress = Math.min((currentWorkouts / goalWorkouts) * 100, 100)
   const isComplete = currentWorkouts >= goalWorkouts
 
@@ -132,15 +137,16 @@ export function WeeklyGoalProgress({ currentWorkouts, goalWorkouts = 3 }: Weekly
       )}
     </div>
   )
-}
+})
 
 interface NextWorkoutSuggestionProps {
   lastWorkoutType?: string
   daysSinceLastWorkout?: number
 }
 
-export function NextWorkoutSuggestion({ daysSinceLastWorkout = 0 }: NextWorkoutSuggestionProps) {
-  const getSuggestion = () => {
+export const NextWorkoutSuggestion = memo(function NextWorkoutSuggestion({ daysSinceLastWorkout = 0 }: NextWorkoutSuggestionProps) {
+  const suggestion = useMemo(() => {
+    const getSuggestion = () => {
     if (daysSinceLastWorkout === 0) {
       return {
         title: "Great job today!",
@@ -172,7 +178,9 @@ export function NextWorkoutSuggestion({ daysSinceLastWorkout = 0 }: NextWorkoutS
     }
   }
 
-  const suggestion = getSuggestion()
+    return getSuggestion()
+  }, [daysSinceLastWorkout])
+
   const urgencyColors = {
     low: "from-gray-500 to-gray-600",
     medium: "from-blue-500 to-indigo-600", 
@@ -192,4 +200,4 @@ export function NextWorkoutSuggestion({ daysSinceLastWorkout = 0 }: NextWorkoutS
       </div>
     </div>
   )
-}
+})

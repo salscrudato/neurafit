@@ -1,10 +1,10 @@
 // src/pages/workout/Preview.tsx
-import React, { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { List, Hash, Play, Lightbulb, Shield, ChevronDown, Crown } from 'lucide-react'
+import { Play, Lightbulb, Shield, ChevronDown } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
-import { useSubscription } from '../../hooks/useSubscription'
 import { trackWorkoutStarted } from '../../lib/firebase-analytics'
+import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
 
 type Exercise = {
   name: string
@@ -23,7 +23,9 @@ type Plan = { exercises: Exercise[] }
 
 export default function Preview() {
   const nav = useNavigate()
-  const { hasUnlimitedWorkouts } = useSubscription()
+
+  // Scroll to top on mount and route changes
+  useWorkoutScrollToTop()
 
   // Parse saved data and calculate exercises before early return - memoized to prevent unnecessary re-renders
   const { saved, parsedData, exercises } = useMemo(() => {
@@ -36,11 +38,6 @@ export default function Preview() {
     const exercises = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
     return { saved, parsedData, exercises }
   }, [])
-
-  // All hooks must be called before early returns
-  const totalSets = useMemo(() => {
-    return exercises.reduce((s, e) => s + (Number(e.sets) || 0), 0)
-  }, [exercises])
 
   // Early return after all hooks
   if (!saved || !parsedData) return <EmptyState />
@@ -66,29 +63,9 @@ export default function Preview() {
 
           <div className="relative">
             {/* Compact Workout Title */}
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
               {type} <span className="text-slate-400/60">—</span> {duration} min
             </h1>
-
-            {/* Compact Badges */}
-            <div className="flex flex-wrap gap-2">
-              <CompactBadge variant="primary">
-                <List className="h-4 w-4" />
-                <span className="font-semibold">{exercises.length}</span>
-              </CompactBadge>
-
-              <CompactBadge variant="secondary">
-                <Hash className="h-4 w-4" />
-                <span className="font-semibold">{totalSets}</span>
-              </CompactBadge>
-
-              {hasUnlimitedWorkouts && (
-                <CompactBadge variant="pro">
-                  <Crown className="h-3 w-3" />
-                  Pro
-                </CompactBadge>
-              )}
-            </div>
           </div>
         </div>
       </section>
@@ -235,24 +212,3 @@ function EmptyState() {
     </div>
   )
 }
-
-function CompactBadge({
-  children,
-  variant = 'primary'
-}: {
-  children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'pro'
-}) {
-  const variants = {
-    primary: "inline-flex items-center gap-2 rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2 text-blue-700 shadow-sm shadow-blue-100/40 text-sm font-medium",
-    secondary: "inline-flex items-center gap-2 rounded-xl border border-slate-200/50 bg-gradient-to-r from-slate-50 to-gray-50 px-3 py-2 text-slate-700 shadow-sm shadow-slate-100/40 text-sm font-medium",
-    pro: "inline-flex items-center gap-2 rounded-xl border border-yellow-300/50 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-2 text-white font-semibold shadow-sm shadow-yellow-500/20 text-sm"
-  }
-
-  return (
-    <span className={variants[variant]}>
-      {children}
-    </span>
-  )
-}
-

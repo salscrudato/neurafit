@@ -43,8 +43,8 @@ interface DashboardStats {
   recentStreak: number
 }
 
-// Memoized stats calculation function
-const calculateDashboardStats = (workouts: WorkoutItem[]): DashboardStats => {
+// Extract stats calculation outside component - only created once
+function calculateDashboardStats(workouts: WorkoutItem[]): DashboardStats {
   if (workouts.length === 0) {
     return {
       totalWorkouts: 0,

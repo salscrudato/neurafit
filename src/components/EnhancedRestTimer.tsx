@@ -85,8 +85,13 @@ export function EnhancedRestTimer({
 
 
   const vibrate = (duration: number) => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate(duration)
+    try {
+      if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(duration)
+      }
+    } catch {
+      // Silently fail - vibration is enhancement only
+      // Some browsers may throw errors even if the API exists
     }
   }
 

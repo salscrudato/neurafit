@@ -5,6 +5,7 @@ import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { useShallow } from 'zustand/react/shallow'
 import type { User } from 'firebase/auth'
 import type { UserProfile } from '../session/types'
 import type { UserSubscription } from '../types/subscription'
@@ -352,41 +353,92 @@ function calculateCompletionRate(weights: Record<number, Record<number, number |
   return totalSets > 0 ? completedSets / totalSets : 0
 }
 
-// Selectors for common state access patterns
-export const useAuth = () => useAppStore((state) => ({
-  user: state.user,
-  profile: state.profile,
-  status: state.authStatus,
-  setUser: state.setUser,
-  setProfile: state.setProfile,
-  setAuthStatus: state.setAuthStatus
-}))
+// Optimized atomic selectors to prevent unnecessary re-renders
+// Auth selectors
+export const useUser = () => useAppStore((state) => state.user)
+export const useProfile = () => useAppStore((state) => state.profile)
+export const useAuthStatus = () => useAppStore((state) => state.authStatus)
+export const useSetUser = () => useAppStore((state) => state.setUser)
+export const useSetProfile = () => useAppStore((state) => state.setProfile)
+export const useSetAuthStatus = () => useAppStore((state) => state.setAuthStatus)
 
-export const useSubscriptionStore = () => useAppStore((state) => ({
-  subscription: state.subscription,
-  loading: state.subscriptionLoading,
-  setSubscription: state.setSubscription,
-  setSubscriptionLoading: state.setSubscriptionLoading
-}))
+// Composite auth selector with shallow comparison to prevent unnecessary re-renders
+export const useAuth = () => {
+  return useAppStore(
+    useShallow((state) => ({
+      user: state.user,
+      profile: state.profile,
+      status: state.authStatus,
+      setUser: state.setUser,
+      setProfile: state.setProfile,
+      setAuthStatus: state.setAuthStatus
+    }))
+  )
+}
 
-export const useWorkout = () => useAppStore((state) => ({
-  currentWorkout: state.currentWorkout,
-  workoutWeights: state.workoutWeights,
-  workoutHistory: state.workoutHistory,
-  startWorkout: state.startWorkout,
-  updateWorkoutProgress: state.updateWorkoutProgress,
-  updateWeight: state.updateWeight,
-  completeWorkout: state.completeWorkout,
-  clearWorkout: state.clearWorkout,
-  addToHistory: state.addToHistory
-}))
+// Subscription selectors
+export const useSubscription = () => useAppStore((state) => state.subscription)
+export const useSubscriptionLoading = () => useAppStore((state) => state.subscriptionLoading)
+export const useSetSubscription = () => useAppStore((state) => state.setSubscription)
+export const useSetSubscriptionLoading = () => useAppStore((state) => state.setSubscriptionLoading)
 
-export const useErrors = () => useAppStore((state) => ({
-  errors: state.errors,
-  addError: state.addError,
-  resolveError: state.resolveError,
-  clearErrors: state.clearErrors
-}))
+// Composite subscription selector with shallow comparison
+export const useSubscriptionStore = () => {
+  return useAppStore(
+    useShallow((state) => ({
+      subscription: state.subscription,
+      loading: state.subscriptionLoading,
+      setSubscription: state.setSubscription,
+      setSubscriptionLoading: state.setSubscriptionLoading
+    }))
+  )
+}
+
+// Workout selectors
+export const useCurrentWorkout = () => useAppStore((state) => state.currentWorkout)
+export const useWorkoutWeights = () => useAppStore((state) => state.workoutWeights)
+export const useWorkoutHistory = () => useAppStore((state) => state.workoutHistory)
+export const useStartWorkout = () => useAppStore((state) => state.startWorkout)
+export const useUpdateWorkoutProgress = () => useAppStore((state) => state.updateWorkoutProgress)
+export const useUpdateWeight = () => useAppStore((state) => state.updateWeight)
+export const useCompleteWorkout = () => useAppStore((state) => state.completeWorkout)
+export const useClearWorkout = () => useAppStore((state) => state.clearWorkout)
+export const useAddToHistory = () => useAppStore((state) => state.addToHistory)
+
+// Composite workout selector with shallow comparison
+export const useWorkout = () => {
+  return useAppStore(
+    useShallow((state) => ({
+      currentWorkout: state.currentWorkout,
+      workoutWeights: state.workoutWeights,
+      workoutHistory: state.workoutHistory,
+      startWorkout: state.startWorkout,
+      updateWorkoutProgress: state.updateWorkoutProgress,
+      updateWeight: state.updateWeight,
+      completeWorkout: state.completeWorkout,
+      clearWorkout: state.clearWorkout,
+      addToHistory: state.addToHistory
+    }))
+  )
+}
+
+// Error selectors
+export const useErrorsState = () => useAppStore((state) => state.errors)
+export const useAddError = () => useAppStore((state) => state.addError)
+export const useResolveError = () => useAppStore((state) => state.resolveError)
+export const useClearErrors = () => useAppStore((state) => state.clearErrors)
+
+// Composite error selector with shallow comparison
+export const useErrors = () => {
+  return useAppStore(
+    useShallow((state) => ({
+      errors: state.errors,
+      addError: state.addError,
+      resolveError: state.resolveError,
+      clearErrors: state.clearErrors
+    }))
+  )
+}
 
 
 
