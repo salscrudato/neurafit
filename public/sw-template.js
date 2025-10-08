@@ -42,11 +42,13 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   console.log(`SW: Activating new service worker - ${CACHE_VERSION}`);
   event.waitUntil(
-    // Take control of all clients immediately
-    self.clients.claim().then(() => {
-      console.log('SW: Now controlling all clients');
+    Promise.all([
+      // Take control of all clients immediately
+      self.clients.claim(),
+      // Disable navigation preload to avoid the warning
+      self.registration.navigationPreload?.disable(),
       // Delete old caches
-      return caches.keys().then((cacheNames) => {
+      caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (!cacheName.includes(CACHE_VERSION)) {
@@ -55,7 +57,9 @@ self.addEventListener('activate', (event) => {
             }
           })
         );
-      });
+      })
+    ]).then(() => {
+      console.log('SW: Now controlling all clients');
     })
   );
 });
