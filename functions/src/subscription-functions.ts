@@ -53,7 +53,7 @@ export const createPaymentIntent = onCall(
         auth.uid,
         auth.token.email || '',
         auth.token.name,
-        stripeSecretKey.value()
+        stripeSecretKey.value(),
       );
 
       // Create subscription
@@ -102,7 +102,7 @@ export const createPaymentIntent = onCall(
         errorMessage = error.message;
 
         // Check if it's a Stripe error with additional details
-        const stripeError = error as any;
+        const stripeError = error as Error & { type?: string; code?: string };
         if (stripeError.type) {
           errorCode = stripeError.code || stripeError.type;
           errorMessage = `${stripeError.type}: ${errorMessage}`;
@@ -112,7 +112,7 @@ export const createPaymentIntent = onCall(
       console.error('Error details:', { errorMessage, errorCode });
       throw new functions.https.HttpsError('internal', `Failed to create payment intent: ${errorMessage}`);
     }
-  }
+  },
 );
 
 /**
@@ -183,7 +183,7 @@ export const verifySubscriptionStatus = onCall(
       console.error('Error verifying subscription status:', error);
       throw new functions.https.HttpsError('internal', 'Failed to verify subscription status');
     }
-  }
+  },
 );
 
 /**
@@ -219,7 +219,7 @@ export const cancelUserSubscription = onCall(
       console.error('Error canceling subscription:', error);
       throw new functions.https.HttpsError('internal', 'Failed to cancel subscription');
     }
-  }
+  },
 );
 
 /**
@@ -254,7 +254,7 @@ export const reactivateUserSubscription = onCall(
       console.error('Error reactivating subscription:', error);
       throw new functions.https.HttpsError('internal', 'Failed to reactivate subscription');
     }
-  }
+  },
 );
 
 /**
@@ -291,7 +291,7 @@ export const getCustomerPortalUrl = onCall(
       console.error('Error creating customer portal session:', error);
       throw new functions.https.HttpsError('internal', 'Failed to create customer portal session');
     }
-  }
+  },
 );
 
 /**
@@ -341,7 +341,7 @@ export const getSubscriptionDetails = onCall(
       console.error('Error getting subscription details:', error);
       throw new functions.https.HttpsError('internal', 'Failed to get subscription details');
     }
-  }
+  },
 );
 
 /**
@@ -392,5 +392,5 @@ export const getBillingHistory = onCall(
       console.error('Error getting billing history:', error);
       throw new functions.https.HttpsError('internal', 'Failed to get billing history');
     }
-  }
+  },
 );

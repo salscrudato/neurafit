@@ -81,7 +81,7 @@ export function validateWorkoutPlan(
     injuries?: string[];
     duration: number;
     goals?: string[];
-  }
+  },
 ): ExerciseValidationResult {
   const result: ExerciseValidationResult = {
     isValid: true,
@@ -105,13 +105,13 @@ export function validateWorkoutPlan(
     }
 
     exerciseResult.errors.forEach((error) =>
-      result.errors.push(`Exercise ${index + 1} (${exercise.name}): ${error}`)
+      result.errors.push(`Exercise ${index + 1} (${exercise.name}): ${error}`),
     );
     exerciseResult.warnings.forEach((warning) =>
-      result.warnings.push(`Exercise ${index + 1} (${exercise.name}): ${warning}`)
+      result.warnings.push(`Exercise ${index + 1} (${exercise.name}): ${warning}`),
     );
     exerciseResult.suggestions.forEach((suggestion) =>
-      result.suggestions.push(`Exercise ${index + 1} (${exercise.name}): ${suggestion}`)
+      result.suggestions.push(`Exercise ${index + 1} (${exercise.name}): ${suggestion}`),
     );
   });
 
@@ -132,7 +132,7 @@ export function validateWorkoutPlan(
  */
 function validateExercise(
   exercise: Exercise,
-  userProfile: { experience?: string; goals?: string[] }
+  userProfile: { experience?: string; goals?: string[] },
 ): ExerciseValidationResult {
   const result: ExerciseValidationResult = {
     isValid: true,
@@ -190,7 +190,7 @@ function validateExercise(
 
   if (exercise.restSeconds < minRestSeconds) {
     result.warnings.push(
-      `Rest period may be short: ${exercise.restSeconds}s (typical minimum ${minRestSeconds}s for this exercise type)`
+      `Rest period may be short: ${exercise.restSeconds}s (typical minimum ${minRestSeconds}s for this exercise type)`,
     );
   } else if (exercise.restSeconds > maxRestSeconds) {
     result.warnings.push(`Rest period very long: ${exercise.restSeconds}s (consider ${maxRestSeconds}s maximum)`);
@@ -224,18 +224,18 @@ function validateExercise(
 function validateWorkoutStructure(
   plan: WorkoutPlan,
   userProfile: { duration: number; goals?: string[] },
-  result: ExerciseValidationResult
+  result: ExerciseValidationResult,
 ): void {
   const exercises = plan.exercises;
   const hasWarmup = exercises.some(
-    (ex) => ex.name.toLowerCase().includes('warm') || ex.name.toLowerCase().includes('mobility') || ex.difficulty === 'beginner'
+    (ex) => ex.name.toLowerCase().includes('warm') || ex.name.toLowerCase().includes('mobility') || ex.difficulty === 'beginner',
   );
 
   const hasCooldown = exercises.some(
     (ex) =>
       ex.name.toLowerCase().includes('cool') ||
       ex.name.toLowerCase().includes('stretch') ||
-      ex.name.toLowerCase().includes('recovery')
+      ex.name.toLowerCase().includes('recovery'),
   );
 
   // Warm-up validation
@@ -273,7 +273,7 @@ function validateWorkoutStructure(
 function validateInjuryCompliance(
   plan: WorkoutPlan,
   injuries: string[],
-  result: ExerciseValidationResult
+  result: ExerciseValidationResult,
 ): void {
   if (injuries.length === 0) return;
 
@@ -283,12 +283,12 @@ function validateInjuryCompliance(
       const exerciseName = exercise.name.toLowerCase();
 
       const hasContraindication = contraindications.some((contraindicated) =>
-        exerciseName.includes(contraindicated)
+        exerciseName.includes(contraindicated),
       );
 
       if (hasContraindication) {
         result.errors.push(
-          `Exercise ${index + 1} (${exercise.name}) may be contraindicated for ${injury} injury`
+          `Exercise ${index + 1} (${exercise.name}) may be contraindicated for ${injury} injury`,
         );
         result.isValid = false;
       }
@@ -302,7 +302,7 @@ function validateInjuryCompliance(
 function validateTimeFeasibility(
   plan: WorkoutPlan,
   targetDuration: number,
-  result: ExerciseValidationResult
+  result: ExerciseValidationResult,
 ): void {
   let estimatedTime = 0;
 
@@ -315,7 +315,7 @@ function validateTimeFeasibility(
       } else if (exercise.reps.includes('-')) {
         // Handle ranges like "8-12"
         const [minReps, maxReps] = exercise.reps.split('-').map(Number);
-        workTime = ((minReps + maxReps) / 2) * 3;
+        workTime = ((minReps || 0) + (maxReps || 0)) / 2 * 3;
       } else {
         workTime = 30; // Default for time-based
       }
@@ -334,13 +334,13 @@ function validateTimeFeasibility(
 
   if (estimatedTime > targetDuration * 1.2) {
     result.warnings.push(
-      `Estimated workout time (${estimatedTime}min) exceeds target duration (${targetDuration}min) by >20%`
+      `Estimated workout time (${estimatedTime}min) exceeds target duration (${targetDuration}min) by >20%`,
     );
   }
 
   if (estimatedTime < targetDuration * 0.7) {
     result.suggestions.push(
-      `Workout may be shorter than expected (${estimatedTime}min vs ${targetDuration}min target)`
+      `Workout may be shorter than expected (${estimatedTime}min vs ${targetDuration}min target)`,
     );
   }
 }

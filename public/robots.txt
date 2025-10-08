@@ -1,0 +1,13 @@
+# robots.txt for NeuraFit
+# https://neurafit-ai-2025.web.app
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://neurafit-ai-2025.web.app/sitemap.xml
+
+# Disallow admin/private areas (if any in future)
+# Disallow: /admin/
+# Disallow: /api/
+

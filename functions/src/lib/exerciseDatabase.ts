@@ -225,7 +225,7 @@ export function getExerciseRecommendations(
     equipment?: string[];
     injuries?: string[];
     workoutType?: string;
-  }
+  },
 ): ExerciseTemplate[] {
   const allExercises = [
     ...COMPOUND_EXERCISES,
@@ -240,8 +240,8 @@ export function getExerciseRecommendations(
       const hasRequiredEquipment = exercise.equipment.some((eq) =>
         userProfile.equipment!.some(
           (userEq) =>
-            userEq.toLowerCase().includes(eq.toLowerCase()) || eq.toLowerCase().includes(userEq.toLowerCase())
-        )
+            userEq.toLowerCase().includes(eq.toLowerCase()) || eq.toLowerCase().includes(userEq.toLowerCase()),
+        ),
       );
       if (!hasRequiredEquipment) return false;
     }
@@ -255,8 +255,8 @@ export function getExerciseRecommendations(
     if (userProfile.injuries && userProfile.injuries.length > 0) {
       const hasContraindication = exercise.contraindications.some((contraindication) =>
         userProfile.injuries!.some((injury) =>
-          injury.toLowerCase().includes(contraindication.toLowerCase())
-        )
+          injury.toLowerCase().includes(contraindication.toLowerCase()),
+        ),
       );
       if (hasContraindication) return false;
     }
@@ -278,7 +278,7 @@ export function getExerciseRecommendations(
  */
 export function getProgrammingRecommendations(
   goals: string[],
-  _experience: string
+  _experience: string,
 ): Partial<ProgrammingGuidelines[keyof ProgrammingGuidelines]> {
   const primaryGoal = goals[0]?.toLowerCase() || 'general health';
 

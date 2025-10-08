@@ -35,13 +35,27 @@ module.exports = tseslint.config(
       }
     },
     rules: {
+      // TypeScript
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_'
+        varsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_'
       }],
-      'quotes': ['error', 'single'],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+
+      // Code Style
+      'quotes': ['error', 'single', { avoidEscape: true }],
       'indent': ['error', 2],
+      'semi': ['error', 'always'],
+      'comma-dangle': ['error', 'always-multiline'],
+
+      // Best Practices
+      'no-console': 'off', // Allow console in Cloud Functions
+      'no-debugger': 'warn',
+      'prefer-const': 'error',
+      'no-var': 'error',
     }
   }
 );

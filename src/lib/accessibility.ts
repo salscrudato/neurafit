@@ -4,7 +4,7 @@
  * Ensures WCAG 2.1 AA compliance
  */
 
-import React from 'react'
+import type React from 'react'
 import { logger } from './logger'
 
 /**

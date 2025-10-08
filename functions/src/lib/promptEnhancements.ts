@@ -27,7 +27,7 @@ export function generateCoachingContext(context: PromptContext): string {
       'BEGINNER FOCUS: Prioritize movement quality over intensity. Teach fundamental patterns.',
       'Use 2-3 sets maximum per exercise to prevent overload and allow adaptation.',
       'Include detailed setup and execution cues in descriptions.',
-      'Provide clear regression options for challenging movements.'
+      'Provide clear regression options for challenging movements.',
     );
     break;
   case 'Intermediate':
@@ -35,7 +35,7 @@ export function generateCoachingContext(context: PromptContext): string {
       'INTERMEDIATE FOCUS: Challenge with progressive overload while maintaining form.',
       'Use 3-4 sets per exercise with moderate to challenging loads.',
       'Include advanced technique cues and common mistake corrections.',
-      'Introduce movement variations and unilateral work.'
+      'Introduce movement variations and unilateral work.',
     );
     break;
   case 'Expert':
@@ -44,7 +44,7 @@ export function generateCoachingContext(context: PromptContext): string {
       'ADVANCED FOCUS: Implement complex movement patterns and high-intensity techniques.',
       'Use 3-6 sets with varied rep ranges and advanced progressions.',
       'Include biomechanical optimization cues and performance tips.',
-      'Challenge with compound movements and athletic variations.'
+      'Challenge with compound movements and athletic variations.',
     );
     break;
   }
@@ -57,7 +57,7 @@ export function generateCoachingContext(context: PromptContext): string {
       coachingPoints.push(
         'STRENGTH COACHING: Focus on compound movements with 3-6 reps at high intensity.',
         'Emphasize proper bracing, tension, and force production.',
-        'Use longer rest periods (2-3 minutes) for full recovery between sets.'
+        'Use longer rest periods (2-3 minutes) for full recovery between sets.',
       );
     }
 
@@ -65,7 +65,7 @@ export function generateCoachingContext(context: PromptContext): string {
       coachingPoints.push(
         'HYPERTROPHY COACHING: Use 6-12 rep range with moderate loads.',
         'Focus on time under tension and mind-muscle connection.',
-        'Include both compound and isolation exercises for complete development.'
+        'Include both compound and isolation exercises for complete development.',
       );
     }
 
@@ -73,7 +73,7 @@ export function generateCoachingContext(context: PromptContext): string {
       coachingPoints.push(
         'FAT LOSS COACHING: Incorporate circuit-style training with shorter rest periods.',
         'Emphasize compound movements that burn more calories.',
-        'Include metabolic finishers or cardio intervals when appropriate.'
+        'Include metabolic finishers or cardio intervals when appropriate.',
       );
     }
 
@@ -81,7 +81,7 @@ export function generateCoachingContext(context: PromptContext): string {
       coachingPoints.push(
         'ENDURANCE COACHING: Use higher rep ranges (12-20+) with shorter rest.',
         'Focus on movement efficiency and breathing patterns.',
-        'Include cardio intervals and circuit training elements.'
+        'Include cardio intervals and circuit training elements.',
       );
     }
   });
@@ -92,7 +92,7 @@ export function generateCoachingContext(context: PromptContext): string {
       'INJURY CONSIDERATIONS: Modify exercises to work around limitations.',
       'Provide alternative movements that target same muscle groups safely.',
       'Include corrective exercises and mobility work when appropriate.',
-      'Emphasize pain-free range of motion and proper movement patterns.'
+      'Emphasize pain-free range of motion and proper movement patterns.',
     );
   }
 
@@ -110,7 +110,7 @@ export function generateExerciseSelectionGuidelines(context: PromptContext): str
     guidelines.push(
       'BODYWEIGHT FOCUS: Emphasize fundamental movement patterns.',
       'Use push-up variations, squat patterns, and core stability exercises.',
-      'Include plyometric and cardio elements for variety and challenge.'
+      'Include plyometric and cardio elements for variety and challenge.',
     );
   }
 
@@ -118,7 +118,7 @@ export function generateExerciseSelectionGuidelines(context: PromptContext): str
     guidelines.push(
       'DUMBBELL TRAINING: Utilize unilateral work and stabilization challenges.',
       'Include compound movements like dumbbell deadlifts and presses.',
-      'Use single-arm variations to challenge core stability.'
+      'Use single-arm variations to challenge core stability.',
     );
   }
 
@@ -126,7 +126,7 @@ export function generateExerciseSelectionGuidelines(context: PromptContext): str
     guidelines.push(
       'BARBELL TRAINING: Focus on heavy compound movements.',
       'Include squats, deadlifts, presses, and rows as primary exercises.',
-      'Use bilateral loading for maximum strength development.'
+      'Use bilateral loading for maximum strength development.',
     );
   }
 
@@ -135,7 +135,7 @@ export function generateExerciseSelectionGuidelines(context: PromptContext): str
     guidelines.push(
       'CARDIO STRUCTURE: Maintain elevated heart rate throughout session.',
       'Use interval methods for variety.',
-      'Include both steady-state and interval components.'
+      'Include both steady-state and interval components.',
     );
   }
 
@@ -163,7 +163,7 @@ export function generateSafetyEmphasis(context: PromptContext): string {
       safetyPoints.push(
         '- KNEE SAFETY: Avoid deep knee flexion, ensure proper tracking',
         '- Modify jumping and pivoting movements',
-        '- Include knee-friendly alternatives like wall sits or glute bridges'
+        '- Include knee-friendly alternatives like wall sits or glute bridges',
       );
     }
 
@@ -171,7 +171,7 @@ export function generateSafetyEmphasis(context: PromptContext): string {
       safetyPoints.push(
         '- BACK SAFETY: Maintain neutral spine alignment',
         '- Avoid spinal flexion under load',
-        '- Include core activation cues and bracing techniques'
+        '- Include core activation cues and bracing techniques',
       );
     }
 
@@ -179,7 +179,7 @@ export function generateSafetyEmphasis(context: PromptContext): string {
       safetyPoints.push(
         '- SHOULDER SAFETY: Avoid overhead movements if impingement present',
         '- Include scapular stability and mobility work',
-        '- Modify pressing movements to pain-free ranges'
+        '- Modify pressing movements to pain-free ranges',
       );
     }
   });
@@ -189,7 +189,7 @@ export function generateSafetyEmphasis(context: PromptContext): string {
     safetyPoints.push(
       '- BEGINNER SAFETY: Start with bodyweight or light resistance',
       '- Focus on learning movement patterns before adding load',
-      '- Include detailed setup instructions and common mistake warnings'
+      '- Include detailed setup instructions and common mistake warnings',
     );
   }
 
@@ -212,13 +212,13 @@ export function generateProgressionGuidance(context: PromptContext): string {
     progressionPoints.push(
       '- INTENSITY INCREASE: User ready for moderate challenge increase',
       '- Add 1-2 reps, reduce rest by 10-15 seconds, or increase range of motion',
-      '- Include more challenging exercise variations'
+      '- Include more challenging exercise variations',
     );
   } else if (context.targetIntensity < 0.9) {
     progressionPoints.push(
       '- INTENSITY DECREASE: User needs recovery or easier variations',
       '- Reduce reps by 2-3, increase rest by 15-30 seconds',
-      '- Use regression options and assisted movements'
+      '- Use regression options and assisted movements',
     );
   }
 
@@ -227,7 +227,7 @@ export function generateProgressionGuidance(context: PromptContext): string {
     '- Reduce range of motion for mobility limitations',
     '- Use assisted variations (bands, partner, or equipment support)',
     '- Decrease load or switch to bodyweight alternatives',
-    '- Modify tempo to slower, more controlled movements'
+    '- Modify tempo to slower, more controlled movements',
   );
 
   return progressionPoints.join('\n- ');

@@ -7,7 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
 *.local
@@ -18,6 +21,10 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Firebase
+.firebase
+.firebaserc.local
 
 # Editor directories and files
 .vscode/*
@@ -30,5 +37,18 @@ dist-ssr
 *.sln
 *.sw?
 
+# Testing
+coverage
+.nyc_output
+
+# Temporary files
+*.tmp
+*.temp
+.cache
+
 # Consolidated codebase file (regenerate with ./consolidate-codebase.sh)
 neurafit-codebase.txt
+
+# Backup files
+*-old-backup.*
+*-backup.*

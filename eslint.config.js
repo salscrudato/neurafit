@@ -42,19 +42,35 @@ export default [
       ...js.configs.recommended.rules,
       ...tseslint.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+
+      // React Refresh
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true }
       ],
+
+      // TypeScript
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_'
+        varsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_'
       }],
-      'no-unused-vars': ['error', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_'
+      '@typescript-eslint/consistent-type-imports': ['warn', {
+        prefer: 'type-imports',
+        fixStyle: 'inline-type-imports'
       }],
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off', // Allow non-null assertions when we know the value exists
+
+      // General JavaScript
+      'no-unused-vars': 'off', // Use TypeScript version instead
+      'no-console': 'off', // Allow console.log (stripped in production build)
+      'no-debugger': 'warn', // Warn but don't error on debugger
+      'prefer-const': 'error',
+      'no-var': 'error',
+
+      // React (React 19 doesn't need imports)
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off'
     }

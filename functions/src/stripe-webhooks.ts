@@ -112,7 +112,7 @@ export const stripeWebhook = onRequest(
         eventId: event.id,
         eventType: event.type,
         processingTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       const processingTime = Date.now() - startTime;
@@ -124,10 +124,10 @@ export const stripeWebhook = onRequest(
         eventType: event.type,
         processingTime,
         message: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
-  }
+  },
 );
 
 /**
@@ -141,7 +141,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     let uid: string | null = subscription.metadata?.firebaseUID || null;
 
     if (!uid) {
-      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      console.log('⚠️ No Firebase UID in metadata, falling back to customer lookup');
       uid = await getUserByCustomerId(subscription.customer as string);
     } else {
       console.log(`✅ Found Firebase UID in metadata: ${uid}`);
@@ -178,7 +178,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       subscriptionId: subscriptionData.subscriptionId,
       status: subscriptionData.status,
       customerId: subscriptionData.customerId,
-      freeWorkoutLimit: subscriptionData.freeWorkoutLimit
+      freeWorkoutLimit: subscriptionData.freeWorkoutLimit,
     });
 
     await updateUserSubscription(uid, subscriptionData);
@@ -202,7 +202,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     let uid: string | null = subscription.metadata?.firebaseUID || null;
 
     if (!uid) {
-      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      console.log('⚠️ No Firebase UID in metadata, falling back to customer lookup');
       uid = await getUserByCustomerId(subscription.customer as string);
     } else {
       console.log(`✅ Found Firebase UID in metadata: ${uid}`);
@@ -236,7 +236,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       status: subscriptionData.status,
       customerId: subscriptionData.customerId,
       cancelAtPeriodEnd: subscriptionData.cancelAtPeriodEnd,
-      freeWorkoutLimit: subscriptionData.freeWorkoutLimit
+      freeWorkoutLimit: subscriptionData.freeWorkoutLimit,
     });
 
     await updateUserSubscription(uid, subscriptionData);
@@ -277,7 +277,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     uid = subscription.metadata?.firebaseUID || null;
 
     if (!uid) {
-      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      console.log('⚠️ No Firebase UID in metadata, falling back to customer lookup');
       uid = await getUserByCustomerId(invoice.customer as string);
     } else {
       console.log(`✅ Found Firebase UID in metadata: ${uid}`);
@@ -310,7 +310,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       subscriptionId: subscriptionData.subscriptionId,
       status: subscriptionData.status,
       customerId: subscriptionData.customerId,
-      freeWorkoutLimit: subscriptionData.freeWorkoutLimit
+      freeWorkoutLimit: subscriptionData.freeWorkoutLimit,
     });
 
     await updateUserSubscription(uid, subscriptionData);
@@ -325,7 +325,7 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
         await updateUserSubscription(uid, {
           status: subscription.status as UserSubscriptionData['status'],
           customerId: subscription.customer as string,
-          freeWorkoutLimit: 15
+          freeWorkoutLimit: 15,
         });
         console.log('✅ Fallback update completed with status:', subscription.status);
       } catch (fallbackError) {
@@ -343,7 +343,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     let uid: string | null = subscription.metadata?.firebaseUID || null;
 
     if (!uid) {
-      console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+      console.log('⚠️ No Firebase UID in metadata, falling back to customer lookup');
       uid = await getUserByCustomerId(subscription.customer as string);
     } else {
       console.log(`✅ Found Firebase UID in metadata: ${uid}`);
@@ -363,7 +363,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     await updateUserSubscription(uid, subscriptionData);
     console.log(`✅ Subscription deleted for user: ${uid}`);
   } catch (error) {
-    console.error(`❌ Failed to handle subscription deleted:`, error);
+    console.error('❌ Failed to handle subscription deleted:', error);
     throw error;
   }
 }
@@ -385,7 +385,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   let uid: string | null = subscription.metadata?.firebaseUID || null;
 
   if (!uid) {
-    console.log(`⚠️ No Firebase UID in metadata, falling back to customer lookup`);
+    console.log('⚠️ No Firebase UID in metadata, falling back to customer lookup');
     uid = await getUserByCustomerId(invoice.customer as string);
   } else {
     console.log(`✅ Found Firebase UID in metadata: ${uid}`);

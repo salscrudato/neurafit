@@ -85,7 +85,7 @@ export function scoreWorkoutQuality(workout: WorkoutPlan, userProfile: UserProfi
   score.overall = Math.round(
     Object.entries(score.breakdown).reduce((total, [key, value]) => {
       return total + value * (weights[key as keyof typeof weights] ?? 0);
-    }, 0)
+    }, 0),
   );
 
   // Add overall feedback based on score
@@ -147,7 +147,7 @@ function scoreProgramming(workout: WorkoutPlan, userProfile: UserProfile, score:
     if (exercise.restSeconds < minRestSeconds) {
       programmingScore -= 20; // Heavy penalty for inadequate rest
       score.feedback.push(
-        `${exercise.name}: Rest period too short (${exercise.restSeconds}s, need ${minRestSeconds}s+)`
+        `${exercise.name}: Rest period too short (${exercise.restSeconds}s, need ${minRestSeconds}s+)`,
       );
     } else if (exercise.restSeconds < optimalRestSeconds) {
       programmingScore -= 10; // Moderate penalty for suboptimal rest
@@ -174,7 +174,7 @@ function scoreProgramming(workout: WorkoutPlan, userProfile: UserProfile, score:
 
   // Check for progressive structure
   const hasWarmup = exercises.some(
-    (ex) => ex.name.toLowerCase().includes('warm') || ex.difficulty === 'beginner'
+    (ex) => ex.name.toLowerCase().includes('warm') || ex.difficulty === 'beginner',
   );
 
   if (!hasWarmup && userProfile.duration >= 20) {
@@ -321,7 +321,7 @@ function scoreSpecificity(workout: WorkoutPlan, userProfile: UserProfile, score:
         (ex) =>
           ex.name.toLowerCase().includes('squat') ||
           ex.name.toLowerCase().includes('deadlift') ||
-          ex.name.toLowerCase().includes('press')
+          ex.name.toLowerCase().includes('press'),
       );
 
       if (!hasCompound) {
@@ -333,7 +333,7 @@ function scoreSpecificity(workout: WorkoutPlan, userProfile: UserProfile, score:
     if (goalLower.includes('cardio') || goalLower.includes('stamina')) {
       // Should have cardio or circuit-style exercises
       const hasCardio = exercises.some(
-        (ex) => ex.name.toLowerCase().includes('jump') || ex.name.toLowerCase().includes('run') || ex.restSeconds < 45
+        (ex) => ex.name.toLowerCase().includes('jump') || ex.name.toLowerCase().includes('run') || ex.restSeconds < 45,
       );
 
       if (!hasCardio) {
@@ -366,7 +366,7 @@ function scoreFeasibility(workout: WorkoutPlan, userProfile: UserProfile, score:
         workTime = parseInt(exercise.reps, 10) || 30;
       } else if (exercise.reps.includes('-')) {
         const [min, max] = exercise.reps.split('-').map(Number);
-        workTime = ((min + (max ?? min)) / 2) * 3;
+        workTime = ((min || 0) + (max ?? min ?? 0)) / 2 * 3;
       }
     }
 
@@ -381,7 +381,7 @@ function scoreFeasibility(workout: WorkoutPlan, userProfile: UserProfile, score:
   if (estimatedTime > targetDuration * 1.3) {
     feasibilityScore -= 20;
     score.feedback.push(
-      `Estimated time (${estimatedTime}min) significantly exceeds target (${targetDuration}min)`
+      `Estimated time (${estimatedTime}min) significantly exceeds target (${targetDuration}min)`,
     );
   }
 
@@ -397,7 +397,7 @@ function scoreFeasibility(workout: WorkoutPlan, userProfile: UserProfile, score:
         (eq) =>
           eq.toLowerCase().includes('dumbbell') ||
           eq.toLowerCase().includes('barbell') ||
-          eq.toLowerCase().includes('weight')
+          eq.toLowerCase().includes('weight'),
       );
 
       if (needsEquipment && !availableEquipment.includes('Bodyweight')) {

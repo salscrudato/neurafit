@@ -55,7 +55,7 @@ export async function createOrGetCustomer(
   uid: string,
   email: string,
   name?: string,
-  stripeSecretKey?: string
+  stripeSecretKey?: string,
 ): Promise<string> {
   try {
     const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
@@ -98,7 +98,7 @@ export async function createOrGetCustomer(
       {
         subscription: subscriptionData,
       },
-      { merge: true }
+      { merge: true },
     );
 
     return customer.id;
@@ -122,7 +122,7 @@ export async function createSubscription(
   customerId: string,
   priceId: string,
   uid: string,
-  stripeSecretKey?: string
+  stripeSecretKey?: string,
 ): Promise<Stripe.Subscription> {
   const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
 
@@ -160,7 +160,7 @@ export async function createSubscription(
     const activeSubscription = existingSubscriptions.data.find(
       (sub) =>
         (sub.status === 'active' || sub.status === 'trialing') &&
-        sub.items.data.some((item) => item.price.id === priceId)
+        sub.items.data.some((item) => item.price.id === priceId),
     );
 
     if (activeSubscription) {
@@ -177,7 +177,7 @@ export async function createSubscription(
       payment_behavior: 'default_incomplete',
       payment_settings: {
         save_default_payment_method: 'on_subscription',
-        payment_method_types: ['card']
+        payment_method_types: ['card'],
       },
       expand: ['latest_invoice.payment_intent'],
       metadata: {
@@ -220,7 +220,7 @@ export async function createSubscription(
           ? typeof invoiceWithPaymentIntent.payment_intent === 'string'
             ? invoiceWithPaymentIntent.payment_intent
             : invoiceWithPaymentIntent.payment_intent.id
-          : 'none'
+          : 'none',
       );
     }
 
@@ -257,7 +257,7 @@ export async function createSubscription(
             console.log('Payment intent found after retry:',
               typeof retryInvoiceWithPI.payment_intent === 'string'
                 ? retryInvoiceWithPI.payment_intent
-                : retryInvoiceWithPI.payment_intent.id
+                : retryInvoiceWithPI.payment_intent.id,
             );
 
             return {
@@ -317,7 +317,7 @@ export async function createSubscription(
  */
 export async function updateUserSubscription(
   uid: string,
-  subscriptionData: Partial<UserSubscriptionData>
+  subscriptionData: Partial<UserSubscriptionData>,
 ): Promise<void> {
   try {
     console.log(`📝 Updating subscription for user ${uid}:`, subscriptionData);
@@ -359,7 +359,7 @@ export async function updateUserSubscription(
       {
         subscription: updatedSubscription,
       },
-      { merge: true }
+      { merge: true },
     );
 
     console.log(`✅ Successfully updated subscription for user ${uid}:`, {
@@ -393,7 +393,7 @@ export async function getUserByCustomerId(customerId: string): Promise<string | 
     const query = usersRef.where('subscription.customerId', '==', customerId);
     const snapshot = await query.get();
 
-    if (!snapshot.empty) {
+    if (!snapshot.empty && snapshot.docs[0]) {
       const userId = snapshot.docs[0].id;
       console.log(`✅ Found user by customer ID: ${userId}`);
       return userId;
@@ -413,7 +413,7 @@ export async function getUserByCustomerId(customerId: string): Promise<string | 
         const emailQuery = usersRef.where('email', '==', customer.email);
         const emailSnapshot = await emailQuery.get();
 
-        if (!emailSnapshot.empty) {
+        if (!emailSnapshot.empty && emailSnapshot.docs[0]) {
           const userId = emailSnapshot.docs[0].id;
           console.log(`✅ Found user by email: ${userId}`);
 
@@ -441,7 +441,7 @@ export async function getUserByCustomerId(customerId: string): Promise<string | 
  */
 export async function cancelSubscription(
   subscriptionId: string,
-  stripeSecretKey?: string
+  stripeSecretKey?: string,
 ): Promise<Stripe.Subscription> {
   const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
 
@@ -460,7 +460,7 @@ export async function cancelSubscription(
  */
 export async function reactivateSubscription(
   subscriptionId: string,
-  stripeSecretKey?: string
+  stripeSecretKey?: string,
 ): Promise<Stripe.Subscription> {
   const stripeInstance = stripeSecretKey ? getStripeClient(stripeSecretKey) : getStripeClient(process.env.STRIPE_SECRET_KEY!);
 
@@ -499,7 +499,7 @@ export async function incrementWorkoutCount(uid: string): Promise<void> {
         {
           subscription: subscriptionData,
         },
-        { merge: true }
+        { merge: true },
       );
     } else {
       // Increment counters
@@ -517,7 +517,7 @@ export async function incrementWorkoutCount(uid: string): Promise<void> {
             updatedAt: Date.now(),
           },
         },
-        { merge: true }
+        { merge: true },
       );
     }
   } catch (error) {

@@ -1,128 +1,117 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- ============================================ -->
+    <!-- CORE META TAGS -->
+    <!-- ============================================ -->
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    
+    <!-- SEO: Primary meta tags -->
+    <title>NeuraFit - AI Workout Generator | Personalized Fitness Plans</title>
+    <meta name="description" content="Get AI-powered workout plans in 30 seconds! Personalized for your goals, equipment & fitness level. Join thousands transforming their fitness with smart training plans." />
+    <meta name="keywords" content="AI workout generator, personalized fitness app, custom workout plans, AI fitness trainer, smart exercise planner, adaptive training program, fitness AI, workout builder" />
+    <meta name="author" content="NeuraFit Team" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    
+    <!-- Canonical URL: Update with your actual production domain -->
+    <link rel="canonical" href="https://neurafit-ai-2025.web.app/" />
 
-    <!-- PWA Theme Color - Must be early for browser chrome -->
+    <!-- ============================================ -->
+    <!-- PWA & MOBILE OPTIMIZATION -->
+    <!-- ============================================ -->
+    
+    <!-- PWA: Theme colors for browser chrome -->
     <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-
-    <!-- Favicon and Icons -->
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
-
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-
-    <!-- Android Chrome Icons -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
-
-    <!-- Critical Resource Preconnects -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://js.stripe.com" crossorigin />
-    <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com" />
-    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
-    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
-
-    <!-- Import Inter font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-
-    <!-- Cache busting -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-
-    <!-- Mobile app-like experience -->
+    
+    <!-- PWA: Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Mobile: App-like experience -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NeuraFit" />
-
-    <!-- Screen orientation lock (portrait preferred) -->
+    <meta name="application-name" content="NeuraFit" />
+    
+    <!-- Mobile: Disable automatic detection -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- Mobile: Orientation preference (portrait) -->
     <meta name="screen-orientation" content="portrait" />
     <meta name="orientation" content="portrait" />
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
-
-    <!-- Enhanced SEO and Social Sharing Meta Tags -->
-    <title>neurafit</title>
-    <meta name="description" content="🏋️ Get AI-powered workout plans in 30 seconds! Personalized for your goals, equipment & fitness level. Join 10,000+ users transforming their fitness with smart training plans. Free trial!" />
-    <meta name="keywords" content="AI workout generator, personalized fitness app, custom workout plans, AI fitness trainer, smart exercise planner, adaptive training program, fitness AI, workout builder, personal trainer app, strength training AI, cardio workouts, home gym workouts, fitness goals tracker, exercise routine generator, intelligent fitness coaching" />
-    <meta name="author" content="NeuraFit Team" />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-
-    <!-- Additional SEO Meta Tags -->
-    <meta name="application-name" content="NeuraFit" />
-    <meta name="apple-mobile-web-app-title" content="NeuraFit - AI Workouts" />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="msapplication-tap-highlight" content="no" />
-
-    <!-- Geo and Language Tags -->
-    <meta name="geo.region" content="US" />
-    <meta name="geo.placename" content="United States" />
-    <meta name="language" content="English" />
-    <meta name="distribution" content="global" />
-    <meta name="rating" content="general" />
-
-    <!-- App Store and Business Info -->
-    <meta name="apple-itunes-app" content="app-id=neurafit-app" />
-    <meta name="google-play-app" content="app-id=com.neurafit.app" />
+    <!-- ============================================ -->
+    <!-- ICONS & FAVICONS -->
+    <!-- ============================================ -->
+    
+    <!-- Primary favicon (SVG for modern browsers) -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    
+    <!-- Fallback favicons (PNG for older browsers) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    
+    <!-- Apple Touch Icons (iOS home screen) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    
+    <!-- Android Chrome Icons (Android home screen) -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
+    
+    <!-- Windows Tiles (Microsoft Edge) -->
+    <meta name="msapplication-TileColor" content="#1f2937" />
     <meta name="msapplication-TileImage" content="/android-chrome-512x512.png" />
-    <meta name="msapplication-square150x150logo" content="/android-chrome-192x192.png" />
-    <meta name="msapplication-square310x310logo" content="/android-chrome-512x512.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
 
-    <!-- Enhanced Open Graph / Facebook -->
+    <!-- ============================================ -->
+    <!-- PERFORMANCE OPTIMIZATION -->
+    <!-- ============================================ -->
+    
+    <!-- Preconnect: Critical third-party domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://js.stripe.com" crossorigin />
+    
+    <!-- DNS Prefetch: Firebase services -->
+    <link rel="dns-prefetch" href="https://firebaseinstallations.googleapis.com" />
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+    
+    <!-- Font: Inter (optimized with display=swap) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- ============================================ -->
+    <!-- SOCIAL MEDIA & SHARING -->
+    <!-- ============================================ -->
+    
+    <!-- Open Graph: Facebook & LinkedIn -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://neurastack.ai/" />
-    <meta property="og:title" content="NeuraFit - #1 AI Workout Generator | Get Fit with Smart Training" />
-    <meta property="og:description" content="🏋️ Transform your fitness with AI-powered workout plans! Personalized training in 30 seconds. Join 10,000+ users getting stronger with intelligent fitness coaching. Try free!" />
-    <meta property="og:image" content="https://neurastack.ai/android-chrome-512x512.png" />
+    <meta property="og:url" content="https://neurafit-ai-2025.web.app/" />
+    <meta property="og:title" content="NeuraFit - AI Workout Generator | Get Fit with Smart Training" />
+    <meta property="og:description" content="Transform your fitness with AI-powered workout plans! Personalized training in 30 seconds. Join thousands getting stronger with intelligent fitness coaching." />
+    <meta property="og:image" content="https://neurafit-ai-2025.web.app/android-chrome-512x512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:image:alt" content="NeuraFit AI Workout Generator - Personalized Fitness App" />
     <meta property="og:site_name" content="NeuraFit" />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:locale:alternate" content="en_GB" />
-    <meta property="og:locale:alternate" content="en_CA" />
-    <meta property="og:locale:alternate" content="en_AU" />
-
-    <!-- Additional Open Graph Tags -->
-    <meta property="article:author" content="NeuraFit Team" />
-    <meta property="article:publisher" content="https://www.facebook.com/neurafit" />
-    <meta property="fb:app_id" content="your-facebook-app-id" />
-
-    <!-- Enhanced Twitter Cards -->
+    
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@neurafit" />
-    <meta name="twitter:creator" content="@neurafit" />
-    <meta name="twitter:url" content="https://neurastack.ai/" />
-    <meta name="twitter:title" content="NeuraFit - #1 AI Workout Generator | Smart Fitness Training" />
-    <meta name="twitter:description" content="🏋️ Get personalized AI workouts in 30 seconds! Smart training plans for your goals & equipment. Join 10,000+ users transforming their fitness. Free trial!" />
-    <meta name="twitter:image" content="https://neurastack.ai/android-chrome-512x512.png" />
+    <meta name="twitter:title" content="NeuraFit - AI Workout Generator | Smart Fitness Training" />
+    <meta name="twitter:description" content="Get personalized AI workouts in 30 seconds! Smart training plans for your goals & equipment. Join thousands transforming their fitness." />
+    <meta name="twitter:image" content="https://neurafit-ai-2025.web.app/android-chrome-512x512.png" />
     <meta name="twitter:image:alt" content="NeuraFit AI Workout Generator - Personalized Fitness Training App" />
-    <meta name="twitter:app:name:iphone" content="NeuraFit" />
-    <meta name="twitter:app:id:iphone" content="neurafit-ios-id" />
-    <meta name="twitter:app:name:googleplay" content="NeuraFit" />
-    <meta name="twitter:app:id:googleplay" content="com.neurafit.app" />
 
-    <!-- Additional Meta Tags -->
-    <meta name="msapplication-TileColor" content="#1f2937" />
-    <meta name="msapplication-config" content="/browserconfig.xml" />
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://neurastack.ai/" />
-
-    <!-- Structured Data (JSON-LD) for SEO -->
+    <!-- ============================================ -->
+    <!-- STRUCTURED DATA (JSON-LD) FOR SEO -->
+    <!-- ============================================ -->
+    
+    <!-- Schema.org: WebApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -130,7 +119,7 @@
       "name": "NeuraFit",
       "alternateName": "NeuraFit AI Workout Generator",
       "description": "AI-powered personalized workout generator that creates custom fitness plans tailored to your goals, experience level, and available equipment.",
-      "url": "https://neurastack.ai/",
+      "url": "https://neurafit-ai-2025.web.app/",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "Web, iOS, Android",
       "offers": {
@@ -149,22 +138,22 @@
       "author": {
         "@type": "Organization",
         "name": "NeuraFit Team",
-        "url": "https://neurastack.ai/"
+        "url": "https://neurafit-ai-2025.web.app/"
       },
       "publisher": {
         "@type": "Organization",
         "name": "NeuraFit",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://neurastack.ai/android-chrome-512x512.png",
+          "url": "https://neurafit-ai-2025.web.app/android-chrome-512x512.png",
           "width": 512,
           "height": 512
         }
       },
-      "screenshot": "https://neurastack.ai/android-chrome-512x512.png",
+      "screenshot": "https://neurafit-ai-2025.web.app/android-chrome-512x512.png",
       "softwareVersion": "1.0.1",
       "datePublished": "2024-01-01",
-      "dateModified": "2025-09-30",
+      "dateModified": "2025-10-08",
       "keywords": "AI workout generator, personalized fitness, custom training plans, smart exercise planner, fitness AI, workout builder",
       "featureList": [
         "AI-powered workout generation",
@@ -175,40 +164,28 @@
         "Goal-oriented training"
       ],
       "applicationSubCategory": "Fitness & Health",
-      "downloadUrl": "https://neurastack.ai/",
-      "installUrl": "https://neurastack.ai/",
+      "downloadUrl": "https://neurafit-ai-2025.web.app/",
+      "installUrl": "https://neurafit-ai-2025.web.app/",
       "memoryRequirements": "50MB",
       "storageRequirements": "100MB"
     }
     </script>
 
-    <!-- Organization Schema -->
+    <!-- Schema.org: Organization -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "NeuraFit",
       "alternateName": "NeuraFit AI Fitness",
-      "url": "https://neurastack.ai/",
-      "logo": "https://neurastack.ai/android-chrome-512x512.png",
+      "url": "https://neurafit-ai-2025.web.app/",
+      "logo": "https://neurafit-ai-2025.web.app/android-chrome-512x512.png",
       "description": "Leading AI-powered fitness platform providing personalized workout plans and intelligent training solutions.",
-      "foundingDate": "2024",
-      "sameAs": [
-        "https://www.facebook.com/neurafit",
-        "https://www.twitter.com/neurafit",
-        "https://www.instagram.com/neurafit",
-        "https://www.linkedin.com/company/neurafit"
-      ],
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer service",
-        "email": "support@neurafit.com",
-        "availableLanguage": "English"
-      }
+      "foundingDate": "2024"
     }
     </script>
 
-    <!-- FAQ Schema -->
+    <!-- Schema.org: FAQ -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -227,7 +204,7 @@
           "name": "Is NeuraFit free to use?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "NeuraFit offers a free tier with limited workout generations per month. For unlimited access to AI-powered workouts and advanced features, we offer affordable premium subscriptions starting at $9.99/month."
+            "text": "NeuraFit offers 50 free workouts for new users. For unlimited access to AI-powered workouts and advanced features, we offer affordable premium subscriptions."
           }
         },
         {
@@ -250,15 +227,13 @@
     }
     </script>
 
+    <!-- ============================================ -->
+    <!-- CRITICAL INLINE STYLES -->
+    <!-- ============================================ -->
+    
     <style>
-      /* Prevent zoom and ensure mobile-first experience */
+      /* Prevent text selection on non-interactive elements (mobile optimization) */
       * {
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        -khtml-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
         -webkit-tap-highlight-color: transparent;
       }
 
@@ -280,6 +255,7 @@
         overflow: hidden;
       }
 
+      /* Root container with proper scrolling */
       #root {
         width: 100%;
         height: 100%;
@@ -288,7 +264,7 @@
         -webkit-overflow-scrolling: touch;
       }
 
-      /* Landscape warning overlay */
+      /* Landscape warning overlay (triggered by orientation.ts utility) */
       .landscape-warning::before {
         content: "📱 Please rotate your device to portrait mode for the best experience";
         position: fixed;
@@ -311,10 +287,11 @@
     </style>
   </head>
   <body>
-    <div id="root" data-version="1.0.1" data-build-time="2025-09-30T18:13:44.859Z"></div>
+    <!-- React root element with version metadata -->
+    <div id="root" data-version="1.0.1" data-build-time="2025-10-08"></div>
 
-    <!-- Firebase is now loaded directly in the main bundle -->
-
+    <!-- Main application entry point (Vite handles module bundling) -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

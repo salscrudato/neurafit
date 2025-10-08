@@ -106,7 +106,7 @@ export const generateWorkout = onRequest(
 
                 await db.collection('users').doc(uid).set(
                   { subscription: initialSubscriptionData },
-                  { merge: true }
+                  { merge: true },
                 );
 
                 console.log('Initialized subscription data for new user:', uid);
@@ -127,7 +127,7 @@ export const generateWorkout = onRequest(
                 lastFeedback: adaptiveState.lastFeedback,
                 recentCompletion,
               };
-            })() : Promise.resolve(null)
+            })() : Promise.resolve(null),
           ]);
 
           // Handle subscription initialization result (no limits enforced)
@@ -360,5 +360,5 @@ JSON OUTPUT (no markdown):
       res.status(500).json({ error: 'Internal Server Error' });
       return;
     }
-  }
+  },
 );

@@ -75,7 +75,7 @@ export async function getAdaptiveState(uid: string): Promise<AdaptiveState> {
 export async function updateAdaptiveState(
   uid: string,
   signal: 'easy' | 'right' | 'hard',
-  recentCompletion: number
+  recentCompletion: number,
 ): Promise<AdaptiveState> {
   const db = getFirestore();
   const docRef = db.collection('users').doc(uid).collection('personalization').doc('adaptive');
@@ -126,7 +126,7 @@ export async function updateAdaptiveState(
 export function computeNextScalar(
   prevScalar: number,
   signal: 'easy' | 'right' | 'hard',
-  recentCompletion?: number
+  recentCompletion?: number,
 ): number {
   let newScalar = prevScalar;
 
@@ -223,7 +223,7 @@ export async function calculateRecentCompletionRate(uid: string, lookbackCount =
 export function generateProgressionNote(
   prevScalar: number,
   newScalar: number,
-  feedback: 'easy' | 'right' | 'hard' | null
+  feedback: 'easy' | 'right' | 'hard' | null,
 ): string {
   const intensityChange = ((newScalar - 1.0) - (prevScalar - 1.0)) * 100;
 

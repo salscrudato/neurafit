@@ -5,7 +5,8 @@
  * Ensures screen readers announce page changes and focus is properly managed.
  */
 
-import React, { useEffect, useRef } from 'react';
+import type React from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**

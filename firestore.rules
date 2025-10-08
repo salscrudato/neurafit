@@ -84,6 +84,21 @@ service cloud.firestore {
              (!('subscription' in data) || validateSubscriptionData(data.subscription));
     }
 
+    function isValidWorkoutData() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['createdAt', 'exercises']) &&
+             data.createdAt is timestamp &&
+             data.exercises is list &&
+             data.exercises.size() > 0 &&
+             data.exercises.size() <= 50 &&
+             (!('duration' in data) || (data.duration is number && data.duration > 0 && data.duration <= 7200)) &&
+             (!('type' in data) || data.type is string) &&
+             (!('completed' in data) || data.completed is bool) &&
+             (!('completedAt' in data) || data.completedAt is timestamp) &&
+             (!('feedback' in data) || data.feedback is string) &&
+             (!('rpe' in data) || (data.rpe is number && data.rpe >= 1 && data.rpe <= 10));
+    }
+
 
 
     // User profiles - allow users to read and manage their own data
@@ -92,7 +107,15 @@ service cloud.firestore {
       // Allow users to create and update their own documents (permissive for onboarding)
       allow create, update: if isAuthenticated() && isOwner(uid);
 
-      // User subcollections (workouts, etc.) - allow users to manage their own data
+      // Workouts subcollection - with validation
+      match /workouts/{workoutId} {
+        allow read: if isAuthenticated() && isOwner(uid);
+        allow create: if isAuthenticated() && isOwner(uid) && isValidWorkoutData();
+        allow update: if isAuthenticated() && isOwner(uid);
+        allow delete: if isAuthenticated() && isOwner(uid);
+      }
+
+      // Other subcollections - allow users to manage their own data
       match /{subcollection}/{docId} {
         allow read, write: if isAuthenticated() && isOwner(uid);
       }

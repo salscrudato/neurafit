@@ -10,32 +10,58 @@
   },
   "packageManager": "npm@10.9.2",
   "scripts": {
+    "// Development": "========================================",
     "dev": "vite",
+    "dev:host": "vite --host",
+    "dev:https": "vite --https",
+
+    "// Building": "========================================",
     "build": "tsc -b && vite build && npm run build:sw && npm run build:check",
     "build:deploy": "vite build && npm run build:sw",
     "build:sw": "node scripts/build-sw.js",
     "build:analyze": "ANALYZE=true npm run build",
     "build:check": "node scripts/check-bundle-size.js",
+
+    "// Code Quality": "========================================",
     "typecheck": "tsc -b --force",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+
+    "// Testing": "========================================",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+
+    "// Preview": "========================================",
     "preview": "vite preview",
     "preview:sw": "vite preview --port 4173",
+
+    "// Analysis": "========================================",
     "analyze": "vite-bundle-visualizer",
     "analyze:build": "npm run build:analyze && open dist/stats.html",
-    "prepack": "npm run lint && npm run typecheck",
+
+    "// Deployment": "========================================",
     "deploy": "npm run build && firebase deploy --only hosting",
     "deploy:full": "npm run build && firebase deploy",
+    "deploy:functions": "npm run build && firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+
+    "// Versioning": "========================================",
     "version:patch": "npm version patch && npm run deploy",
     "version:minor": "npm version minor && npm run deploy",
     "version:major": "npm version major && npm run deploy",
-    "ci": "npm run lint && npm run typecheck && npm run test && npm run build"
+
+    "// Maintenance": "========================================",
+    "clean": "rm -rf dist node_modules/.vite node_modules/.tmp",
+    "clean:all": "rm -rf dist node_modules",
+    "reinstall": "npm run clean:all && npm install",
+
+    "// CI/CD": "========================================",
+    "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "prepack": "npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@sentry/react": "^8.47.0",
