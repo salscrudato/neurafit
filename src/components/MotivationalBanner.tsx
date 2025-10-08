@@ -68,20 +68,21 @@ export function MotivationalBanner({
   const Icon = motivation.icon
 
   return (
-    <div className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${motivation.bgColor} border border-white/70 shadow-depth-xl hover:shadow-depth-xl transition-all duration-500 hover:scale-[1.003] hover:-translate-y-1 border-inner`}>
-      <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/25 to-transparent" />
-      <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-white/25 blur-3xl group-hover:blur-2xl group-hover:scale-110 transition-all duration-700" />
-      <div className="absolute -left-16 -bottom-16 h-32 w-32 rounded-full bg-white/15 blur-2xl group-hover:blur-3xl transition-all duration-700" />
-      <div className="relative p-6 sm:p-8 lg:p-10">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-          <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-depth-lg shadow-current/30 group-hover:shadow-current/50 group-hover:scale-110 transition-all duration-500`}>
-            <Icon className="h-9 w-9 sm:h-10 sm:w-10 text-white" />
+    <div className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${motivation.bgColor} border border-white/80 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.002] hover:-translate-y-1`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-white/30 to-transparent" />
+      <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-white/30 blur-3xl group-hover:blur-2xl group-hover:scale-110 transition-all duration-700" />
+      <div className="absolute -left-16 -bottom-16 h-32 w-32 rounded-full bg-white/20 blur-2xl group-hover:blur-3xl transition-all duration-700" />
+      <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/60 pointer-events-none" />
+      <div className="relative p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+          <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br ${motivation.color} flex items-center justify-center shadow-lg shadow-current/40 group-hover:shadow-xl group-hover:shadow-current/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ring-2 ring-white/50`}>
+            <Icon className="h-7 w-7 sm:h-8 sm:w-8 text-white drop-shadow-sm" />
           </div>
-          <div className="flex-1 space-y-3">
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300 leading-tight tracking-tight">
+          <div className="flex-1 space-y-1">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-slate-800 transition-colors duration-300 leading-tight tracking-tight drop-shadow-sm">
               {motivation.title}
             </h3>
-            <p className="text-gray-700/90 text-base sm:text-lg lg:text-xl leading-relaxed font-medium max-w-2xl">
+            <p className="text-slate-700 text-sm sm:text-base leading-snug font-medium max-w-2xl">
               {motivation.message}
             </p>
           </div>
