@@ -29,7 +29,7 @@ function exec(command, options = {}) {
       ...options,
     });
     return true;
-  } catch (error) {
+  } catch {
     console.error(`❌ Command failed: ${command}`);
     return false;
   }

@@ -17,13 +17,6 @@ import { resolve } from 'path';
 
 const ROOT_DIR = resolve(process.cwd());
 
-// Files to update with new version
-const FILES_TO_UPDATE = [
-  'package.json',
-  'public/manifest.json',
-  'index.html',
-];
-
 function getCurrentVersion() {
   const packageJson = JSON.parse(readFileSync(resolve(ROOT_DIR, 'package.json'), 'utf-8'));
   return packageJson.version;

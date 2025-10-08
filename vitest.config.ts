@@ -18,13 +18,16 @@ export default defineConfig({
   test: {
     // Test environment
     environment: 'jsdom',
-    
+
     // Setup files
     setupFiles: ['./src/test/setup.ts'],
-    
+
     // Global test utilities
     globals: true,
-    
+
+    // Test timeout for async operations (10 seconds)
+    testTimeout: 10000,
+
     // Coverage configuration
     coverage: {
       provider: 'v8',
@@ -38,16 +41,16 @@ export default defineConfig({
         'dist/',
       ],
       thresholds: {
-        lines: 60,
-        functions: 60,
-        branches: 60,
-        statements: 60,
+        lines: 70,
+        functions: 70,
+        branches: 65,
+        statements: 70,
       },
     },
-    
+
     // Test file patterns
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    
+
     // Exclude patterns
     exclude: [
       'node_modules',

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 import { resolve } from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { readFileSync } from 'fs'
 
 /**
  * Production-Ready Vite Configuration for NeuraFit
@@ -17,6 +18,12 @@ import { visualizer } from 'rollup-plugin-visualizer'
  */
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production'
+
+  // Read package.json for version
+  const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')) as { version: string }
+  const appVersion: string = packageJson.version
+  const buildTime: string = new Date().toISOString()
+  const buildDate: string = new Date().toISOString().split('T')[0] || ''
 
   return {
     // Path resolution - matches tsconfig paths
@@ -45,6 +52,16 @@ export default defineConfig(({ mode }) => {
           brotliSize: true,
           template: 'treemap', // 'sunburst', 'treemap', 'network'
         }),
+      // HTML transform plugin to inject version and build time
+      {
+        name: 'html-transform',
+        transformIndexHtml(html: string): string {
+          return html
+            .replaceAll('__APP_VERSION__', appVersion)
+            .replaceAll('__BUILD_TIME__', buildTime)
+            .replaceAll('__BUILD_DATE__', buildDate)
+        },
+      },
     ].filter(Boolean),
 
     // Development server
@@ -62,7 +79,7 @@ export default defineConfig(({ mode }) => {
 
     // Build configuration
     build: {
-      target: 'es2020',
+      target: 'es2022',
       outDir: 'dist',
       // Enable sourcemaps for production debugging (hidden from browser by default)
       sourcemap: isProduction ? 'hidden' : true,
@@ -92,7 +109,7 @@ export default defineConfig(({ mode }) => {
       },
 
       // Chunk size warnings
-      chunkSizeWarningLimit: 1000, // 1MB warning threshold
+      chunkSizeWarningLimit: 500, // 500KB warning threshold for optimal performance
 
       // Rollup options for advanced chunking
       rollupOptions: {
@@ -242,7 +259,6 @@ export default defineConfig(({ mode }) => {
         'hoist-non-react-statics',
         // Include React-dependent packages
         '@stripe/react-stripe-js',
-        '@tanstack/react-query',
       ],
       exclude: [],
       // Force CommonJS dependencies to be pre-bundled as ESM
@@ -254,8 +270,8 @@ export default defineConfig(({ mode }) => {
 
     // Global constants
     define: {
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
-      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+      __APP_VERSION__: JSON.stringify(appVersion),
+      __BUILD_TIME__: JSON.stringify(buildTime),
       global: 'globalThis',
     },
 

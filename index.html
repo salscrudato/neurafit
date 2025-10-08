@@ -14,8 +14,8 @@
     <meta name="author" content="NeuraFit Team" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     
-    <!-- Canonical URL: Update with your actual production domain -->
-    <link rel="canonical" href="https://neurafit-ai-2025.web.app/" />
+    <!-- Canonical URL: Primary production domain -->
+    <link rel="canonical" href="https://neurastack.ai/" />
 
     <!-- ============================================ -->
     <!-- PWA & MOBILE OPTIMIZATION -->
@@ -92,21 +92,21 @@
     
     <!-- Open Graph: Facebook & LinkedIn -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://neurafit-ai-2025.web.app/" />
+    <meta property="og:url" content="https://neurastack.ai/" />
     <meta property="og:title" content="NeuraFit - AI Workout Generator | Get Fit with Smart Training" />
     <meta property="og:description" content="Transform your fitness with AI-powered workout plans! Personalized training in 30 seconds. Join thousands getting stronger with intelligent fitness coaching." />
-    <meta property="og:image" content="https://neurafit-ai-2025.web.app/android-chrome-512x512.png" />
+    <meta property="og:image" content="https://neurastack.ai/android-chrome-512x512.png" />
     <meta property="og:image:width" content="512" />
     <meta property="og:image:height" content="512" />
     <meta property="og:image:alt" content="NeuraFit AI Workout Generator - Personalized Fitness App" />
     <meta property="og:site_name" content="NeuraFit" />
     <meta property="og:locale" content="en_US" />
-    
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="NeuraFit - AI Workout Generator | Smart Fitness Training" />
     <meta name="twitter:description" content="Get personalized AI workouts in 30 seconds! Smart training plans for your goals & equipment. Join thousands transforming their fitness." />
-    <meta name="twitter:image" content="https://neurafit-ai-2025.web.app/android-chrome-512x512.png" />
+    <meta name="twitter:image" content="https://neurastack.ai/android-chrome-512x512.png" />
     <meta name="twitter:image:alt" content="NeuraFit AI Workout Generator - Personalized Fitness Training App" />
 
     <!-- ============================================ -->
@@ -121,7 +121,7 @@
       "name": "NeuraFit",
       "alternateName": "NeuraFit AI Workout Generator",
       "description": "AI-powered personalized workout generator that creates custom fitness plans tailored to your goals, experience level, and available equipment.",
-      "url": "https://neurafit-ai-2025.web.app/",
+      "url": "https://neurastack.ai/",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "Web, iOS, Android",
       "offers": {
@@ -140,22 +140,22 @@
       "author": {
         "@type": "Organization",
         "name": "NeuraFit Team",
-        "url": "https://neurafit-ai-2025.web.app/"
+        "url": "https://neurastack.ai/"
       },
       "publisher": {
         "@type": "Organization",
         "name": "NeuraFit",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://neurafit-ai-2025.web.app/android-chrome-512x512.png",
+          "url": "https://neurastack.ai/android-chrome-512x512.png",
           "width": 512,
           "height": 512
         }
       },
-      "screenshot": "https://neurafit-ai-2025.web.app/android-chrome-512x512.png",
-      "softwareVersion": "1.0.2",
+      "screenshot": "https://neurastack.ai/android-chrome-512x512.png",
+      "softwareVersion": "__APP_VERSION__",
       "datePublished": "2024-01-01",
-      "dateModified": "2025-10-08",
+      "dateModified": "__BUILD_DATE__",
       "keywords": "AI workout generator, personalized fitness, custom training plans, smart exercise planner, fitness AI, workout builder",
       "featureList": [
         "AI-powered workout generation",
@@ -166,8 +166,8 @@
         "Goal-oriented training"
       ],
       "applicationSubCategory": "Fitness & Health",
-      "downloadUrl": "https://neurafit-ai-2025.web.app/",
-      "installUrl": "https://neurafit-ai-2025.web.app/",
+      "downloadUrl": "https://neurastack.ai/",
+      "installUrl": "https://neurastack.ai/",
       "memoryRequirements": "50MB",
       "storageRequirements": "100MB"
     }
@@ -180,8 +180,8 @@
       "@type": "Organization",
       "name": "NeuraFit",
       "alternateName": "NeuraFit AI Fitness",
-      "url": "https://neurafit-ai-2025.web.app/",
-      "logo": "https://neurafit-ai-2025.web.app/android-chrome-512x512.png",
+      "url": "https://neurastack.ai/",
+      "logo": "https://neurastack.ai/android-chrome-512x512.png",
       "description": "Leading AI-powered fitness platform providing personalized workout plans and intelligent training solutions.",
       "foundingDate": "2024"
     }
@@ -289,8 +289,8 @@
     </style>
   </head>
   <body>
-    <!-- React root element with version metadata -->
-    <div id="root" data-version="1.0.2" data-build-time="2025-10-08"></div>
+    <!-- React root element with version metadata (dynamically injected during build) -->
+    <div id="root" data-version="__APP_VERSION__" data-build-time="__BUILD_TIME__"></div>
 
     <!-- Main application entry point (Vite handles module bundling) -->
     <script type="module" src="/src/main.tsx"></script>
