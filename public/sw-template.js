@@ -23,7 +23,7 @@ const isDevelopment = location.hostname === 'localhost' || location.hostname ===
 const isProduction = !isDevelopment;
 
 // Cache version - increment to force cache refresh
-const CACHE_VERSION = 'v1.0.1';
+const CACHE_VERSION = 'v1.0.2';
 
 // Precache app shell and assets (injected by workbox-build)
 // This will be replaced with actual file list during build
@@ -31,6 +31,34 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 
 // Clean up outdated precaches automatically
 cleanupOutdatedCaches();
+
+// Force the waiting service worker to become the active service worker
+// This ensures users get the latest version immediately
+self.addEventListener('install', (event) => {
+  console.log(`SW: Installing new service worker - ${CACHE_VERSION}`);
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log(`SW: Activating new service worker - ${CACHE_VERSION}`);
+  event.waitUntil(
+    // Take control of all clients immediately
+    self.clients.claim().then(() => {
+      console.log('SW: Now controlling all clients');
+      // Delete old caches
+      return caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (!cacheName.includes(CACHE_VERSION)) {
+              console.log(`SW: Deleting old cache: ${cacheName}`);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      });
+    })
+  );
+});
 
 console.log(`SW: Workbox service worker ${isDevelopment ? 'development' : 'production'} mode - ${CACHE_VERSION}`);
 
