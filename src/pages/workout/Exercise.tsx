@@ -1,5 +1,5 @@
 // src/pages/workout/Exercise.tsx
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { Lightbulb, Shield } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
 import { useOptimisticUpdate, createWeightUpdateAction } from '../../lib/optimisticUpdates'
@@ -12,6 +12,7 @@ import {
 import { SmartWeightInput } from '../../components/SmartWeightInput'
 import { logger } from '../../lib/logger'
 import { ProgressiveOverloadTracker } from '../../components/ProgressiveOverloadTracker'
+import { triggerHaptic } from '../../utils/haptic'
 import {
   getCachedWeightHistory,
   fetchRecentSessions,
@@ -50,6 +51,8 @@ export default function Exercise() {
   const [weightHistory, setWeightHistory] = useState<WeightHistory[]>([])
   const [recentSessions, setRecentSessions] = useState<WorkoutSession[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [workoutPlan, setWorkoutPlan] = useState<{ saved: string | null; list: ExerciseT[] }>({ saved: null, list: [] })
+  const [workoutStartTime, setWorkoutStartTime] = useState<number>(Date.now())
 
   // Enhanced UX hooks
   const containerRef = useRef<HTMLDivElement>(null)
@@ -58,18 +61,26 @@ export default function Exercise() {
   const { shakeClass } = useShake()
 
   // Weight tracking state with optimistic updates - must be called before early returns
-  const initialWeights = (() => {
+  const [initialWeights] = useState(() => {
     const savedWeights = sessionStorage.getItem('nf_workout_weights')
     return savedWeights ? JSON.parse(savedWeights) : {}
-  })()
+  })
   const weightState = useOptimisticUpdate<Record<number, Record<number, number | null>>>(initialWeights)
 
-  // Get saved workout plan - memoized to prevent unnecessary re-renders
-  const { saved, list } = useMemo(() => {
+  // Load workout plan from sessionStorage on mount
+  useEffect(() => {
     const saved = sessionStorage.getItem('nf_workout_plan')
     const parsedData = saved ? JSON.parse(saved) as { plan: PlanT } : null
     const list = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
-    return { saved, list }
+    setWorkoutPlan({ saved, list })
+  }, [])
+
+  // Load workout start time on mount
+  useEffect(() => {
+    const startTimeStr = sessionStorage.getItem('nf_workout_start_time')
+    if (startTimeStr) {
+      setWorkoutStartTime(parseInt(startTimeStr))
+    }
   }, [])
 
   // All useEffect hooks must be called before early returns
@@ -93,7 +104,9 @@ export default function Exercise() {
   }, [])
 
   // Load weight history and recent sessions for current exercise
+  const { saved, list } = workoutPlan
   const ex = list[i] as ExerciseT
+
   useEffect(() => {
     if (!ex?.name) return
 
@@ -116,80 +129,68 @@ export default function Exercise() {
     loadHistoryData()
   }, [ex?.name])
 
-  // All useMemo and useCallback hooks
+  // Calculate progress percentage (simple calculation - no memoization needed)
   const totalExercises = list.length
-  const progressPct = useMemo(() => {
-    const perExercise = 1 / totalExercises
-    const withinExercise = ((setNo - 1) / Math.max(1, ex.sets)) * perExercise
-    return Math.min(100, Math.round(((i * perExercise) + withinExercise) * 100))
-  }, [i, setNo, ex.sets, totalExercises])
+  const perExercise = 1 / totalExercises
+  const withinExercise = ((setNo - 1) / Math.max(1, ex?.sets || 1)) * perExercise
+  const progressPct = Math.min(100, Math.round(((i * perExercise) + withinExercise) * 100))
 
-  const completedSets = useMemo(() => {
-    const exerciseWeights = weightState.data[i] || {}
-    return Object.entries(exerciseWeights)
-      .filter(([_, weight]) => weight !== null)
-      .map(([setNum]) => parseInt(setNum))
-  }, [weightState.data, i])
+  // Calculate completed and skipped sets (removed memoization - simple filter)
+  const exerciseWeights = weightState.data[i] || {}
+  const completedSets = Object.entries(exerciseWeights)
+    .filter(([_, weight]) => weight !== null)
+    .map(([setNum]) => parseInt(setNum))
 
-  const skippedSets = useMemo(() => {
-    const exerciseWeights = weightState.data[i] || {}
-    return Object.entries(exerciseWeights)
-      .filter(([_, weight]) => weight === null)
-      .map(([setNum]) => parseInt(setNum))
-  }, [weightState.data, i])
+  const skippedSets = Object.entries(exerciseWeights)
+    .filter(([_, weight]) => weight === null)
+    .map(([setNum]) => parseInt(setNum))
 
-  const workoutStartTime = useMemo(() => {
-    const startTimeStr = sessionStorage.getItem('nf_workout_start_time')
-    return startTimeStr ? parseInt(startTimeStr) : Date.now()
-  }, [])
+  // Calculate total stats (removed memoization - simple reduce)
+  const totalCompletedSets = Object.values(weightState.data).reduce((total, exerciseWeights) => {
+    return total + Object.values(exerciseWeights || {}).filter(weight => weight !== null).length
+  }, 0)
 
+  const totalSets = list.reduce((total, exercise) => total + exercise.sets, 0)
+
+  const completedExercises = Object.keys(weightState.data).filter(exerciseIndex => {
+    const exerciseIndex_num = parseInt(exerciseIndex)
+    const exercise = list[exerciseIndex_num]
+    if (!exercise) return false
+
+    const exerciseWeights = weightState.data[exerciseIndex_num] || {}
+    const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
+
+    // Only count as completed if all sets are done
+    return completedCount === exercise.sets
+  }).length
+
+  // Keep goRest memoized - passed to child components
   const goRest = useCallback((nextIndex: number, nextSet: number, seconds?: number) => {
-    const restDuration = seconds ?? ex.restSeconds ?? 60
+    const restDuration = seconds ?? ex?.restSeconds ?? 60
     sessionStorage.setItem('nf_rest', String(restDuration))
     sessionStorage.setItem('nf_next', JSON.stringify({ i: nextIndex, setNo: nextSet }))
     nav('/workout/rest')
-  }, [nav, ex.restSeconds])
-
-  const totalCompletedSets = useMemo(() => {
-    return Object.values(weightState.data).reduce((total, exerciseWeights) => {
-      return total + Object.values(exerciseWeights || {}).filter(weight => weight !== null).length
-    }, 0)
-  }, [weightState.data])
-
-  const totalSets = useMemo(() => {
-    return list.reduce((total, exercise) => total + exercise.sets, 0)
-  }, [list])
-
-  const completedExercises = useMemo(() => {
-    // Count exercises that are fully completed (all sets done)
-    return Object.keys(weightState.data).filter(exerciseIndex => {
-      const exerciseIndex_num = parseInt(exerciseIndex)
-      const exercise = list[exerciseIndex_num]
-      if (!exercise) return false
-
-      const exerciseWeights = weightState.data[exerciseIndex_num] || {}
-      const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
-
-      // Only count as completed if all sets are done
-      return completedCount === exercise.sets
-    }).length
-  }, [weightState.data, list])
+  }, [nav, ex?.restSeconds])
 
   // Update weight for current exercise and set with optimistic updates
   // RULE 3: If a set is complete and a weight is entered, the set should be marked as complete and the weight should be stored and displayed
   // This must be defined before early returns to satisfy React hooks rules
   const updateWeight = useCallback((weight: number | null) => {
-    const workoutWeights = weightState.data
+    // Get current weights from state at call time to avoid stale closure (used in action creator)
     const action = createWeightUpdateAction(
       i,
       setNo,
       weight,
       async (exerciseIndex, setNumber, weightValue) => {
         // Server update simulation - in real app this might sync to backend
+        // Use fresh weights from sessionStorage to avoid race conditions
+        const savedWeights = sessionStorage.getItem('nf_workout_weights')
+        const existingWeights = savedWeights ? JSON.parse(savedWeights) : {}
+
         const updated = {
-          ...workoutWeights,
+          ...existingWeights,
           [exerciseIndex]: {
-            ...workoutWeights[exerciseIndex],
+            ...existingWeights[exerciseIndex],
             [setNumber]: weightValue
           }
         }
@@ -216,6 +217,9 @@ export default function Exercise() {
 
 
   const completeSet = () => {
+    // Haptic feedback for successful completion
+    triggerHaptic('success')
+
     // RULE 1: If a set is complete regardless of whether or not a weight is entered,
     // the set should be marked as complete
     const currentWeight = workoutWeights[i]?.[setNo]
@@ -258,6 +262,9 @@ export default function Exercise() {
   }
 
   const skipSet = () => {
+    // Haptic feedback for skip action
+    triggerHaptic('light')
+
     // RULE 2: If a set is skipped, it should be marked as incomplete
     const action = {
       optimisticUpdate: (prev: Record<number, Record<number, number | null>>) => ({
@@ -296,6 +303,9 @@ export default function Exercise() {
   }
 
   const skipExercise = () => {
+    // Haptic feedback for skip exercise
+    triggerHaptic('warning')
+
     // Mark this exercise as skipped by creating an empty weights object
     const skipAction = {
       optimisticUpdate: (data: Record<number, Record<number, number | null>>) => {

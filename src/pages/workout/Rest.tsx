@@ -1,5 +1,5 @@
 // src/pages/workout/Rest.tsx
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { EnhancedRestTimer } from '../../components/EnhancedRestTimer'
@@ -12,14 +12,14 @@ export default function Rest() {
   // Scroll to top on mount and route changes
   useWorkoutScrollToTop()
 
-  // Retrieve initial rest time, default to 60 seconds if not set
-  const initial = useMemo(() => {
+  // Retrieve initial rest time, default to 60 seconds if not set (computed once on mount)
+  const [initial] = useState(() => {
     const storedRest = sessionStorage.getItem('nf_rest')
     return storedRest ? Number(storedRest) : 60
-  }, [])
+  })
 
-  // Parse next exercise data safely
-  const nextExercise = useMemo(() => {
+  // Parse next exercise data safely (computed once on mount)
+  const [nextExercise] = useState(() => {
     try {
       const nextRaw = sessionStorage.getItem('nf_next')
       const planRaw = sessionStorage.getItem('nf_workout_plan')
@@ -42,7 +42,7 @@ export default function Rest() {
       logger.error('Error parsing next exercise data', { error })
       return undefined
     }
-  }, [])
+  })
 
   const handleComplete = () => {
     // Transfer next state to return state for Exercise screen

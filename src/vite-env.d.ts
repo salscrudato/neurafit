@@ -34,6 +34,8 @@ interface ImportMetaEnv {
 
   // Cloud Functions
   readonly VITE_WORKOUT_FN_URL?: string
+  readonly VITE_ADD_EXERCISE_FN_URL?: string
+  readonly VITE_SWAP_EXERCISE_FN_URL?: string
 
   // Environment
   readonly VITE_APP_ENV?: 'development' | 'staging' | 'production'

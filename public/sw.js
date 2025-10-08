@@ -74,10 +74,10 @@ self.addEventListener('activate', (event) => {
 
   event.waitUntil(
     Promise.all([
-      // Enable navigation preload if supported
+      // Disable navigation preload to avoid warnings
       self.registration.navigationPreload ?
-        self.registration.navigationPreload.enable().catch(error => {
-          console.warn('SW: Navigation preload not supported:', error)
+        self.registration.navigationPreload.disable().catch(error => {
+          console.warn('SW: Navigation preload disable failed:', error)
           return Promise.resolve()
         }) :
         Promise.resolve(),
@@ -175,19 +175,10 @@ self.addEventListener('fetch', (event) => {
 
     // Production caching strategies
     if (isProduction) {
-      // For HTML files, use network-first strategy with navigation preload
+      // For HTML files, use network-first strategy
       if (request.headers.get('accept')?.includes('text/html')) {
         event.respondWith(
-          (async () => {
-            try {
-              // Wait for preloadResponse if available
-              const preloadResponse = await event.preloadResponse
-              return await handleNetworkFirst(request, preloadResponse)
-            } catch (error) {
-              console.warn('SW: Preload response failed:', error)
-              return await handleNetworkFirst(request, null)
-            }
-          })()
+          handleNetworkFirst(request, null)
         )
         return
       }

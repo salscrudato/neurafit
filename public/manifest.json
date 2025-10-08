@@ -1,9 +1,9 @@
 {
   "name": "NeuraFit - AI-Powered Personalized Workout Generator",
   "short_name": "NeuraFit",
-  "version": "1.0.1",
-  "build_time": "2025-09-30T17:32:00.000Z",
-  "cache_version": "v1.0.1-20250930",
+  "version": "1.0.2",
+  "build_time": "2025-10-08T23:04:20.919Z",
+  "cache_version": "v1.0.2-1759964660919",
   "description": "Generate personalized AI workouts tailored to your goals, experience, and equipment. Transform your fitness journey with intelligent, adaptive training plans.",
   "start_url": "/",
   "display": "standalone",
@@ -55,7 +55,13 @@
       "purpose": "any"
     }
   ],
-  "categories": ["health", "fitness", "lifestyle", "medical", "sports"],
+  "categories": [
+    "health",
+    "fitness",
+    "lifestyle",
+    "medical",
+    "sports"
+  ],
   "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false,

@@ -1,15 +1,5 @@
 @import "tailwindcss";
 
-/* Shimmer animation for skeleton loaders */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
 /* Futuristic loading animations */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
@@ -51,6 +41,60 @@
 /* Smooth scrolling for better UX */
 html {
   scroll-behavior: smooth;
+  /* Fix mobile viewport height issues */
+  height: -webkit-fill-available;
+}
+
+/* Mobile-friendly viewport height */
+.min-h-screen-mobile {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Touch target optimization - ensure minimum 44x44px for all interactive elements */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+[role="button"],
+[role="link"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Touch-friendly spacing for mobile */
+@media (max-width: 768px) {
+  button,
+  a.button,
+  [role="button"] {
+    padding: 12px 16px;
+  }
+}
+
+/* Custom utility classes for common patterns */
+.card {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  padding: 1.5rem;
+}
+
+.card-hover {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transform: scale(1.01);
+}
+
+.gradient-bg {
+  background: linear-gradient(to bottom right, rgb(249 250 251), rgb(243 244 246));
 }
 
 /* Enhanced safe area support for mobile devices */
@@ -384,21 +428,6 @@ a {
 }
 
 /* Advanced Micro-Interactions */
-
-/* Floating animation */
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(var(--float-intensity, -10px));
-  }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
 
 /* Fade in up animation */
 @keyframes fadeInUp {

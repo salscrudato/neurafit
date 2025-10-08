@@ -97,7 +97,7 @@ export const WorkoutProgressHeader = memo(function WorkoutProgressHeader({
               </div>
             </div>
           </div>
-          
+
           {/* Exercise Progress */}
           <div className="text-right">
             <div className="text-sm font-medium text-gray-900">
@@ -119,7 +119,7 @@ export const WorkoutProgressHeader = memo(function WorkoutProgressHeader({
         {/* Progress Bar */}
         <div className="mt-3">
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${overallProgress}%` }}
             />
@@ -127,6 +127,16 @@ export const WorkoutProgressHeader = memo(function WorkoutProgressHeader({
         </div>
       </div>
     </div>
+  )
+}, (prev, next) => {
+  // Custom comparison for optimal re-render prevention
+  return (
+    prev.currentExercise === next.currentExercise &&
+    prev.totalExercises === next.totalExercises &&
+    prev.currentSet === next.currentSet &&
+    prev.totalSets === next.totalSets &&
+    prev.overallProgress === next.overallProgress &&
+    prev.exerciseName === next.exerciseName
   )
 })
 

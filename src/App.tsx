@@ -2,6 +2,7 @@ import { useEffect, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 import ErrorBoundary from './components/ErrorBoundary';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
 import { SubscriptionManager } from './components/SubscriptionManager';
 import { UpdateToast } from './hooks/useUpdateToast';
@@ -63,10 +64,27 @@ function AppContent() {
 
     window.addEventListener('versionUpdate', handleVersionUpdate);
 
+    // Add passive event listeners for better scroll performance
+    const passiveOptions = { passive: true } as const;
+
+    const handleScroll = () => {
+      // Scroll handler (if needed in future)
+    };
+
+    const handleTouchMove = () => {
+      // Touch move handler (if needed in future)
+    };
+
+    window.addEventListener('scroll', handleScroll, passiveOptions);
+    window.addEventListener('touchmove', handleTouchMove, passiveOptions);
+
     // Cleanup on unmount
     return () => {
       cleanupOrientation();
       cleanupZoom();
+      window.removeEventListener('versionUpdate', handleVersionUpdate);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 
@@ -79,29 +97,89 @@ function AppContent() {
         <main id="main-content" role="main" tabIndex={-1}>
         <Routes>
           {/* Public legal pages */}
-          <Route path="/terms" element={<PublicRoute lazy><Terms /></PublicRoute>} />
-          <Route path="/privacy" element={<PublicRoute lazy><Privacy /></PublicRoute>} />
+          <Route path="/terms" element={
+            <RouteErrorBoundary routeName="Terms">
+              <PublicRoute lazy><Terms /></PublicRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/privacy" element={
+            <RouteErrorBoundary routeName="Privacy">
+              <PublicRoute lazy><Privacy /></PublicRoute>
+            </RouteErrorBoundary>
+          } />
 
           {/* Landing route: determines user redirection */}
-          <Route path="/" element={<HomeGate authPage={<Auth />} />} />
+          <Route path="/" element={
+            <RouteErrorBoundary routeName="Home">
+              <HomeGate authPage={<Auth />} />
+            </RouteErrorBoundary>
+          } />
 
           {/* Onboarding: requires authentication but not a complete profile */}
-          <Route path="/onboarding" element={<AuthRoute lazy><Onboarding /></AuthRoute>} />
+          <Route path="/onboarding" element={
+            <RouteErrorBoundary routeName="Onboarding">
+              <AuthRoute lazy><Onboarding /></AuthRoute>
+            </RouteErrorBoundary>
+          } />
 
           {/* Protected routes: require completed profile */}
-          <Route path="/dashboard" element={<ProfileRoute lazy><Dashboard /></ProfileRoute>} />
-          <Route path="/generate" element={<ProfileRoute lazy><Generate /></ProfileRoute>} />
-          <Route path="/workout/preview" element={<ProfileRoute lazy><Preview /></ProfileRoute>} />
-          <Route path="/workout/run" element={<ProfileRoute lazy><Exercise /></ProfileRoute>} />
-          <Route path="/workout/rest" element={<ProfileRoute lazy><Rest /></ProfileRoute>} />
-          <Route path="/workout/complete" element={<ProfileRoute lazy><Complete /></ProfileRoute>} />
-          <Route path="/history" element={<ProfileRoute lazy><History /></ProfileRoute>} />
-          <Route path="/workout/:workoutId" element={<ProfileRoute lazy><WorkoutDetail /></ProfileRoute>} />
-          <Route path="/profile" element={<ProfileRoute lazy><Profile /></ProfileRoute>} />
-          <Route path="/subscription" element={<ProfileRoute lazy><Subscription /></ProfileRoute>} />
+          <Route path="/dashboard" element={
+            <RouteErrorBoundary routeName="Dashboard">
+              <ProfileRoute lazy><Dashboard /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/generate" element={
+            <RouteErrorBoundary routeName="Generate">
+              <ProfileRoute lazy><Generate /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/workout/preview" element={
+            <RouteErrorBoundary routeName="Workout Preview">
+              <ProfileRoute lazy><Preview /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/workout/run" element={
+            <RouteErrorBoundary routeName="Workout Exercise">
+              <ProfileRoute lazy><Exercise /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/workout/rest" element={
+            <RouteErrorBoundary routeName="Workout Rest">
+              <ProfileRoute lazy><Rest /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/workout/complete" element={
+            <RouteErrorBoundary routeName="Workout Complete">
+              <ProfileRoute lazy><Complete /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/history" element={
+            <RouteErrorBoundary routeName="History">
+              <ProfileRoute lazy><History /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/workout/:workoutId" element={
+            <RouteErrorBoundary routeName="Workout Detail">
+              <ProfileRoute lazy><WorkoutDetail /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/profile" element={
+            <RouteErrorBoundary routeName="Profile">
+              <ProfileRoute lazy><Profile /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
+          <Route path="/subscription" element={
+            <RouteErrorBoundary routeName="Subscription">
+              <ProfileRoute lazy><Subscription /></ProfileRoute>
+            </RouteErrorBoundary>
+          } />
 
           {/* Catch-all 404 page */}
-          <Route path="*" element={<PublicRoute lazy><NotFound /></PublicRoute>} />
+          <Route path="*" element={
+            <RouteErrorBoundary routeName="Not Found">
+              <PublicRoute lazy><NotFound /></PublicRoute>
+            </RouteErrorBoundary>
+          } />
         </Routes>
         </main>
 

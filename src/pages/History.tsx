@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
+import { collection, getDocs, orderBy, query, limit, startAfter, doc, getDoc } from 'firebase/firestore'
 import { convertToDate } from '../utils/timestamp'
 import { ArrowLeft, Calendar, Clock, CheckCircle, XCircle, Zap, Activity } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
@@ -76,8 +76,11 @@ export default function History() {
   const [items, setItems] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const WORKOUTS_PER_PAGE = 20
 
-  // Fetch workout history
+  // Fetch workout history with pagination
   useEffect(() => {
     (async () => {
       try {
@@ -88,7 +91,12 @@ export default function History() {
         }
 
         logger.debug('Loading workout history', { uid })
-        const q = query(collection(db, 'users', uid, 'workouts'), orderBy('timestamp', 'desc'))
+        // Fetch one extra to check if there are more
+        const q = query(
+          collection(db, 'users', uid, 'workouts'),
+          orderBy('timestamp', 'desc'),
+          limit(WORKOUTS_PER_PAGE + 1)
+        )
         const snap = await getDocs(q)
 
         const workouts = snap.docs.map(d => {
@@ -96,7 +104,15 @@ export default function History() {
           return { id: d.id, ...data } as WorkoutItem
         })
 
-        logger.debug('Workout history loaded', { count: workouts.length })
+        // Check if there are more workouts
+        if (workouts.length > WORKOUTS_PER_PAGE) {
+          setHasMore(true)
+          workouts.pop() // Remove the extra item
+        } else {
+          setHasMore(false)
+        }
+
+        logger.debug('Workout history loaded', { count: workouts.length, hasMore: workouts.length > WORKOUTS_PER_PAGE })
         setItems(workouts)
       } catch (err) {
         const error = err as { message?: string }
@@ -106,7 +122,51 @@ export default function History() {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [WORKOUTS_PER_PAGE])
+
+  // Load more workouts
+  const loadMoreWorkouts = async () => {
+    if (loadingMore || !hasMore || items.length === 0) return
+
+    setLoadingMore(true)
+    try {
+      const uid = auth.currentUser?.uid
+      if (!uid) return
+
+      const lastWorkout = items[items.length - 1]
+      if (!lastWorkout) return
+
+      const lastDoc = await getDoc(doc(db, 'users', uid, 'workouts', lastWorkout.id))
+
+      const q = query(
+        collection(db, 'users', uid, 'workouts'),
+        orderBy('timestamp', 'desc'),
+        startAfter(lastDoc),
+        limit(WORKOUTS_PER_PAGE + 1)
+      )
+      const snap = await getDocs(q)
+
+      const newWorkouts = snap.docs.map(d => {
+        const data = d.data()
+        return { id: d.id, ...data } as WorkoutItem
+      })
+
+      // Check if there are more workouts
+      if (newWorkouts.length > WORKOUTS_PER_PAGE) {
+        setHasMore(true)
+        newWorkouts.pop() // Remove the extra item
+      } else {
+        setHasMore(false)
+      }
+
+      setItems([...items, ...newWorkouts])
+      logger.debug('Loaded more workouts', { newCount: newWorkouts.length, totalCount: items.length + newWorkouts.length })
+    } catch (err) {
+      logger.error('Error loading more workouts', err as Error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   // Memoize workout stats calculations
   const workoutStats = useMemo(() => {
@@ -166,7 +226,7 @@ export default function History() {
         </div>
 
         {/* Workout List */}
-            {items.length === 0 ? (
+        {items.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Activity className="h-8 w-8 text-gray-400" />
@@ -257,13 +317,13 @@ export default function History() {
                   {workout.exercises && workout.exercises.length > 0 && (
                     <div className="border-t border-gray-100 pt-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {workout.exercises.slice(0, 4).map((exercise, index) => {
+                        {workout.exercises.slice(0, 4).map((exercise: NonNullable<WorkoutItem['exercises']>[0], index: number) => {
                           // Calculate average weight more safely
-                          let avgWeight = null
+                          let avgWeight: number | null = null
                           let completedSets = 0
 
                           if (exercise.weights && typeof exercise.weights === 'object') {
-                            const weights = Object.values(exercise.weights).filter(w => w !== null && w > 0) as number[]
+                            const weights = Object.values(exercise.weights).filter((w): w is number => w !== null && w !== undefined && w > 0)
                             completedSets = Object.values(exercise.weights).filter(w => w !== null).length
 
                             if (weights.length > 0) {
@@ -294,6 +354,26 @@ export default function History() {
                 </button>
               )
             })}
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={loadMoreWorkouts}
+                  disabled={loadingMore}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                >
+                  {loadingMore ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Loading...
+                    </span>
+                  ) : (
+                    'Load More Workouts'
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

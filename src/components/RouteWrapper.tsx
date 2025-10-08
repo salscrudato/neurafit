@@ -4,7 +4,7 @@
  */
 
 import { Suspense, type ReactNode } from 'react'
-import { LoadingSpinner } from './Loading'
+import { PageSkeleton } from './SkeletonLoader'
 import ErrorBoundary from './ErrorBoundary'
 import { RequireAuth, RequireProfile } from '../routes/guards'
 
@@ -33,7 +33,7 @@ export function RouteWrapper({
   // Wrap with Suspense if lazy loading
   if (lazy) {
     content = (
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<PageSkeleton />}>
         {content}
       </Suspense>
     )

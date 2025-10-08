@@ -1,10 +1,11 @@
 // src/pages/workout/Preview.tsx
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Play, Lightbulb, Shield, ChevronDown } from 'lucide-react'
+import { Play, Lightbulb, Shield, ChevronDown, Plus, RefreshCw, Loader2, Trash2 } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
 import { trackWorkoutStarted } from '../../lib/firebase-analytics'
 import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
+import { useAppStore } from '../../store'
 
 type Exercise = {
   name: string
@@ -23,26 +24,135 @@ type Plan = { exercises: Exercise[] }
 
 export default function Preview() {
   const nav = useNavigate()
+  const profile = useAppStore(state => state.profile)
 
   // Scroll to top on mount and route changes
   useWorkoutScrollToTop()
 
-  // Parse saved data and calculate exercises before early return - memoized to prevent unnecessary re-renders
-  const { saved, parsedData, exercises } = useMemo(() => {
+  // Parse saved data and calculate exercises before early return (computed once on mount)
+  const [{ saved, parsedData, initialExercises, initialWorkoutContext }] = useState(() => {
     const saved = sessionStorage.getItem('nf_workout_plan')
     const parsedData = saved ? JSON.parse(saved) as {
       plan: Plan & { metadata?: { targetIntensity?: number; progressionNote?: string } };
       type: string;
       duration: number
     } : null
-    const exercises = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
-    return { saved, parsedData, exercises }
-  }, [])
+    const initialExercises = Array.isArray(parsedData?.plan?.exercises) ? parsedData.plan.exercises : []
+
+    // Store the initial workout context for adding exercises
+    const initialWorkoutContext = {
+      exercises: initialExercises,
+      type: parsedData?.type,
+      duration: parsedData?.duration,
+    }
+
+    return { saved, parsedData, initialExercises, initialWorkoutContext }
+  })
+
+  // State for modified exercises
+  const [exercises, setExercises] = useState<Exercise[]>(initialExercises)
+  const [loadingAdd, setLoadingAdd] = useState(false)
+  const [swappingIndex, setSwappingIndex] = useState<number | null>(null)
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null)
 
   // Early return after all hooks
   if (!saved || !parsedData) return <EmptyState />
 
   const { type, duration } = parsedData
+
+  // Add exercise handler - uses initial workout context
+  const handleAddExercise = async () => {
+    setLoadingAdd(true)
+    try {
+      const res = await fetch(import.meta.env['VITE_ADD_EXERCISE_FN_URL'] as string, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Use initial workout context, not current modified exercises
+          currentWorkout: { exercises: initialWorkoutContext.exercises },
+          workoutType: initialWorkoutContext.type,
+          experience: profile?.experience,
+          goals: profile?.goals,
+          equipment: profile?.equipment,
+          injuries: profile?.injuries,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to add exercise')
+
+      const data = await res.json()
+      const newExercises = [...exercises, data.exercise]
+      setExercises(newExercises)
+
+      // Update session storage
+      const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
+      sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
+    } catch (error) {
+      console.error('Error adding exercise:', error)
+      alert('Failed to add exercise. Please try again.')
+    } finally {
+      setLoadingAdd(false)
+    }
+  }
+
+  // Delete exercise handler - minimum 3 exercises required
+  const handleDeleteExercise = async (index: number) => {
+    if (exercises.length <= 3) {
+      alert('Cannot delete exercise. Minimum of 3 exercises required.')
+      return
+    }
+
+    setDeletingIndex(index)
+    try {
+      const newExercises = exercises.filter((_, i) => i !== index)
+      setExercises(newExercises)
+
+      // Update session storage
+      const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
+      sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
+    } catch (error) {
+      console.error('Error deleting exercise:', error)
+      alert('Failed to delete exercise. Please try again.')
+    } finally {
+      setDeletingIndex(null)
+    }
+  }
+
+  // Swap exercise handler
+  const handleSwapExercise = async (index: number) => {
+    setSwappingIndex(index)
+    try {
+      const res = await fetch(import.meta.env['VITE_SWAP_EXERCISE_FN_URL'] as string, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exerciseToReplace: exercises[index],
+          currentWorkout: { exercises },
+          workoutType: type,
+          experience: profile?.experience,
+          goals: profile?.goals,
+          equipment: profile?.equipment,
+          injuries: profile?.injuries,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to swap exercise')
+
+      const data = await res.json()
+      const newExercises = [...exercises]
+      newExercises[index] = data.exercise
+      setExercises(newExercises)
+
+      // Update session storage
+      const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
+      sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
+    } catch (error) {
+      console.error('Error swapping exercise:', error)
+      alert('Failed to swap exercise. Please try again.')
+    } finally {
+      setSwappingIndex(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative">
@@ -74,9 +184,41 @@ export default function Preview() {
       <main className="relative mx-auto max-w-4xl px-4 pt-4 pb-24">
         <ol className="space-y-3">
           {exercises.map((ex, i) => (
-            <ExerciseItem key={i} index={i} ex={ex} />
+            <ExerciseItem
+              key={i}
+              index={i}
+              ex={ex}
+              onSwap={() => handleSwapExercise(i)}
+              onDelete={() => handleDeleteExercise(i)}
+              isSwapping={swappingIndex === i}
+              isDeleting={deletingIndex === i}
+              canDelete={exercises.length > 3}
+            />
           ))}
         </ol>
+
+        {/* Add Exercise Button */}
+        <div className="mt-4">
+          <button
+            onClick={handleAddExercise}
+            disabled={loadingAdd}
+            className="w-full group overflow-hidden rounded-xl border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50/80 to-indigo-50/60 backdrop-blur-xl px-4 py-4 hover:border-blue-400 hover:from-blue-100/80 hover:to-indigo-100/60 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold">
+              {loadingAdd ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Adding Exercise...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                  <span>Add Another Exercise</span>
+                </>
+              )}
+            </div>
+          </button>
+        </div>
       </main>
 
       {/* Compact Sticky Start Button */}
@@ -115,7 +257,23 @@ export default function Preview() {
 
 /* ---------------- Components ---------------- */
 
-function ExerciseItem({ ex, index }: { ex: Exercise; index: number }) {
+function ExerciseItem({
+  ex,
+  index,
+  onSwap,
+  onDelete,
+  isSwapping,
+  isDeleting,
+  canDelete,
+}: {
+  ex: Exercise;
+  index: number;
+  onSwap: () => void;
+  onDelete: () => void;
+  isSwapping: boolean;
+  isDeleting: boolean;
+  canDelete: boolean;
+}) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -163,7 +321,7 @@ function ExerciseItem({ ex, index }: { ex: Exercise; index: number }) {
             </div>
           )}
           {!!ex.safetyTips?.length && (
-            <div>
+            <div className="mb-3">
               <div className="mb-2 font-bold text-orange-700 flex items-center gap-2 text-sm">
                 <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
                   <Shield className="h-3 w-3 text-white" />
@@ -180,6 +338,50 @@ function ExerciseItem({ ex, index }: { ex: Exercise; index: number }) {
               </ul>
             </div>
           )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 mt-2">
+            {/* Swap Exercise Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onSwap()
+              }}
+              disabled={isSwapping}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 text-slate-700 font-medium text-sm hover:from-slate-200 hover:to-slate-100 hover:border-slate-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSwapping ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Swapping...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Swap</span>
+                </>
+              )}
+            </button>
+
+            {/* Delete Exercise Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (canDelete) {
+                  onDelete()
+                }
+              }}
+              disabled={!canDelete || isDeleting}
+              title={!canDelete ? 'Minimum 3 exercises required' : 'Delete exercise'}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-red-50 to-red-100 border border-red-200 text-red-700 font-medium text-sm hover:from-red-100 hover:to-red-200 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
       )}
     </li>

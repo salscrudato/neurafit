@@ -5,7 +5,8 @@
  * error handling, and submission logic.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import type React from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { FieldError, ValidationResult } from '../types/common'
 
 export interface UseFormOptions<T> {
@@ -202,6 +203,7 @@ export function useForm<T extends Record<string, unknown>>({
     } finally {
       setIsSubmitting(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, validateForm, onSubmit, resetOnSubmit])
 
   // Reset form

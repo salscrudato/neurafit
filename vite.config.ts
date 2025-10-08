@@ -110,10 +110,22 @@ export default defineConfig(({ mode }) => {
               return 'vendor-router'
             }
 
-            // Firebase - group all Firebase packages together to avoid circular dependencies
-            // The aggressive splitting was causing initialization order issues
+            // Firebase - split by service for better caching and smaller initial bundles
+            if (id.includes('node_modules/firebase/auth') || id.includes('node_modules/@firebase/auth')) {
+              return 'firebase-auth'
+            }
+            if (id.includes('node_modules/firebase/firestore') || id.includes('node_modules/@firebase/firestore')) {
+              return 'firebase-firestore'
+            }
+            if (id.includes('node_modules/firebase/functions') || id.includes('node_modules/@firebase/functions')) {
+              return 'firebase-functions'
+            }
+            if (id.includes('node_modules/firebase/analytics') || id.includes('node_modules/@firebase/analytics')) {
+              return 'firebase-analytics'
+            }
+            // Remaining Firebase core
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
-              return 'firebase'
+              return 'firebase-core'
             }
 
             // Stripe - payment processing

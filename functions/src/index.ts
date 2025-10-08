@@ -43,7 +43,7 @@ function calculateWorkoutQuality(
       expectedRPE: string;
     };
   },
-  userProfile: {
+  _userProfile: {
     experience?: string;
     injuries?: string[];
     duration: number;
@@ -54,13 +54,10 @@ function calculateWorkoutQuality(
 ): { overall: number; grade: string } {
   let score = 100;
 
-  // Check exercise count appropriateness (3-4 min per exercise)
-  const expectedMin = Math.max(3, Math.floor(userProfile.duration / 5));
-  const expectedMax = Math.max(4, Math.ceil(userProfile.duration / 3));
+  // Check minimum exercise count (at least 3 exercises)
   const exerciseCount = workout.exercises.length;
-
-  if (exerciseCount < expectedMin - 1 || exerciseCount > expectedMax + 2) {
-    score -= 10;
+  if (exerciseCount < 3) {
+    score -= 20;
   }
 
   // Check for complete exercise data
@@ -466,22 +463,45 @@ REP FORMAT STANDARDS:
 - Use time for isometric holds: "30s", "45s", "60s" (NOT "Hold for 30 seconds")
 - Use "each side" or "per leg" for unilateral exercises: "10-12 each side"`;
 
-      // Calculate recommended exercise count based on duration
-      // Formula: ~3-4 minutes per exercise (including rest periods)
-      const minExercises = Math.max(3, Math.floor((duration || 30) / 5));
-      const maxExercises = Math.max(4, Math.ceil((duration || 30) / 3));
-      const durationGuidance = `\n\nDURATION CONSTRAINT:
-- Total workout time: ${duration} minutes
-- Recommended exercise count: ${minExercises}-${maxExercises} exercises
-- Account for rest periods between sets (${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s per set)
-- Ensure the workout fits within the time limit including warm-up considerations`;
+      // Calculate time guidance for AI - focus on rest periods as the main time component
+      // Work time per set is trivial (~1 min per set including execution), rest is the key factor
+      const avgSetsPerExercise = ((programming.sets?.[0] || 3) + (programming.sets?.[1] || 4)) / 2;
+      const avgRestPerSet = ((programming.restSeconds?.[0] || 60) + (programming.restSeconds?.[1] || 120)) / 2;
+
+      // Warmup time allocation
+      const warmupTimeMinutes = (duration || 30) >= 20 ? 2.5 : 0;
+      const availableWorkoutMinutes = (duration || 30) - warmupTimeMinutes;
+
+      const durationGuidance = `\n\n═══════════════════════════════════════════════════════════════
+DURATION CONSTRAINT - CRITICAL REQUIREMENT
+═══════════════════════════════════════════════════════════════
+Total workout time: ${duration} minutes
+${warmupTimeMinutes > 0 ? `Warmup allocation: ${warmupTimeMinutes} minutes (1-2 warmup exercises with 1 set each)` : ''}
+Available time for main exercises: ${availableWorkoutMinutes.toFixed(1)} minutes
+
+TIME CALCULATION FORMULA (MANDATORY):
+For each exercise, calculate time as:
+  Time = (sets × 1 minute) + ((sets - 1) × rest_seconds / 60)
+
+Example with ${avgSetsPerExercise.toFixed(0)} sets and ${avgRestPerSet.toFixed(0)}s rest:
+  Time = (${avgSetsPerExercise.toFixed(0)} × 1) + (${(avgSetsPerExercise - 1).toFixed(0)} × ${avgRestPerSet.toFixed(0)}/60)
+  Time = ${avgSetsPerExercise.toFixed(0)} + ${((avgSetsPerExercise - 1) * avgRestPerSet / 60).toFixed(1)} = ${(avgSetsPerExercise + (avgSetsPerExercise - 1) * avgRestPerSet / 60).toFixed(1)} minutes per exercise
+
+REQUIRED EXERCISE COUNT:
+Based on ${availableWorkoutMinutes.toFixed(1)} minutes available and ~${(avgSetsPerExercise + (avgSetsPerExercise - 1) * avgRestPerSet / 60).toFixed(1)} minutes per exercise:
+You should generate approximately ${Math.floor(availableWorkoutMinutes / (avgSetsPerExercise + (avgSetsPerExercise - 1) * avgRestPerSet / 60))} main exercises
+
+⚠️  CRITICAL: Calculate the total time for ALL exercises you generate
+⚠️  The sum must equal approximately ${duration} minutes (±2 minutes acceptable)
+⚠️  DO NOT generate more exercises than can fit in the available time`;
 
       // Structured prompt with enhanced organization and requirements
       const warmupRequirement =
         (duration || 30) >= 20
           ? `\n\nWARM-UP REQUIREMENT:
-- Include 1-2 dynamic warm-up exercises at the beginning (e.g., arm circles, leg swings, cat-cow, inchworms)
-- These should be low-intensity, mobility-focused movements
+- Include 1-2 dynamic warm-up exercises at the beginning
+- Choose movements that are low-intensity and mobility-focused
+- Select exercises appropriate for the workout type and target muscle groups
 - Mark these as difficulty: "beginner" regardless of user's experience level
 - Use 1 set of 8-12 reps or 30-45s holds for warm-up exercises`
           : '';
@@ -529,7 +549,7 @@ CRITICAL RULES - MUST FOLLOW
 ═══════════════════════════════════════════════════════════════
 1. ✅ Use ONLY real, evidence-based exercises with standard names
 2. ✅ Match the requested workout type exactly
-3. ✅ Generate ${minExercises}-${maxExercises} exercises to fit within ${duration} minutes
+3. ✅ GENERATE ENOUGH EXERCISES to fill ${duration} minutes based on sets and rest periods
 4. ✅ Follow the rest period requirements strictly (compound: 120-180s, isolation: 60-90s)
 5. ✅ If injuries are present, STRICTLY AVOID all contraindicated exercises
 6. ✅ Use proper rep format: ranges like "8-12" or time like "30s" (NOT "Hold for 30 seconds")
@@ -563,15 +583,37 @@ JSON OUTPUT SCHEMA (no markdown, no code blocks, no explanatory text)
 
       // Use GPT-4.1-nano for ultra-fast generation with low latency
       console.log('⚡ Using GPT-4.1-nano for ultra-fast workout generation');
+
       const completion = await client.chat.completions.create({
         model: 'gpt-4.1-nano',
-        temperature: 0.4, // Balanced creativity
+        temperature: 0.6, // Higher temperature for more creative/varied responses
         max_tokens: 2500, // Sufficient for complete workouts with 6-8 exercises
         messages: [
           {
             role: 'system',
-            content:
-              'You are an elite certified personal trainer (NASM-CPT, CSCS, ACSM-CEP) with 15+ years of experience in exercise science, biomechanics, and periodization. You specialize in creating highly personalized, evidence-based workout programs that are safe, effective, and tailored to individual needs. You have extensive experience working with clients of all fitness levels and injury histories.\n\nCORE PRINCIPLES:\n1. Safety First - Never compromise client safety for intensity or variety\n2. Evidence-Based Programming - Use scientifically validated set/rep/rest schemes\n3. Injury Prevention - Strictly avoid contraindicated exercises and provide safe alternatives\n4. Progressive Overload - Design workouts that challenge clients appropriately for their level\n5. Movement Quality - Emphasize proper form and technique in all exercises\n\nOUTPUT REQUIREMENTS:\n- Output ONLY valid JSON with no markdown formatting, code blocks, or explanatory text\n- Follow the exact schema provided in the user prompt\n- Ensure all exercises are real, evidence-based movements with standard names\n- Provide comprehensive descriptions, form tips, and safety guidance for each exercise',
+                content:
+                  `You are an elite certified personal trainer (NASM-CPT, CSCS, ACSM-CEP) with 15+ years of experience in exercise science, biomechanics, and periodization. You specialize in creating highly personalized, evidence-based workout programs that are safe, effective, and tailored to individual needs. You have extensive experience working with clients of all fitness levels and injury histories.
+
+CORE PRINCIPLES:
+1. Safety First - Never compromise client safety for intensity or variety
+2. Evidence-Based Programming - Use scientifically validated set/rep/rest schemes
+3. Injury Prevention - Strictly avoid contraindicated exercises and provide safe alternatives
+4. Progressive Overload - Design workouts that challenge clients appropriately for their level
+5. Movement Quality - Emphasize proper form and technique in all exercises
+
+CRITICAL: DURATION REQUIREMENT
+- You MUST calculate the total time for all exercises you generate
+- Use the formula: Time per exercise = (sets × 1 min) + ((sets - 1) × rest_seconds / 60)
+- The total workout time must match the requested duration
+- DO NOT generate more exercises than can fit in the available time
+- This is a MANDATORY requirement - verify your math before generating the workout
+
+OUTPUT REQUIREMENTS:
+- Output ONLY valid JSON with no markdown formatting, code blocks, or explanatory text
+- Follow the exact schema provided in the user prompt
+- Ensure all exercises are real, evidence-based movements with standard names
+- Provide comprehensive descriptions, form tips, and safety guidance for each exercise
+- Generate the FULL number of exercises required to fill the workout duration`,
           },
           { role: 'user', content: prompt },
         ],
@@ -603,6 +645,14 @@ JSON OUTPUT SCHEMA (no markdown, no code blocks, no explanatory text)
             expectedRPE: string;
           };
         };
+
+        // Validate minimum exercise count (at least 3 exercises for any workout)
+        const exerciseCount = json.exercises?.length || 0;
+        if (exerciseCount < 3) {
+          throw new Error(
+            `AI generated only ${exerciseCount} exercises but at least 3 are required for a ${duration}-minute workout.`
+          );
+        }
 
         // Professional workout validation with rule-based scoring
         const { validateWorkoutPlan } = await import('./lib/exerciseValidation');
@@ -682,6 +732,221 @@ JSON OUTPUT SCHEMA (no markdown, no code blocks, no explanatory text)
       console.error('Workout generation error', e);
       res.status(500).json({ error: 'Internal Server Error' });
       return;
+    }
+  },
+);
+
+/**
+ * Add an exercise to an existing workout
+ * Takes the current workout context and generates one additional exercise
+ */
+export const addExerciseToWorkout = onRequest(
+  {
+    cors: [
+      'http://localhost:5173',
+      'https://neurafit-ai-2025.web.app',
+      'https://neurafit-ai-2025.firebaseapp.com',
+      'https://neurastack.ai',
+      'https://www.neurastack.ai',
+    ],
+    region: 'us-central1',
+    secrets: [openaiApiKey],
+    timeoutSeconds: 60,
+    memory: '512MiB',
+  },
+  async (req: Request, res: Response) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    try {
+      const {
+        currentWorkout,
+        workoutType,
+        experience,
+        goals,
+        equipment,
+        injuries,
+      } = req.body;
+
+      if (!currentWorkout?.exercises || !Array.isArray(currentWorkout.exercises)) {
+        res.status(400).json({ error: 'Invalid workout data' });
+        return;
+      }
+
+      const client = new OpenAI({ apiKey: openaiApiKey.value() });
+
+      const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
+      const programming = getProgrammingRecommendations(goals || ['General Health'], experience || 'Beginner');
+
+      const prompt = `You are adding ONE additional exercise to an existing ${workoutType || 'Full Body'} workout.
+
+EXISTING EXERCISES IN WORKOUT:
+${existingExercises}
+
+CLIENT PROFILE:
+- Experience: ${experience || 'Beginner'}
+- Goals: ${(goals || ['General Health']).join(', ')}
+- Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
+
+REQUIREMENTS:
+1. Generate ONE exercise that complements the existing workout
+2. DO NOT duplicate or closely replicate any existing exercises
+3. Target muscle groups that are underrepresented in the current workout
+4. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${programming.reps?.[0]}-${programming.reps?.[1]} reps, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
+5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
+6. Avoid contraindicated exercises if injuries are present
+
+OUTPUT ONLY valid JSON (no markdown, no code blocks):
+{
+  "name": "Exercise Name",
+  "description": "Detailed description with setup, execution, and breathing cues (100+ chars)",
+  "sets": 3,
+  "reps": "8-12",
+  "formTips": ["tip1", "tip2", "tip3"],
+  "safetyTips": ["safety1", "safety2"],
+  "restSeconds": 90,
+  "usesWeight": true,
+  "muscleGroups": ["muscle1", "muscle2"],
+  "difficulty": "${(experience || 'beginner').toLowerCase()}"
+}`;
+
+      const completion = await client.chat.completions.create({
+        model: 'gpt-4.1-nano',
+        temperature: 0.5,
+        max_tokens: 800,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. Output ONLY valid JSON with no markdown formatting.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      const text = completion.choices[0]?.message?.content?.trim() || '';
+      const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      const exercise = JSON.parse(cleanedText);
+
+      res.status(200).json({ exercise });
+    } catch (e) {
+      console.error('Add exercise error', e);
+      res.status(500).json({ error: 'Failed to add exercise' });
+    }
+  },
+);
+
+/**
+ * Swap an exercise with a similar alternative
+ * Takes the exercise to replace and generates a similar but different exercise
+ */
+export const swapExercise = onRequest(
+  {
+    cors: [
+      'http://localhost:5173',
+      'https://neurafit-ai-2025.web.app',
+      'https://neurafit-ai-2025.firebaseapp.com',
+      'https://neurastack.ai',
+      'https://www.neurastack.ai',
+    ],
+    region: 'us-central1',
+    secrets: [openaiApiKey],
+    timeoutSeconds: 60,
+    memory: '512MiB',
+  },
+  async (req: Request, res: Response) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    try {
+      const {
+        exerciseToReplace,
+        currentWorkout,
+        workoutType,
+        experience,
+        goals,
+        equipment,
+        injuries,
+      } = req.body;
+
+      if (!exerciseToReplace?.name || !currentWorkout?.exercises) {
+        res.status(400).json({ error: 'Invalid request data' });
+        return;
+      }
+
+      const client = new OpenAI({ apiKey: openaiApiKey.value() });
+
+      const otherExercises = currentWorkout.exercises
+        .filter((ex: { name: string }) => ex.name !== exerciseToReplace.name)
+        .map((ex: { name: string }) => ex.name)
+        .join(', ');
+
+      const prompt = `You are replacing an exercise in a ${workoutType || 'Full Body'} workout with a similar alternative.
+
+EXERCISE TO REPLACE:
+- Name: ${exerciseToReplace.name}
+- Muscle Groups: ${exerciseToReplace.muscleGroups?.join(', ') || 'N/A'}
+- Sets: ${exerciseToReplace.sets}, Reps: ${exerciseToReplace.reps}
+- Uses Weight: ${exerciseToReplace.usesWeight ? 'Yes' : 'No'}
+
+OTHER EXERCISES IN WORKOUT (DO NOT DUPLICATE):
+${otherExercises}
+
+CLIENT PROFILE:
+- Experience: ${experience || 'Beginner'}
+- Goals: ${(goals || ['General Health']).join(', ')}
+- Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
+
+REQUIREMENTS:
+1. Generate ONE exercise that targets the SAME muscle groups as the exercise being replaced
+2. Use a DIFFERENT movement pattern or variation
+3. DO NOT duplicate the exercise being replaced or any other exercises in the workout
+4. Match the same sets/reps/rest scheme as the original exercise
+5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
+6. Respect equipment availability and injury constraints
+
+OUTPUT ONLY valid JSON (no markdown, no code blocks):
+{
+  "name": "Exercise Name",
+  "description": "Detailed description with setup, execution, and breathing cues (100+ chars)",
+  "sets": ${exerciseToReplace.sets},
+  "reps": "${exerciseToReplace.reps}",
+  "formTips": ["tip1", "tip2", "tip3"],
+  "safetyTips": ["safety1", "safety2"],
+  "restSeconds": ${exerciseToReplace.restSeconds || 90},
+  "usesWeight": true,
+  "muscleGroups": ["muscle1", "muscle2"],
+  "difficulty": "${(experience || 'beginner').toLowerCase()}"
+}`;
+
+      const completion = await client.chat.completions.create({
+        model: 'gpt-4.1-nano',
+        temperature: 0.6,
+        max_tokens: 800,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles. Output ONLY valid JSON with no markdown formatting.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      const text = completion.choices[0]?.message?.content?.trim() || '';
+      const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      const exercise = JSON.parse(cleanedText);
+
+      res.status(200).json({ exercise });
+    } catch (e) {
+      console.error('Swap exercise error', e);
+      res.status(500).json({ error: 'Failed to swap exercise' });
     }
   },
 );

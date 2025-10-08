@@ -2,7 +2,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
-import { collection, query, orderBy, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore'
 import { convertToDate } from '../utils/timestamp'
 import { logger } from '../lib/logger'
 import {
@@ -97,6 +97,7 @@ export default function Dashboard() {
   const nav = useNavigate()
   const [workouts, setWorkouts] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
+  const WORKOUTS_PER_PAGE = 20
   const [error, setError] = useState<string | null>(null)
 
   // Get subscription status for Pro badge
@@ -105,12 +106,12 @@ export default function Dashboard() {
   // Prefetch likely next routes on idle
   usePrefetchOnIdle(['/generate', '/history', '/profile'], 3000)
 
-  // Memoize dashboard stats calculation
+  // Calculate dashboard stats (memoized because calculation is expensive with array operations)
   const dashboardStats = useMemo(() => {
     return calculateDashboardStats(workouts)
   }, [workouts])
 
-  // Fetch dashboard data
+  // Fetch dashboard data with pagination
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -120,9 +121,13 @@ export default function Dashboard() {
           return
         }
 
-        // Fetch all workouts (assuming reasonable number per user)
+        // Fetch workouts with pagination (fetch one extra to check if there are more)
         const workoutsRef = collection(db, 'users', uid, 'workouts')
-        const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'))
+        const workoutsQuery = query(
+          workoutsRef,
+          orderBy('timestamp', 'desc'),
+          limit(WORKOUTS_PER_PAGE + 1)
+        )
         const workoutsSnap = await getDocs(workoutsQuery)
         const fetchedWorkouts = workoutsSnap.docs.map(doc => ({
           id: doc.id,
@@ -141,7 +146,7 @@ export default function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [WORKOUTS_PER_PAGE])
 
   if (loading) {
     return (

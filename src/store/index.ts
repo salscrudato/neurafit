@@ -11,6 +11,24 @@ import type { UserProfile } from '../session/types'
 import type { UserSubscription } from '../types/subscription'
 import { logger } from '../lib/logger'
 
+// Debounced localStorage writer to reduce write frequency
+let persistTimer: NodeJS.Timeout | null = null
+const PERSIST_DEBOUNCE_MS = 1000 // Persist max once per second
+
+function debouncedSetItem(key: string, value: string) {
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+  }
+
+  persistTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(key, value)
+    } catch (error) {
+      logger.warn('Failed to persist state to localStorage', { error })
+    }
+  }, PERSIST_DEBOUNCE_MS)
+}
+
 // Exercise and workout types
 export interface Exercise {
   name: string
@@ -307,25 +325,41 @@ export const useAppStore = create<AppState & AppActions>()(
         }),
         {
           name: 'neurafit-app-store',
-          storage: createJSONStorage(() => localStorage),
+          storage: createJSONStorage(() => ({
+            getItem: (name: string) => {
+              const str = localStorage.getItem(name)
+              return str ? JSON.parse(str) : null
+            },
+            setItem: (name: string, value: unknown) => {
+              // Use debounced writer to reduce localStorage writes
+              debouncedSetItem(name, JSON.stringify(value))
+            },
+            removeItem: (name: string) => {
+              localStorage.removeItem(name)
+            }
+          })),
           partialize: (state) => ({
-            // Only persist essential data
+            // Persist essential data and active workout state
             workoutHistory: state.workoutHistory,
             lastSyncTime: state.lastSyncTime,
+            currentWorkout: state.currentWorkout, // Persist active workout
+            workoutWeights: state.workoutWeights, // Persist workout weights
             // Don't persist sensitive or temporary data
             user: null,
             profile: null,
             subscription: null,
-            currentWorkout: null,
-            workoutWeights: {},
             errors: [],
             pendingOperations: []
           }),
           version: 1,
           migrate: (persistedState: unknown, _version: number) => {
             // Handle state migrations for future versions
-            // _version parameter reserved for future use
-            return persistedState
+            // Validate persisted state structure
+            if (persistedState && typeof persistedState === 'object') {
+              return persistedState
+            }
+            logger.warn('Invalid persisted state, resetting to initial state')
+            return initialState
           }
         }
       )
@@ -362,18 +396,20 @@ export const useSetUser = () => useAppStore((state) => state.setUser)
 export const useSetProfile = () => useAppStore((state) => state.setProfile)
 export const useSetAuthStatus = () => useAppStore((state) => state.setAuthStatus)
 
+// Stable selector reference for composite auth selector
+const authSelector = (state: AppState & AppActions) => ({
+  user: state.user,
+  profile: state.profile,
+  status: state.authStatus,
+  setUser: state.setUser,
+  setProfile: state.setProfile,
+  setAuthStatus: state.setAuthStatus
+})
+
 // Composite auth selector with shallow comparison to prevent unnecessary re-renders
+// Uses stable selector reference to prevent creating new objects on every call
 export const useAuth = () => {
-  return useAppStore(
-    useShallow((state) => ({
-      user: state.user,
-      profile: state.profile,
-      status: state.authStatus,
-      setUser: state.setUser,
-      setProfile: state.setProfile,
-      setAuthStatus: state.setAuthStatus
-    }))
-  )
+  return useAppStore(useShallow(authSelector))
 }
 
 // Subscription selectors
@@ -382,16 +418,17 @@ export const useSubscriptionLoading = () => useAppStore((state) => state.subscri
 export const useSetSubscription = () => useAppStore((state) => state.setSubscription)
 export const useSetSubscriptionLoading = () => useAppStore((state) => state.setSubscriptionLoading)
 
+// Stable selector reference for composite subscription selector
+const subscriptionSelector = (state: AppState & AppActions) => ({
+  subscription: state.subscription,
+  loading: state.subscriptionLoading,
+  setSubscription: state.setSubscription,
+  setSubscriptionLoading: state.setSubscriptionLoading
+})
+
 // Composite subscription selector with shallow comparison
 export const useSubscriptionStore = () => {
-  return useAppStore(
-    useShallow((state) => ({
-      subscription: state.subscription,
-      loading: state.subscriptionLoading,
-      setSubscription: state.setSubscription,
-      setSubscriptionLoading: state.setSubscriptionLoading
-    }))
-  )
+  return useAppStore(useShallow(subscriptionSelector))
 }
 
 // Workout selectors
@@ -405,21 +442,22 @@ export const useCompleteWorkout = () => useAppStore((state) => state.completeWor
 export const useClearWorkout = () => useAppStore((state) => state.clearWorkout)
 export const useAddToHistory = () => useAppStore((state) => state.addToHistory)
 
+// Stable selector reference for composite workout selector
+const workoutSelector = (state: AppState & AppActions) => ({
+  currentWorkout: state.currentWorkout,
+  workoutWeights: state.workoutWeights,
+  workoutHistory: state.workoutHistory,
+  startWorkout: state.startWorkout,
+  updateWorkoutProgress: state.updateWorkoutProgress,
+  updateWeight: state.updateWeight,
+  completeWorkout: state.completeWorkout,
+  clearWorkout: state.clearWorkout,
+  addToHistory: state.addToHistory
+})
+
 // Composite workout selector with shallow comparison
 export const useWorkout = () => {
-  return useAppStore(
-    useShallow((state) => ({
-      currentWorkout: state.currentWorkout,
-      workoutWeights: state.workoutWeights,
-      workoutHistory: state.workoutHistory,
-      startWorkout: state.startWorkout,
-      updateWorkoutProgress: state.updateWorkoutProgress,
-      updateWeight: state.updateWeight,
-      completeWorkout: state.completeWorkout,
-      clearWorkout: state.clearWorkout,
-      addToHistory: state.addToHistory
-    }))
-  )
+  return useAppStore(useShallow(workoutSelector))
 }
 
 // Error selectors
@@ -428,21 +466,22 @@ export const useAddError = () => useAppStore((state) => state.addError)
 export const useResolveError = () => useAppStore((state) => state.resolveError)
 export const useClearErrors = () => useAppStore((state) => state.clearErrors)
 
+// Stable selector reference for composite error selector
+const errorsSelector = (state: AppState & AppActions) => ({
+  errors: state.errors,
+  addError: state.addError,
+  resolveError: state.resolveError,
+  clearErrors: state.clearErrors
+})
+
 // Composite error selector with shallow comparison
 export const useErrors = () => {
-  return useAppStore(
-    useShallow((state) => ({
-      errors: state.errors,
-      addError: state.addError,
-      resolveError: state.resolveError,
-      clearErrors: state.clearErrors
-    }))
-  )
+  return useAppStore(useShallow(errorsSelector))
 }
 
 
 
-// Expose store globally for performance monitoring and other utilities
-if (typeof window !== 'undefined') {
+// Expose store globally for performance monitoring and debugging (development only)
+if (typeof window !== 'undefined' && import.meta.env.MODE === 'development') {
   (window as Window & { __NEURAFIT_STORE__?: typeof useAppStore }).__NEURAFIT_STORE__ = useAppStore
 }

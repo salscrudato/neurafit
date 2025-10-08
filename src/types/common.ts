@@ -1,9 +1,11 @@
 /**
  * Common TypeScript Types and Utilities
- * 
+ *
  * Provides reusable type definitions and type utilities for better
  * type safety across the application.
  */
+
+import type React from 'react'
 
 /**
  * Makes all properties of T optional recursively

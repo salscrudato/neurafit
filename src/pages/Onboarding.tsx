@@ -1,5 +1,5 @@
 // src/pages/Onboarding.tsx
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -246,8 +246,9 @@ export default function Onboarding() {
     })()
   }, [])
 
-  const header = useMemo(() => {
-    switch (step) {
+  // Simple object lookup - no memoization needed
+  const getHeader = (currentStep: number) => {
+    switch (currentStep) {
       case 1: return { title: 'What’s your training level?'}
       case 2: return { title: 'What are your fitness goals?'}
       case 3: return { title: 'What do you have access to?'}
@@ -255,7 +256,8 @@ export default function Onboarding() {
       case 5: return { title: 'Any injuries or limitations?'}
       default: return { title: '' }
     }
-  }, [step])
+  }
+  const header = getHeader(step)
 
   const disableNext = !validStep(step, draft)
   const atStart = step === 1

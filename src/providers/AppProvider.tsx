@@ -27,25 +27,34 @@ export function AppProvider({ children }: AppProviderProps) {
     updateLastSyncTime,
   } = useAppStore();
 
-  // Authentication state management
+  // Authentication state management with coordinated async operations
   useEffect(() => {
     let unsubDoc: (() => void) | null = null;
     let unsubSubscription: (() => void) | null = null;
     let unsubAuth: (() => void) | null = null;
+    let isMounted = true; // Track mount status to prevent race conditions
+    let initializationTimeout: NodeJS.Timeout | null = null; // Track timeout for cleanup
 
     const setupAuthListener = () => {
       unsubAuth = onAuthStateChanged(auth, async (user: User | null) => {
       try {
+        if (!isMounted) return; // Prevent updates after unmount
+
         if (import.meta.env.MODE === 'development') {
           console.log('🔐 Auth state changed:', user?.email || 'signed out');
         }
 
-        // Cleanup existing listeners
+        // Cleanup existing listeners and pending operations
+        if (initializationTimeout) {
+          clearTimeout(initializationTimeout);
+          initializationTimeout = null;
+        }
         unsubDoc?.();
         unsubDoc = null;
         unsubSubscription?.();
         unsubSubscription = null;
 
+        // Update auth state atomically
         setUser(user);
         setProfile(null);
         setSubscription(null);
@@ -65,14 +74,19 @@ export function AppProvider({ children }: AppProviderProps) {
           email: user.email || undefined,
         });
 
-        // Delay to ensure auth stability
-        setTimeout(async () => {
+        // Delay to ensure auth stability - store timeout for cleanup
+        initializationTimeout = setTimeout(async () => {
+          if (!isMounted) return; // Check again after timeout
+
           try {
+            // Ensure user document exists before setting up listeners
             await ensureUserDocument(user);
 
             const profileRef = doc(db, 'users', user.uid);
             unsubDoc = onSnapshot(profileRef,
               (snapshot) => {
+                if (!isMounted) return; // Prevent updates after unmount
+
                 if (!snapshot.exists()) {
                   setProfile(null);
                   setAuthStatus('needsOnboarding');
@@ -88,7 +102,7 @@ export function AppProvider({ children }: AppProviderProps) {
                   // Validate subscription data integrity
                   const validatedSubscription = {
                     ...profileData.subscription,
-                    freeWorkoutLimit: profileData.subscription.freeWorkoutLimit || 15,
+                    freeWorkoutLimit: profileData.subscription.freeWorkoutLimit || 50,
                     workoutCount: profileData.subscription.workoutCount || 0,
                     freeWorkoutsUsed: profileData.subscription.freeWorkoutsUsed || 0,
                     updatedAt: profileData.subscription.updatedAt || Date.now(),
@@ -101,7 +115,7 @@ export function AppProvider({ children }: AppProviderProps) {
                     status: 'incomplete',
                     workoutCount: 0,
                     freeWorkoutsUsed: 0,
-                    freeWorkoutLimit: 15,
+                    freeWorkoutLimit: 50,
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                   };
@@ -121,14 +135,29 @@ export function AppProvider({ children }: AppProviderProps) {
               }
             );
 
-            await syncPendingOperations();
-            updateLastSyncTime();
+            // Coordinate async operations sequentially to prevent race conditions
+            if (isMounted) {
+              try {
+                await syncPendingOperations();
+                if (isMounted) {
+                  updateLastSyncTime();
+                }
+              } catch (syncError) {
+                console.error('Sync operations error:', syncError);
+              }
+            }
           } catch (error) {
             console.error('User initialization error:', error);
+            if (isMounted) {
+              setAuthStatus('signedOut');
+            }
           }
         }, 100);
       } catch (error) {
         console.error('Auth state change error:', error);
+        if (isMounted) {
+          setAuthStatus('signedOut');
+        }
       }
       });
     };
@@ -136,6 +165,10 @@ export function AppProvider({ children }: AppProviderProps) {
     setupAuthListener();
 
     return () => {
+      isMounted = false; // Mark as unmounted
+      if (initializationTimeout) {
+        clearTimeout(initializationTimeout);
+      }
       if (unsubAuth) {
         unsubAuth();
       }

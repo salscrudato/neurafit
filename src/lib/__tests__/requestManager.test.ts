@@ -92,7 +92,7 @@ describe('createManagedFetch', () => {
     const manager = createManagedFetch('test-component')
 
     // Mock fetch
-    global.fetch = vi.fn().mockImplementation(() => 
+    globalThis.fetch = vi.fn().mockImplementation(() =>
       new Promise((resolve) => setTimeout(resolve, 1000))
     )
 
@@ -110,7 +110,7 @@ describe('createManagedFetch', () => {
     const manager = createManagedFetch('test-component')
 
     // Mock fetch
-    global.fetch = vi.fn().mockImplementation(() => 
+    globalThis.fetch = vi.fn().mockImplementation(() =>
       new Promise((resolve) => setTimeout(resolve, 1000))
     )
 

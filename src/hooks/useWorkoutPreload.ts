@@ -3,9 +3,10 @@ import { auth, db } from '../lib/firebase'
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { useSubscription } from './useSubscription'
 import { isAdaptivePersonalizationEnabled } from '../config/features'
+import type { UserProfile } from '../types/profile'
 
 export interface PreloadedData {
-  profile: Record<string, unknown> | null
+  profile: UserProfile | null
   targetIntensity: number
   progressionNote: string
   isLoading: boolean
@@ -136,9 +137,9 @@ export function useWorkoutPreload() {
           if (!snap.exists()) {
             throw new Error('Profile not found')
           }
-          const profile = snap.data()
+          const profile = snap.data() as UserProfile
           // Basic completeness check
-          const complete = !!(profile['experience'] && profile['goals']?.length && profile['personal']?.height && profile['personal']?.weight)
+          const complete = !!(profile.experience && profile.goals?.length && profile.personal?.height && profile.personal?.weight)
           if (!complete) {
             throw new Error('Profile incomplete')
           }
@@ -149,10 +150,10 @@ export function useWorkoutPreload() {
       ])
 
       // Handle results
-      let profile = null
+      let profile: UserProfile | null = null
       let targetIntensity = 1.0
       let progressionNote = ''
-      let error = null
+      let error: string | null = null
 
       if (profileResult.status === 'fulfilled') {
         profile = profileResult.value

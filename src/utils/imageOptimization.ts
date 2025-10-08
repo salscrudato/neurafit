@@ -106,9 +106,9 @@ export async function preloadImages(urls: string[]): Promise<void> {
  */
 export function lazyLoadImage(
   img: HTMLImageElement,
-  options: IntersectionObserverInit = {}
+  options: Record<string, unknown> = {}
 ): () => void {
-  const defaultOptions: IntersectionObserverInit = {
+  const defaultOptions = {
     root: null,
     rootMargin: '50px',
     threshold: 0.01,

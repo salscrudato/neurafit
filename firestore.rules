@@ -66,7 +66,7 @@ service cloud.firestore {
              (!('photoURL' in data) || data.photoURL is string) &&
              (!('provider' in data) || data.provider is string) &&
              // Optional fields validation (if present)
-             (!('experience' in data) || (data.experience is string && data.experience in ['Beginner', 'Intermediate', 'Advanced'])) &&
+             (!('experience' in data) || (data.experience is string && data.experience in ['Beginner', 'Intermediate', 'Advanced', 'Expert'])) &&
              (!('goals' in data) || data.goals is list) &&
              (!('equipment' in data) || data.equipment is list) &&
              (!('injuries' in data) || data.injuries is list) &&

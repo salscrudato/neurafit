@@ -32,7 +32,12 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
   const [inputValue, setInputValue] = useState(currentWeight?.toString() || '')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [validationError, setValidationError] = useState<string | null>(null)
   const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
+
+  // Weight validation constants
+  const MIN_WEIGHT = 0
+  const MAX_WEIGHT = 1000
 
   // Sync input value when currentWeight changes externally
   useEffect(() => {
@@ -114,8 +119,24 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
 
   const handleSubmit = useCallback(async () => {
     const weight = inputValue.trim() === '' ? null : parseFloat(inputValue)
-    if (weight !== null && (isNaN(weight) || weight < 0)) return
 
+    // Validate weight input
+    if (weight !== null) {
+      if (isNaN(weight)) {
+        setValidationError('Please enter a valid number')
+        return
+      }
+      if (weight < MIN_WEIGHT) {
+        setValidationError(`Weight must be at least ${MIN_WEIGHT} lbs`)
+        return
+      }
+      if (weight > MAX_WEIGHT) {
+        setValidationError(`Weight must be less than ${MAX_WEIGHT} lbs`)
+        return
+      }
+    }
+
+    setValidationError(null)
     setIsSubmitting(true)
     try {
       onWeightChange(weight)
@@ -216,17 +237,22 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
           <input
             type="number"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              setInputValue(e.target.value)
+              setValidationError(null) // Clear error on input change
+            }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             onKeyDown={handleKeyDown}
             placeholder="0"
-            min="0"
+            min={MIN_WEIGHT}
+            max={MAX_WEIGHT}
             step="0.5"
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-center text-lg font-semibold text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
+            className={`w-full rounded-lg border ${validationError ? 'border-red-400' : 'border-gray-200'} bg-white px-4 py-3 text-center text-lg font-semibold text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20`}
             disabled={isSubmitting}
             aria-label={`Weight for set ${setNumber} of ${exerciseName} in pounds`}
             aria-describedby={`weight-help-${setNumber}`}
+            aria-invalid={!!validationError}
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
             lbs
@@ -251,6 +277,16 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
+
+      {/* Validation Error */}
+      {validationError && (
+        <div className="mb-3 text-sm text-red-600 flex items-center gap-2">
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          {validationError}
+        </div>
+      )}
 
       {/* Quick Increment Buttons */}
       <div className="flex gap-2 mb-4">

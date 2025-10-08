@@ -46,7 +46,7 @@ export const validateUserProfile = (profile: Record<string, unknown>): Validatio
   // Experience validation
   if (!profile['experience']) {
     errors.push('Experience level is required')
-  } else if (!['Beginner', 'Intermediate', 'Advanced'].includes(profile['experience'] as string)) {
+  } else if (!['Beginner', 'Intermediate', 'Advanced', 'Expert'].includes(profile['experience'] as string)) {
     errors.push('Invalid experience level')
   }
 

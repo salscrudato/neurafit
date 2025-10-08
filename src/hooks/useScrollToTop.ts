@@ -12,7 +12,7 @@ import { useLocation } from 'react-router-dom';
  * @param options.enabled - Whether scrolling is enabled (default: true)
  */
 export function useScrollToTop(options: {
-  behavior?: ScrollBehavior;
+  behavior?: 'auto' | 'smooth';
   enabled?: boolean;
 } = {}) {
   const { pathname } = useLocation();
@@ -49,7 +49,7 @@ export function useScrollToTop(options: {
           left: 0,
           behavior: 'smooth'
         });
-      } catch (e) {
+      } catch {
         // Fallback already handled above
       }
     }
