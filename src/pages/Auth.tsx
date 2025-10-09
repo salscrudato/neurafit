@@ -266,82 +266,96 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-gray-900 relative overflow-hidden" role="main" aria-label="NeuraFit Authentication Page">
-      {/* Enhanced Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.08),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.04),transparent_50%)]" />
-      <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.02)_50%,transparent_75%)]" />
+    <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden" role="main" aria-label="NeuraFit Authentication Page">
+      {/* Premium Background with Mesh Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/20" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.08),transparent_50%)]" />
 
-      {/* Floating Elements - Optimized with will-change and reduced motion support */}
-      <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-xl animate-float will-change-transform" style={{'--float-intensity': '-8px'} as React.CSSProperties} />
-      <div className="absolute top-40 right-16 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-xl animate-float will-change-transform" style={{'--float-intensity': '-12px'} as React.CSSProperties} />
-      <div className="absolute bottom-32 left-20 w-12 h-12 bg-gradient-to-br from-orange-400/10 to-amber-400/10 rounded-full blur-xl animate-float will-change-transform" style={{'--float-intensity': '-6px'} as React.CSSProperties} />
+      {/* Animated Mesh Grid */}
+      <div className="absolute inset-0 opacity-[0.015]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
+          backgroundSize: '64px 64px'
+        }} />
+      </div>
 
-      {/* Main Content */}
-      <div className="relative max-w-md mx-auto px-6 py-8 sm:py-12 animate-fade-in-up safe-area-inset-top safe-area-inset-bottom" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-        {/* Enhanced Header Badge */}
-        <div className="flex items-center justify-center mb-8 sm:mb-12">
-          <div className="group inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-100/60 rounded-full shadow-sm hover:shadow-lg transition-all duration-500 hover:scale-105 cursor-default touch-manipulation">
+      {/* Floating Orbs - More Subtle and Elegant */}
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as React.CSSProperties} />
+      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as React.CSSProperties} />
+      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-15px', animationDelay: '4s'} as React.CSSProperties} />
+
+      {/* Main Content Container */}
+      <div className="relative max-w-lg mx-auto px-6 py-12 sm:py-16 animate-fade-in-up safe-area-inset-top safe-area-inset-bottom" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+        {/* Premium Header Badge */}
+        <div className="flex items-center justify-center mb-10 sm:mb-14">
+          <div className="group inline-flex items-center gap-2.5 sm:gap-3 px-5 sm:px-7 py-2.5 sm:py-3.5 bg-white/60 backdrop-blur-xl border border-gray-200/60 rounded-full shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-700 hover:scale-[1.03] cursor-default touch-manipulation">
             <div className="relative">
-              <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
-              <div className="absolute inset-0 bg-blue-400 rounded-full blur-sm opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity duration-700" />
+              <Zap className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-blue-600 group-hover:text-indigo-600 transition-all duration-700 relative z-10" strokeWidth={2.5} />
             </div>
-            <span className="text-xs sm:text-sm font-semibold text-blue-700 tracking-wide group-hover:text-blue-800 transition-colors duration-300">
+            <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent tracking-wide group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-700">
               AI-Powered Fitness Technology
             </span>
           </div>
         </div>
 
-        {/* Enhanced Hero Title */}
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6 sm:mb-8 tracking-tight px-2" role="heading" aria-level={1}>
-            <span className="block mb-1 sm:mb-2">Transform Your Body</span>
-            <span className="block mb-1 sm:mb-2">with{' '}
-              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                AI-Powered
+        {/* Hero Title - Apple-inspired Typography */}
+        <div className="text-center mb-12 sm:mb-16">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] mb-8 sm:mb-10 tracking-tight px-2" role="heading" aria-level={1}>
+            <span className="block mb-2 sm:mb-3 text-gray-900">Transform Your Body</span>
+            <span className="block mb-2 sm:mb-3">
+              <span className="text-gray-900">with </span>
+              <span className="relative inline-block">
+                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-gradient-x">
+                  AI-Powered
+                </span>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 blur-2xl -z-10 opacity-50" />
               </span>
             </span>
-            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent">
-              Precision
+            <span className="relative inline-block">
+              <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent animate-gradient-x">
+                Precision
+              </span>
+              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-cyan-600/20 blur-2xl -z-10 opacity-50" />
             </span>
           </h1>
-          <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-sm mx-auto mb-6 px-4">
+          <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-md mx-auto px-4 font-normal">
             Experience personalized workout plans that evolve with you. Our advanced AI
             analyzes your progress, adapts to your goals, and delivers{' '}
             <span className="text-blue-600 font-semibold">results that matter.</span>
           </p>
-
         </div>
 
-        {/* Enhanced CTA Buttons */}
-        <div className="space-y-4 sm:space-y-6 mb-8 sm:mb-12">
+        {/* Premium CTA Buttons */}
+        <div className="space-y-4 mb-16 sm:mb-20">
           <button
             onClick={googleLogin}
             disabled={loading}
-            className="group relative w-full bg-white/80 backdrop-blur-sm border border-gray-200/80 text-gray-700 px-6 py-4 sm:py-4 rounded-2xl font-semibold hover:bg-white hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98] overflow-hidden touch-manipulation min-h-[48px]"
+            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-6 py-5 rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[60px]"
             aria-label="Sign in with Google"
             type="button"
           >
-            {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            {/* Animated gradient border effect */}
+            <div className="absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10" />
 
             {/* Google glyph */}
-            <svg className="h-5 w-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 48 48" aria-hidden="true">
+            <svg className="h-5.5 w-5.5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#EA4335" d="M24 9.5c3.94 0 7.48 1.53 10.2 4.02l6.8-6.8C36.84 2.61 30.77 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.96 6.18C12.3 13 17.74 9.5 24 9.5z"/>
               <path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.44-4.75H24v9.01h12.65c-.55 2.94-2.23 5.43-4.74 7.11l7.24 5.62C43.99 36.76 46.5 30.79 46.5 24z"/>
               <path fill="#FBBC05" d="M10.52 27.6A14.47 14.47 0 0 1 9.5 24c0-1.25.17-2.46.48-3.6l-7.96-6.18A24 24 0 0 0 0 24c0 3.84.9 7.47 2.5 10.68l8.02-7.08z"/>
               <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.9-5.83l-7.24-5.62c-2.01 1.36-4.59 2.16-8.66 2.16-6.26 0-11.7-3.5-13.48-8.52l-8.02 7.08C6.51 42.62 14.62 48 24 48z"/>
             </svg>
-            <span className="transition-colors duration-300 group-hover:text-gray-800 relative z-10 flex items-center gap-2">
+            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 flex items-center gap-2.5 text-[15px]">
               {loading && (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent" />
+                <div className="animate-spin rounded-full h-4.5 w-4.5 border-2 border-gray-400 border-t-transparent" />
               )}
               {loading ? 'Signing in...' : 'Continue with Google'}
             </span>
 
             {/* Loading shimmer effect */}
             {loading && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
             )}
           </button>
 
@@ -349,37 +363,40 @@ export default function Auth() {
           <button
             onClick={handlePhoneSignIn}
             disabled={loading}
-            className="group relative w-full bg-white/80 backdrop-blur-sm border border-gray-200/80 text-gray-700 px-6 py-4 sm:py-4 rounded-2xl font-semibold hover:bg-white hover:border-gray-300 hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98] overflow-hidden touch-manipulation min-h-[48px]"
+            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-6 py-5 rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[60px]"
             aria-label="Sign in with Phone"
             type="button"
           >
-            {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            {/* Animated gradient border effect */}
+            <div className="absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10" />
 
-            <Smartphone className="h-5 w-5 text-gray-600 transition-transform duration-300 group-hover:scale-110 relative z-10" />
-            <span className="transition-colors duration-300 group-hover:text-gray-800 relative z-10">
+            <Smartphone className="h-5.5 w-5.5 text-gray-700 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 relative z-10" strokeWidth={2} />
+            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-[15px]">
               Continue with Phone
             </span>
           </button>
         </div>
 
-        {/* Enhanced Why Choose NeuraFit Section */}
-        <div className="mb-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900">
+        {/* Why Choose NeuraFit Section - Premium Design */}
+        <div className="mb-16">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-5 text-gray-900 tracking-tight">
               Why Choose{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                NeuraFit
+              <span className="relative inline-block">
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  NeuraFit
+                </span>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 blur-xl -z-10 opacity-40" />
               </span>
               ?
             </h2>
-            <p className="text-gray-600 text-lg leading-relaxed max-w-lg mx-auto">
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-md mx-auto font-normal">
               Experience the perfect blend of cutting-edge AI technology and personalized fitness coaching
             </p>
           </div>
 
-          {/* Enhanced Feature Cards */}
-          <div className="space-y-6">
+          {/* Premium Feature Cards */}
+          <div className="space-y-5">
             <div className="animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
               <EnhancedFeatureCard
                 icon={<Brain className="h-7 w-7" />}
@@ -413,15 +430,15 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Enhanced Footer */}
-        <div className="text-center pt-8 border-t border-gray-100/80">
+        {/* Premium Footer */}
+        <div className="text-center pt-10 border-t border-gray-200/60">
           <p className="text-xs text-gray-500 leading-relaxed">
             By continuing, you agree to our{' '}
-            <Link to="/terms" className="text-blue-600 hover:text-blue-700 underline transition-colors duration-200">terms of service</Link>
+            <Link to="/terms" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300">terms of service</Link>
             {' '}and{' '}
-            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 underline transition-colors duration-200">privacy policy</Link>.
+            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300">privacy policy</Link>.
             <br />
-            <span className="text-gray-400 font-medium">Secure authentication powered by Firebase • v1.0.0</span>
+            <span className="text-gray-400 font-medium mt-2 inline-block">Secure authentication powered by Firebase • v1.0.0</span>
           </p>
         </div>
       </div>
@@ -445,7 +462,7 @@ export default function Auth() {
   )
 }
 
-/* ---------- Enhanced Feature card ---------- */
+/* ---------- Premium Feature Card - Apple/Tesla Inspired ---------- */
 function EnhancedFeatureCard({
   icon,
   title,
@@ -463,53 +480,61 @@ function EnhancedFeatureCard({
 }) {
   const accentColors = {
     blue: {
-      border: 'border-blue-200/50',
-      glow: 'group-hover:shadow-blue-500/20',
-      text: 'text-blue-600'
+      border: 'border-blue-100/60',
+      glow: 'group-hover:shadow-blue-500/15',
+      text: 'text-blue-600',
+      shimmer: 'from-blue-500/5 via-indigo-500/5 to-purple-500/5'
     },
     emerald: {
-      border: 'border-emerald-200/50',
-      glow: 'group-hover:shadow-emerald-500/20',
-      text: 'text-emerald-600'
+      border: 'border-emerald-100/60',
+      glow: 'group-hover:shadow-emerald-500/15',
+      text: 'text-emerald-600',
+      shimmer: 'from-emerald-500/5 via-teal-500/5 to-cyan-500/5'
     },
     orange: {
-      border: 'border-orange-200/50',
-      glow: 'group-hover:shadow-orange-500/20',
-      text: 'text-orange-600'
+      border: 'border-orange-100/60',
+      glow: 'group-hover:shadow-orange-500/15',
+      text: 'text-orange-600',
+      shimmer: 'from-orange-500/5 via-amber-500/5 to-yellow-500/5'
     }
   }
 
   const colors = accentColors[accentColor as keyof typeof accentColors]
 
   return (
-    <div className={`group relative p-6 rounded-2xl border ${colors.border} bg-gradient-to-br ${bgGradient} backdrop-blur-sm hover:bg-white/90 hover:shadow-xl ${colors.glow} transition-all duration-500 hover:scale-[1.02] overflow-hidden`}>
-      {/* Subtle animated background */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
+    <div className={`group relative p-7 rounded-[24px] border ${colors.border} bg-white/70 backdrop-blur-xl hover:bg-white hover:shadow-2xl ${colors.glow} transition-all duration-700 hover:scale-[1.01] overflow-hidden shadow-lg shadow-gray-200/50`}>
+      {/* Animated shimmer background */}
+      <div className={`absolute inset-0 bg-gradient-to-r ${colors.shimmer} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
 
-      <div className="relative z-10 flex items-start gap-4">
-        {/* Enhanced Icon */}
-        <div className={`flex-shrink-0 w-14 h-14 bg-gradient-to-br ${iconBg} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-          <div className="text-white">
-            {icon}
+      {/* Subtle gradient overlay on hover */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} opacity-30 group-hover:opacity-0 transition-opacity duration-700`} />
+
+      <div className="relative z-10 flex items-start gap-5">
+        {/* Premium Icon Container */}
+        <div className="relative flex-shrink-0">
+          <div className={`w-16 h-16 bg-gradient-to-br ${iconBg} rounded-[20px] flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-700`}>
+            <div className="text-white">
+              {icon}
+            </div>
           </div>
           {/* Icon glow effect */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${iconBg} rounded-2xl blur-md opacity-0 group-hover:opacity-30 transition-opacity duration-500`} />
+          <div className={`absolute inset-0 bg-gradient-to-br ${iconBg} rounded-[20px] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700`} />
         </div>
 
         {/* Content */}
-        <div className="flex-1 text-left">
-          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-gray-800 transition-colors duration-300">
+        <div className="flex-1 text-left pt-1">
+          <h3 className="text-xl font-bold text-gray-900 mb-2.5 group-hover:text-gray-800 transition-colors duration-500 tracking-tight">
             {title}
           </h3>
-          <p className="text-gray-600 text-sm leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
+          <p className="text-gray-600 text-[15px] leading-relaxed group-hover:text-gray-700 transition-colors duration-500 font-normal">
             {desc}
           </p>
         </div>
 
         {/* Subtle arrow indicator */}
-        <div className={`flex-shrink-0 w-6 h-6 ${colors.text} opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1`}>
-          <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <div className={`flex-shrink-0 w-6 h-6 ${colors.text} opacity-0 group-hover:opacity-60 transition-all duration-500 group-hover:translate-x-1 mt-1`}>
+          <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </div>
       </div>

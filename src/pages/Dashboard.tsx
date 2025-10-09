@@ -150,47 +150,57 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative">
-        {/* Enhanced background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-gradient-to-br from-blue-100/40 via-indigo-100/25 to-purple-100/15 rounded-full blur-3xl animate-pulse-subtle" />
-          <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] bg-gradient-to-tr from-slate-100/30 via-gray-100/20 to-blue-100/15 rounded-full blur-3xl" />
-          <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-gradient-radial from-indigo-50/30 via-transparent to-transparent rounded-full blur-2xl" />
+      <div className="min-h-screen bg-white relative">
+        {/* Premium Background with Mesh Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/20" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.08),transparent_50%)]" />
+
+        {/* Animated Mesh Grid */}
+        <div className="absolute inset-0 opacity-[0.015]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
+            backgroundSize: '64px 64px'
+          }} />
         </div>
+
+        {/* Floating Orbs */}
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as React.CSSProperties} />
+        <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as React.CSSProperties} />
 
         <AppHeader />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-4 sm:pt-5">
-          <div className="animate-pulse space-y-4 sm:space-y-5">
-            {/* Hero skeleton - Compact */}
-            <div className="h-28 sm:h-32 bg-gradient-to-br from-white/95 via-blue-50/30 to-indigo-50/20 backdrop-blur-xl rounded-2xl shadow-lg border border-white/80">
-              <div className="p-4 sm:p-5 space-y-3">
-                <div className="h-7 sm:h-8 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-xl w-2/3 shadow-sm"></div>
-                <div className="h-5 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-lg w-full max-w-xl"></div>
+          <div className="animate-pulse space-y-5 sm:space-y-6">
+            {/* Hero skeleton - Premium */}
+            <div className="h-32 sm:h-36 bg-white/70 backdrop-blur-xl rounded-[24px] shadow-xl shadow-gray-200/50 border border-gray-200/60">
+              <div className="p-6 sm:p-7 space-y-4">
+                <div className="h-8 sm:h-9 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-xl w-2/3 shadow-sm"></div>
+                <div className="h-5 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-lg w-full max-w-md"></div>
               </div>
             </div>
 
-            {/* Motivational banner skeleton - Compact */}
-            <div className="h-24 sm:h-28 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-lg backdrop-blur-xl border border-white/80">
-              <div className="p-4 sm:p-5 flex items-center gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-200/70 to-slate-300/50 rounded-xl shadow-md"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-lg w-40"></div>
-                  <div className="h-4 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-md w-56"></div>
+            {/* Motivational banner skeleton - Premium */}
+            <div className="h-28 sm:h-32 bg-white/70 backdrop-blur-xl rounded-[24px] shadow-xl shadow-gray-200/50 border border-gray-200/60">
+              <div className="p-6 sm:p-7 flex items-center gap-5">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-slate-200/70 to-slate-300/50 rounded-[20px] shadow-md"></div>
+                <div className="flex-1 space-y-3">
+                  <div className="h-6 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-lg w-44"></div>
+                  <div className="h-4 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-md w-60"></div>
                 </div>
               </div>
             </div>
 
-            {/* Quick actions skeleton - Compact */}
-            <div className="space-y-3 sm:space-y-4">
-              <div className="h-6 sm:h-7 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-xl w-36 shadow-sm"></div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {/* Quick actions skeleton - Premium */}
+            <div className="space-y-4 sm:space-y-5">
+              <div className="h-7 sm:h-8 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-xl w-40 shadow-sm"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
                 {[...Array(2)].map((_, i) => (
-                  <div key={i} className="h-[88px] sm:h-[96px] bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-lg backdrop-blur-xl border border-white/80">
-                    <div className="p-4 sm:p-5 flex items-center gap-4">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-200/70 to-slate-300/50 rounded-xl shadow-md"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-5 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-lg w-36"></div>
-                        <div className="h-4 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-md w-40"></div>
+                  <div key={i} className="h-[100px] sm:h-[108px] bg-white/70 backdrop-blur-xl rounded-[24px] shadow-xl shadow-gray-200/50 border border-gray-200/60">
+                    <div className="p-6 sm:p-7 flex items-center gap-5">
+                      <div className="w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-slate-200/70 to-slate-300/50 rounded-[20px] shadow-md"></div>
+                      <div className="flex-1 space-y-3">
+                        <div className="h-6 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-lg w-40"></div>
+                        <div className="h-4 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-md w-44"></div>
                       </div>
                     </div>
                   </div>
@@ -198,13 +208,13 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Profile settings skeleton - Compact */}
-            <div className="h-[88px] sm:h-[96px] bg-gradient-to-br from-white/95 via-slate-50/30 to-gray-50/20 backdrop-blur-xl rounded-2xl shadow-lg border border-white/80">
-              <div className="p-4 sm:p-5 flex items-center gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-slate-200/70 to-slate-300/50 rounded-xl shadow-md"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-lg w-40"></div>
-                  <div className="h-4 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-md w-48"></div>
+            {/* Profile settings skeleton - Premium */}
+            <div className="h-[100px] sm:h-[108px] bg-white/70 backdrop-blur-xl rounded-[24px] shadow-xl shadow-gray-200/50 border border-gray-200/60">
+              <div className="p-6 sm:p-7 flex items-center gap-5">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-slate-200/70 to-slate-300/50 rounded-[20px] shadow-md"></div>
+                <div className="flex-1 space-y-3">
+                  <div className="h-6 bg-gradient-to-r from-slate-200/70 to-slate-300/50 rounded-lg w-44"></div>
+                  <div className="h-4 bg-gradient-to-r from-slate-200/50 to-slate-300/40 rounded-md w-52"></div>
                 </div>
               </div>
             </div>
@@ -216,29 +226,31 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-gradient-to-br from-red-100/30 via-orange-100/20 to-yellow-100/15 rounded-full blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] bg-gradient-to-tr from-slate-100/30 via-gray-100/20 to-red-100/15 rounded-full blur-3xl" />
-        </div>
+      <div className="min-h-screen bg-white relative">
+        {/* Premium Background with Error Tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-red-50/20" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(239,68,68,0.12),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(251,146,60,0.08),transparent_50%)]" />
 
         <AppHeader />
-        <div className="relative mx-auto max-w-2xl px-4 sm:px-6 pt-12 sm:pt-16">
-          <div className="bg-gradient-to-br from-white/95 via-red-50/20 to-orange-50/10 backdrop-blur-xl rounded-3xl p-8 sm:p-12 border border-white/80 shadow-2xl text-center">
-            {/* Error icon with enhanced styling */}
-            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/20 ring-4 ring-red-50">
-              <Activity className="h-10 w-10 text-red-600" />
+        <div className="relative mx-auto max-w-2xl px-4 sm:px-6 pt-16 sm:pt-20">
+          <div className="bg-white/70 backdrop-blur-xl rounded-[32px] p-10 sm:p-14 border border-gray-200/60 shadow-2xl shadow-red-200/30 text-center">
+            {/* Error icon with premium styling */}
+            <div className="relative inline-flex items-center justify-center mb-8">
+              <div className="w-24 h-24 bg-gradient-to-br from-red-500 to-orange-500 rounded-[24px] flex items-center justify-center shadow-xl shadow-red-500/30">
+                <Activity className="h-12 w-12 text-white" strokeWidth={2} />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-orange-500 rounded-[24px] blur-xl opacity-30" />
             </div>
 
-            {/* Error message with better typography */}
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3 tracking-tight">Unable to Load Dashboard</h2>
-            <p className="text-slate-600 text-base sm:text-lg mb-8 leading-relaxed max-w-md mx-auto">{error}</p>
+            {/* Error message with premium typography */}
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 tracking-tight">Unable to Load Dashboard</h2>
+            <p className="text-gray-600 text-base sm:text-lg mb-10 leading-relaxed max-w-md mx-auto font-normal">{error}</p>
 
-            {/* Enhanced button */}
+            {/* Premium button */}
             <Button
               onClick={() => window.location.reload()}
-              className="shadow-lg hover:shadow-xl"
+              className="shadow-xl hover:shadow-2xl transition-all duration-500"
             >
               Try Again
             </Button>
@@ -249,36 +261,44 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 relative">
-      {/* Enhanced background decoration with refined gradients */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-gradient-to-br from-blue-100/40 via-indigo-100/25 to-purple-100/15 rounded-full blur-3xl animate-pulse-subtle" />
-        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] bg-gradient-to-tr from-slate-100/30 via-gray-100/20 to-blue-100/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-gradient-radial from-indigo-50/30 via-transparent to-transparent rounded-full blur-2xl" />
+    <div className="min-h-screen bg-white relative">
+      {/* Premium Background with Mesh Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/20" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.08),transparent_50%)]" />
+
+      {/* Animated Mesh Grid */}
+      <div className="absolute inset-0 opacity-[0.015]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
+          backgroundSize: '64px 64px'
+        }} />
       </div>
+
+      {/* Floating Orbs - More Subtle and Elegant */}
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as React.CSSProperties} />
+      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as React.CSSProperties} />
+      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-15px', animationDelay: '4s'} as React.CSSProperties} />
 
       <AppHeader />
 
-      {/* Hero Section - Compact */}
+      {/* Hero Section - Premium Design */}
       <section className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-4 sm:pt-5 animate-stagger-1">
-        <div className="group relative rounded-2xl border border-white/80 bg-gradient-to-br from-white/95 via-blue-50/30 to-indigo-50/20 backdrop-blur-xl p-4 sm:p-5 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 ease-out">
-          {/* Enhanced background elements with better depth */}
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-to-tr from-blue-400/20 via-indigo-400/15 to-purple-400/10 opacity-70 blur-3xl group-hover:opacity-90 transition-opacity duration-500" />
-          <div className="absolute -left-10 -bottom-10 h-48 w-48 rounded-full bg-gradient-to-br from-indigo-300/15 via-blue-300/10 to-transparent opacity-60 blur-2xl" />
+        <div className="group relative rounded-[24px] border border-gray-200/60 bg-white/70 backdrop-blur-xl p-6 sm:p-7 overflow-hidden shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 ease-out">
+          {/* Animated gradient overlays */}
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gradient-to-tr from-blue-400/20 via-indigo-400/15 to-purple-400/10 opacity-50 blur-3xl group-hover:opacity-70 transition-opacity duration-700" />
+          <div className="absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-300/15 via-teal-300/10 to-transparent opacity-40 blur-3xl group-hover:opacity-60 transition-opacity duration-700" />
 
-          {/* Refined inner glow for premium feel */}
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/50 via-white/20 to-transparent pointer-events-none" />
-
-          {/* Subtle border highlight */}
-          <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/60 pointer-events-none" />
+          {/* Subtle shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
           <div className="relative">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight mb-1.5 drop-shadow-sm">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight mb-2 drop-shadow-sm">
                   Welcome Back
                 </h1>
-                <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-medium max-w-2xl">
+                <p className="text-gray-600 text-base sm:text-lg leading-relaxed font-normal max-w-2xl">
                   {dashboardStats?.totalWorkouts === 0
                     ? "Ready to start your fitness journey?"
                     : "Keep up the momentum!"
@@ -286,9 +306,9 @@ export default function Dashboard() {
                 </p>
               </div>
               {hasUnlimitedWorkouts && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full shadow-lg shadow-amber-500/30 flex-shrink-0 ring-2 ring-amber-300/50 hover:shadow-xl hover:shadow-amber-500/40 transition-all duration-300 hover:scale-105">
-                  <Crown className="w-4 h-4 text-amber-900 drop-shadow-sm" />
-                  <span className="text-xs sm:text-sm font-bold text-amber-900 tracking-wide">Pro</span>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full shadow-xl shadow-amber-500/40 flex-shrink-0 hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 hover:scale-105">
+                  <Crown className="w-4.5 h-4.5 text-amber-900 drop-shadow-sm" strokeWidth={2.5} />
+                  <span className="text-sm font-bold text-amber-900 tracking-wide">Pro</span>
                 </div>
               )}
             </div>
@@ -296,13 +316,13 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Motivational Banner - Compact */}
+      {/* Motivational Banner - Premium */}
       {dashboardStats && dashboardStats.totalWorkouts > 0 && (
-        <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-4 sm:mt-5 animate-stagger-2">
+        <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-5 sm:mt-6 animate-stagger-2">
           <DeferredRender
-            minHeight="100px"
+            minHeight="120px"
             placeholder={
-              <div className="h-24 bg-gradient-to-br from-white/95 via-white/90 to-white/85 rounded-2xl shadow-lg backdrop-blur-xl border border-white/80 animate-pulse" />
+              <div className="h-28 bg-white/70 backdrop-blur-xl rounded-[24px] shadow-xl shadow-gray-200/50 border border-gray-200/60 animate-pulse" />
             }
           >
             <MotivationalBanner
@@ -315,13 +335,13 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Quick Actions - Compact */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-5 sm:mt-6 animate-stagger-3">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-3 sm:mb-4 tracking-tight">
+      {/* Quick Actions - Premium Design */}
+      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-6 sm:mt-8 animate-stagger-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-5 tracking-tight">
           Quick Actions
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
           <div
             className="group relative cursor-pointer"
             onClick={() => nav('/generate')}
@@ -329,26 +349,29 @@ export default function Dashboard() {
             <Card
               variant="elevated"
               rounded="2xl"
-              className="relative p-4 sm:p-5 border border-white/80 bg-gradient-to-br from-white/95 via-blue-50/30 to-indigo-50/20 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-500 active:scale-[0.98] overflow-hidden group-hover:-translate-y-1"
+              className="relative p-6 sm:p-7 border border-gray-200/60 bg-white/70 backdrop-blur-xl shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-blue-200/30 transition-all duration-700 active:scale-[0.99] overflow-hidden group-hover:-translate-y-1"
             >
-              {/* Subtle background accent */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {/* Animated gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-              <div className="relative flex items-center gap-4 sm:gap-5">
-                <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover:shadow-xl group-hover:shadow-blue-500/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <Zap className="h-7 w-7 sm:h-8 sm:w-8 drop-shadow-sm" />
+              <div className="relative flex items-center gap-5">
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-[20px] bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/40 group-hover:shadow-2xl group-hover:shadow-blue-500/50 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
+                    <Zap className="h-8 w-8 sm:h-9 sm:w-9 drop-shadow-sm" strokeWidth={2} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[20px] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1 leading-tight tracking-tight">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 leading-tight tracking-tight">
                     Generate Workout
                   </h3>
-                  <p className="text-slate-600 text-sm leading-snug font-medium">
+                  <p className="text-gray-600 text-[15px] leading-snug font-normal">
                     AI-tailored plans for your goals
                   </p>
                 </div>
                 <Button
                   size="sm"
-                  className="haptic-feedback flex-shrink-0 shadow-md hover:shadow-lg"
+                  className="haptic-feedback flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-500"
                   onClick={() => nav('/generate')}
                 >
                   Start
@@ -364,27 +387,30 @@ export default function Dashboard() {
             <Card
               variant="elevated"
               rounded="2xl"
-              className="relative p-4 sm:p-5 border border-white/80 bg-gradient-to-br from-white/95 via-slate-50/30 to-gray-50/20 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-500 active:scale-[0.98] overflow-hidden group-hover:-translate-y-1"
+              className="relative p-6 sm:p-7 border border-gray-200/60 bg-white/70 backdrop-blur-xl shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 active:scale-[0.99] overflow-hidden group-hover:-translate-y-1"
             >
-              {/* Subtle background accent */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-500/5 via-transparent to-gray-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {/* Animated gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 via-gray-500/5 to-slate-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-              <div className="relative flex items-center gap-4 sm:gap-5">
-                <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-lg shadow-slate-500/30 group-hover:shadow-xl group-hover:shadow-slate-500/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <History className="h-7 w-7 sm:h-8 sm:w-8 drop-shadow-sm" />
+              <div className="relative flex items-center gap-5">
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-[20px] bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-xl shadow-slate-500/40 group-hover:shadow-2xl group-hover:shadow-slate-500/50 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
+                    <History className="h-8 w-8 sm:h-9 sm:w-9 drop-shadow-sm" strokeWidth={2} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-500 to-gray-600 rounded-[20px] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1 leading-tight tracking-tight">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 leading-tight tracking-tight">
                     Workout History
                   </h3>
-                  <p className="text-slate-600 text-sm leading-snug font-medium">
+                  <p className="text-gray-600 text-[15px] leading-snug font-normal">
                     Review and track progress
                   </p>
                 </div>
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="haptic-feedback flex-shrink-0 shadow-md hover:shadow-lg"
+                  className="haptic-feedback flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-500"
                   onClick={() => nav('/history')}
                 >
                   View
@@ -395,28 +421,28 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Profile Settings - Compact */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-5 sm:mt-6 animate-stagger-4">
+      {/* Profile Settings - Premium Design */}
+      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-6 sm:mt-8 animate-stagger-4">
         <div className="group relative cursor-pointer" onClick={() => nav('/profile')}>
-          <div className="relative bg-gradient-to-br from-white/95 via-slate-50/30 to-gray-50/20 backdrop-blur-xl rounded-2xl p-4 sm:p-5 border border-white/80 shadow-lg hover:shadow-xl transition-all duration-500 active:scale-[0.98] overflow-hidden hover:-translate-y-1">
-            {/* Subtle background accent */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-500/5 via-transparent to-gray-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-white/70 backdrop-blur-xl rounded-[24px] p-6 sm:p-7 border border-gray-200/60 shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 active:scale-[0.99] overflow-hidden hover:-translate-y-1">
+            {/* Animated gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 via-gray-500/5 to-slate-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-            {/* Refined inner glow */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 via-white/10 to-transparent pointer-events-none" />
-
-            <div className="relative flex items-center gap-4 sm:gap-5">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-lg shadow-slate-500/30 flex-shrink-0 group-hover:shadow-xl group-hover:shadow-slate-500/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                <UserIcon className="h-7 w-7 sm:h-8 sm:w-8 text-white drop-shadow-sm" />
+            <div className="relative flex items-center gap-5">
+              <div className="relative flex-shrink-0">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-[20px] bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-xl shadow-slate-500/40 group-hover:shadow-2xl group-hover:shadow-slate-500/50 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
+                  <UserIcon className="h-8 w-8 sm:h-9 sm:w-9 text-white drop-shadow-sm" strokeWidth={2} />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-500 to-gray-600 rounded-[20px] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1 leading-tight tracking-tight">Profile Settings</h3>
-                <p className="text-slate-600 text-sm leading-snug font-medium">Update goals & equipment</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 leading-tight tracking-tight">Profile Settings</h3>
+                <p className="text-gray-600 text-[15px] leading-snug font-normal">Update goals & equipment</p>
               </div>
               <Button
                 size="sm"
                 variant="outline"
-                className="haptic-feedback flex-shrink-0 shadow-md hover:shadow-lg"
+                className="haptic-feedback flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-500"
                 onClick={() => nav('/profile')}
               >
                 Edit
@@ -426,8 +452,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Subscription Status - Compact */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-5 sm:mt-6 mb-6 sm:mb-8 animate-stagger-5">
+      {/* Subscription Status - Premium */}
+      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-6 sm:mt-8 mb-8 sm:mb-10 animate-stagger-5">
         <SubscriptionManager mode="status" />
       </section>
 
