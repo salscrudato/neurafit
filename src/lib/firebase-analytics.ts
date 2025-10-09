@@ -96,19 +96,6 @@ class SimpleAnalytics {
   trackRestCompleted = (duration: number): void => this.track('rest_completed', { duration })
   trackRestSkipped = (): void => this.track('rest_skipped')
 
-  // Subscription Events
-  trackSubscriptionStarted = (plan?: string, price?: number): void =>
-    this.track('subscription_started', { plan, price })
-  trackSubscriptionCompleted = (plan?: string, price?: number): void =>
-    this.track('subscription_completed', { plan, price })
-  trackSubscriptionCancelled = (plan: string, reason?: string): void =>
-    this.track('subscription_cancelled', { plan, reason })
-  trackSubscriptionReactivated = (plan: string): void =>
-    this.track('subscription_reactivated', { plan })
-  trackPaymentFailed = (plan: string, error: string): void =>
-    this.track('payment_failed', { plan, error })
-  trackFreeTrialStarted = (): void => this.track('free_trial_started')
-
   // Feature Usage Events
   trackFeatureUsed = (feature: string, context?: string): void =>
     this.track('feature_used', { feature, context })
@@ -152,12 +139,6 @@ export const {
   trackExerciseSkipped,
   trackRestCompleted,
   trackRestSkipped,
-  trackSubscriptionStarted,
-  trackSubscriptionCompleted,
-  trackSubscriptionCancelled,
-  trackSubscriptionReactivated,
-  trackPaymentFailed,
-  trackFreeTrialStarted,
   trackFeatureUsed,
   trackButtonClicked,
   trackFormSubmitted,
@@ -170,8 +151,6 @@ export const {
 export const setUserAnalyticsProperties = (_userId: string, _properties: Record<string, unknown>): void => {}
 export const setEnhancedUserProperties = (_userId: string, _userProfile: Record<string, unknown>): void => {}
 export const trackSessionStart = (): void => analytics.trackCustomEvent('session_start', {})
-export const trackFreeTrialLimitReached = (): void =>
-  analytics.trackCustomEvent('free_trial_limit_reached', {})
 
 // Export analytics instance
 export { analytics }

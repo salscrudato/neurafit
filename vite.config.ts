@@ -7,7 +7,7 @@ import { readFileSync } from 'fs'
 
 /**
  * Production-Ready Vite Configuration for NeuraFit
- * React/TypeScript application with Firebase, Tailwind CSS, and Stripe
+ * React/TypeScript application with Firebase and Tailwind CSS
  *
  * Optimizations:
  * - Firebase SDK properly chunked by service (auth, firestore, functions, analytics)
@@ -150,11 +150,6 @@ export default defineConfig(({ mode }) => {
               return 'firebase-core'
             }
 
-            // Stripe - payment processing
-            if (id.includes('node_modules/@stripe/')) {
-              return 'vendor-stripe'
-            }
-
             // UI libraries - icons and styling utilities
             if (id.includes('node_modules/lucide-react/')) {
               return 'vendor-icons'
@@ -257,8 +252,6 @@ export default defineConfig(({ mode }) => {
         // Include Sentry to fix module resolution issues
         '@sentry/react',
         'hoist-non-react-statics',
-        // Include React-dependent packages
-        '@stripe/react-stripe-js',
       ],
       exclude: [],
       // Force CommonJS dependencies to be pre-bundled as ESM

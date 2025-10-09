@@ -28,10 +28,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   'timeout': 'Request timed out. Please try again',
   'server-error': 'Server error. Please try again later',
 
-  // Payment errors
-  'subscription-required': 'You need an active subscription to access this feature',
-  'payment-failed': 'Payment failed. Please check your payment method',
-
   // Generic fallback
   'unknown-error': 'An unexpected error occurred. Please try again',
 }
@@ -115,7 +111,6 @@ class SimpleErrorManager {
     if ('code' in error) return (error as { code: string }).code
     if (error.name === 'AbortError') return 'timeout'
     if (error.message.includes('fetch')) return 'network-error'
-    if (error.message.includes('402') || error.message.includes('Payment Required')) return 'subscription-required'
     return undefined
   }
 

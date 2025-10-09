@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
-import { useSubscription } from './useSubscription'
 import { isAdaptivePersonalizationEnabled } from '../config/features'
 import type { UserProfile } from '../types/profile'
 
@@ -25,8 +24,6 @@ export function useWorkoutPreload() {
     isLoading: true,
     error: null
   })
-
-  const { subscription } = useSubscription()
 
   // Fetch adaptive intensity based on recent workout feedback
   const fetchAdaptiveIntensity = useCallback(async (uid: string) => {
@@ -205,14 +202,6 @@ export function useWorkoutPreload() {
 
     return unsubscribe
   }, [preloadData])
-
-  // Refresh data when subscription changes (in case limits changed)
-  useEffect(() => {
-    if (auth.currentUser && subscription) {
-      // Don't need to reload profile, just ensure we have latest subscription data
-      // The subscription hook already handles this
-    }
-  }, [subscription])
 
   return {
     preloadedData,

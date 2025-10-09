@@ -5,9 +5,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { useAppStore } from '../store';
 import { isProfileComplete } from '../session/types';
 import type { UserProfile } from '../session/types';
-import type { UserSubscription } from '../types/subscription';
 import { ensureUserDocument } from '../lib/user-utils';
-// Subscription service available but not used in this component
 import ErrorBoundary from '../components/ErrorBoundary';
 import { setUserContext, clearUserContext } from '../lib/sentry';
 
@@ -20,8 +18,6 @@ export function AppProvider({ children }: AppProviderProps) {
     setUser,
     setProfile,
     setAuthStatus,
-    setSubscription,
-    setSubscriptionLoading,
     syncPendingOperations,
     setOnlineStatus,
     updateLastSyncTime,
@@ -30,7 +26,6 @@ export function AppProvider({ children }: AppProviderProps) {
   // Authentication state management with coordinated async operations
   useEffect(() => {
     let unsubDoc: (() => void) | null = null;
-    let unsubSubscription: (() => void) | null = null;
     let unsubAuth: (() => void) | null = null;
     let isMounted = true; // Track mount status to prevent race conditions
     let initializationTimeout: NodeJS.Timeout | null = null; // Track timeout for cleanup
@@ -51,13 +46,10 @@ export function AppProvider({ children }: AppProviderProps) {
         }
         unsubDoc?.();
         unsubDoc = null;
-        unsubSubscription?.();
-        unsubSubscription = null;
 
         // Update auth state atomically
         setUser(user);
         setProfile(null);
-        setSubscription(null);
 
         if (!user) {
           if (import.meta.env.MODE === 'development') {
@@ -96,32 +88,6 @@ export function AppProvider({ children }: AppProviderProps) {
                 const profileData = snapshot.data() as UserProfile;
                 setProfile(profileData);
                 setAuthStatus(isProfileComplete(profileData) ? 'ready' : 'needsOnboarding');
-
-                // Handle subscription data with robust manager
-                if (profileData.subscription) {
-                  // Validate subscription data integrity
-                  const validatedSubscription = {
-                    ...profileData.subscription,
-                    freeWorkoutLimit: profileData.subscription.freeWorkoutLimit || 50,
-                    workoutCount: profileData.subscription.workoutCount || 0,
-                    freeWorkoutsUsed: profileData.subscription.freeWorkoutsUsed || 0,
-                    updatedAt: profileData.subscription.updatedAt || Date.now(),
-                  };
-                  setSubscription(validatedSubscription);
-                } else {
-                  // Set default subscription if none exists
-                  const defaultSubscription: UserSubscription = {
-                    customerId: '',
-                    status: 'incomplete',
-                    workoutCount: 0,
-                    freeWorkoutsUsed: 0,
-                    freeWorkoutLimit: 50,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
-                  };
-                  setSubscription(defaultSubscription);
-                }
-                setSubscriptionLoading(false);
               },
               (error) => {
                 console.error('Profile listener error:', error);
@@ -173,14 +139,11 @@ export function AppProvider({ children }: AppProviderProps) {
         unsubAuth();
       }
       unsubDoc?.();
-      unsubSubscription?.();
     };
   }, [
     setUser,
     setProfile,
     setAuthStatus,
-    setSubscription,
-    setSubscriptionLoading,
     syncPendingOperations,
     updateLastSyncTime,
   ]);

@@ -4,7 +4,6 @@ import { Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
-import { SubscriptionManager } from './components/SubscriptionManager';
 import { UpdateToast } from './hooks/useUpdateToast';
 import { logger } from './lib/logger';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -22,7 +21,6 @@ const Complete = lazy(() => import('./pages/workout/Complete'));
 const History = lazy(() => import('./pages/History'));
 const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'));
 const Profile = lazy(() => import('./pages/Profile'));
-const Subscription = lazy(() => import('./pages/Subscription'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -168,11 +166,6 @@ function AppContent() {
               <ProfileRoute lazy><Profile /></ProfileRoute>
             </RouteErrorBoundary>
           } />
-          <Route path="/subscription" element={
-            <RouteErrorBoundary routeName="Subscription">
-              <ProfileRoute lazy><Subscription /></ProfileRoute>
-            </RouteErrorBoundary>
-          } />
 
           {/* Catch-all 404 page */}
           <Route path="*" element={
@@ -182,9 +175,6 @@ function AppContent() {
           } />
         </Routes>
         </main>
-
-        {/* Unified Subscription Manager - Consolidated subscription functionality */}
-        <SubscriptionManager mode="status" />
 
         {/* Service Worker Update Toast */}
         <UpdateToast />

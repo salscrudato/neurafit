@@ -15,10 +15,6 @@ export const useApp = () => {
     profile: store.profile,
     authStatus: store.authStatus,
 
-    // Subscription state
-    subscription: store.subscription,
-    subscriptionLoading: store.subscriptionLoading,
-
     // Workout state
     currentWorkout: store.currentWorkout,
     workoutWeights: store.workoutWeights,
@@ -70,44 +66,10 @@ export const appUtils = {
     }
   },
 
-  getSubscriptionStatusText: (status?: string): string => {
-    switch (status) {
-      case 'active':
-        return 'Active subscription'
-      case 'canceled':
-        return 'Canceled subscription'
-      case 'incomplete':
-        return 'Incomplete subscription'
-      case 'past_due':
-        return 'Payment overdue'
-      case 'trialing':
-        return 'Trial period'
-      case 'unpaid':
-        return 'Payment required'
-      default:
-        return 'No subscription'
-    }
-  },
-
   formatNotificationCount: (count: number): string => {
     if (count === 0) return ''
     if (count > 99) return '99+'
     return count.toString()
-  },
-
-  shouldShowUpgradePrompt: (subscription?: { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number; subscriptionId?: string }): boolean => {
-    if (!subscription) return true
-
-    // Don't show upgrade prompt if subscription is active or incomplete with payment
-    const isActive = subscription.status === 'active' || subscription.status === 'trialing'
-    const isIncompleteWithPayment = subscription.status === 'incomplete' && subscription.subscriptionId
-
-    if (isActive || isIncompleteWithPayment) return false
-
-    const used = subscription.freeWorkoutsUsed || 0
-    const limit = subscription.freeWorkoutLimit || 15
-    
-    return used >= limit * 0.8 // Show when 80% of free workouts used
   }
 }
 

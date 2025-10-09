@@ -8,7 +8,6 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { useShallow } from 'zustand/react/shallow'
 import type { User } from 'firebase/auth'
 import type { UserProfile } from '../session/types'
-import type { UserSubscription } from '../types/subscription'
 import { logger } from '../lib/logger'
 
 // Debounced localStorage writer to reduce write frequency
@@ -59,11 +58,7 @@ export interface AppState {
   user: User | null
   profile: UserProfile | null
   authStatus: 'loading' | 'signedOut' | 'needsOnboarding' | 'ready'
-  
-  // Subscription state
-  subscription: UserSubscription | null
-  subscriptionLoading: boolean
-  
+
   // Workout state
   currentWorkout: WorkoutState | null
   workoutWeights: Record<number, Record<number, number | null>>
@@ -123,10 +118,6 @@ export interface AppActions {
   setProfile: (_profile: UserProfile | null) => void
   setAuthStatus: (_status: AppState['authStatus']) => void
 
-  // Subscription actions
-  setSubscription: (_subscription: UserSubscription | null) => void
-  setSubscriptionLoading: (_loading: boolean) => void
-
   // Workout actions
   startWorkout: (_plan: WorkoutPlan, _type: string, _duration: number) => void
   updateWorkoutProgress: (_exerciseIndex: number, _setIndex: number) => void
@@ -157,8 +148,6 @@ const initialState: AppState = {
   user: null,
   profile: null,
   authStatus: 'loading',
-  subscription: null,
-  subscriptionLoading: true,
   currentWorkout: null,
   workoutWeights: {},
   workoutHistory: [],
@@ -188,16 +177,7 @@ export const useAppStore = create<AppState & AppActions>()(
           setAuthStatus: (status) => set((state) => {
             state.authStatus = status
           }),
-          
-          // Subscription actions
-          setSubscription: (subscription) => set((state) => {
-            state.subscription = subscription
-          }),
-          
-          setSubscriptionLoading: (loading) => set((state) => {
-            state.subscriptionLoading = loading
-          }),
-          
+
           // Workout actions
           startWorkout: (plan, type, duration) => set((state) => {
             state.currentWorkout = {
@@ -347,7 +327,6 @@ export const useAppStore = create<AppState & AppActions>()(
             // Don't persist sensitive or temporary data
             user: null,
             profile: null,
-            subscription: null,
             errors: [],
             pendingOperations: []
           }),
@@ -410,25 +389,6 @@ const authSelector = (state: AppState & AppActions) => ({
 // Uses stable selector reference to prevent creating new objects on every call
 export const useAuth = () => {
   return useAppStore(useShallow(authSelector))
-}
-
-// Subscription selectors
-export const useSubscription = () => useAppStore((state) => state.subscription)
-export const useSubscriptionLoading = () => useAppStore((state) => state.subscriptionLoading)
-export const useSetSubscription = () => useAppStore((state) => state.setSubscription)
-export const useSetSubscriptionLoading = () => useAppStore((state) => state.setSubscriptionLoading)
-
-// Stable selector reference for composite subscription selector
-const subscriptionSelector = (state: AppState & AppActions) => ({
-  subscription: state.subscription,
-  loading: state.subscriptionLoading,
-  setSubscription: state.setSubscription,
-  setSubscriptionLoading: state.setSubscriptionLoading
-})
-
-// Composite subscription selector with shallow comparison
-export const useSubscriptionStore = () => {
-  return useAppStore(useShallow(subscriptionSelector))
 }
 
 // Workout selectors

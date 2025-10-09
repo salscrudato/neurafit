@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
-import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut, Crown, type LucideIcon } from 'lucide-react'
+import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut, type LucideIcon } from 'lucide-react'
 import { usePrefetchOnIdle, usePrefetchOnHover } from '../hooks/usePrefetch'
 import { logger } from '../lib/logger'
 
@@ -39,14 +39,13 @@ export default function AppHeader() {
   const nav = useNavigate()
 
   // Prefetch critical routes on idle
-  usePrefetchOnIdle(['/generate', '/history', '/subscription'], 2000)
+  usePrefetchOnIdle(['/generate', '/history'], 2000)
 
   // Memoize menu items to prevent recreation on every render
   const menuItems = useMemo(() => [
     { label: 'Dashboard', path: '/dashboard', icon: Home },
     { label: 'Generate Workout', path: '/generate', icon: Dumbbell },
     { label: 'Workout History', path: '/history', icon: History },
-    { label: 'Subscription', path: '/subscription', icon: Crown },
     { label: 'Profile', path: '/profile', icon: User },
   ], [])
 

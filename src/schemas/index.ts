@@ -36,51 +36,6 @@ export const UserProfileSchema = z.object({
 export type UserProfile = z.infer<typeof UserProfileSchema>
 
 // ============================================================================
-// Subscription Schemas
-// ============================================================================
-
-export const SubscriptionStatusSchema = z.enum([
-  'active',
-  'canceled',
-  'incomplete',
-  'incomplete_expired',
-  'past_due',
-  'trialing',
-  'unpaid',
-])
-
-export const SubscriptionPlanSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  price: z.number().int().positive(),
-  currency: z.string(),
-  interval: z.enum(['month', 'year']),
-  features: z.array(z.string()),
-  stripePriceId: z.string(),
-  popular: z.boolean().optional(),
-})
-
-export const UserSubscriptionSchema = z.object({
-  customerId: z.string(),
-  subscriptionId: z.string().optional(),
-  priceId: z.string().optional(),
-  status: SubscriptionStatusSchema,
-  currentPeriodStart: z.number().optional(),
-  currentPeriodEnd: z.number().optional(),
-  cancelAtPeriodEnd: z.boolean().optional(),
-  canceledAt: z.number().optional(),
-  plan: SubscriptionPlanSchema.optional(),
-  workoutCount: z.number().int().nonnegative(),
-  freeWorkoutsUsed: z.number().int().nonnegative(),
-  freeWorkoutLimit: z.number().int().positive(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
-})
-
-export type UserSubscription = z.infer<typeof UserSubscriptionSchema>
-
-// ============================================================================
 // Workout Schemas
 // ============================================================================
 

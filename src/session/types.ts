@@ -1,12 +1,9 @@
-import type { UserSubscription } from '../types/subscription'
-
 export type UserProfile = {
   experience?: string
   goals?: string[]
   equipment?: string[]
   personal?: { sex?: string; height?: string; weight?: string }
   injuries?: { list?: string[]; notes?: string }
-  subscription?: UserSubscription
 }
 
 /**

@@ -14,10 +14,6 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string
   readonly VITE_FIREBASE_MEASUREMENT_ID?: string
 
-  // Stripe Configuration
-  readonly VITE_STRIPE_PUBLISHABLE_KEY: string
-  readonly VITE_STRIPE_PRICE_ID_SIMPLE: string
-
   // Sentry Configuration
   readonly VITE_SENTRY_DSN?: string
   readonly VITE_ENABLE_SENTRY?: string

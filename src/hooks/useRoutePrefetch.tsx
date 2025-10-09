@@ -11,7 +11,7 @@ import { useLocation } from 'react-router-dom';
 // Map of routes to their likely next routes
 const ROUTE_PREFETCH_MAP: Record<string, string[]> = {
   '/': ['/dashboard', '/onboarding'],
-  '/dashboard': ['/generate', '/history', '/profile', '/subscription'],
+  '/dashboard': ['/generate', '/history', '/profile'],
   '/generate': ['/workout/preview'],
   '/workout/preview': ['/workout/run'],
   '/workout/run': ['/workout/rest', '/workout/complete'],
@@ -19,7 +19,6 @@ const ROUTE_PREFETCH_MAP: Record<string, string[]> = {
   '/workout/complete': ['/dashboard', '/history'],
   '/history': ['/dashboard'],
   '/profile': ['/dashboard'],
-  '/subscription': ['/dashboard'],
   '/onboarding': ['/dashboard'],
 };
 
@@ -33,7 +32,6 @@ const ROUTE_MODULE_MAP: Record<string, string> = {
   '/workout/complete': '/src/pages/workout/Complete.tsx',
   '/history': '/src/pages/History.tsx',
   '/profile': '/src/pages/Profile.tsx',
-  '/subscription': '/src/pages/Subscription.tsx',
 };
 
 /**

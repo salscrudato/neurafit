@@ -12,12 +12,11 @@ import { logger } from './logger'
 import * as Sentry from '@sentry/react'
 
 export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical'
-export type ErrorCode = 
+export type ErrorCode =
   | 'AUTH_ERROR'
   | 'NETWORK_ERROR'
   | 'VALIDATION_ERROR'
   | 'WORKOUT_GENERATION_ERROR'
-  | 'SUBSCRIPTION_ERROR'
   | 'FIRESTORE_ERROR'
   | 'UNKNOWN_ERROR'
   | 'PERMISSION_DENIED'
@@ -149,21 +148,6 @@ export class WorkoutGenerationError extends AppError {
   ) {
     super(message, 'WORKOUT_GENERATION_ERROR', 'high', userMessage, context, originalError, retryable)
     this.name = 'WorkoutGenerationError'
-  }
-}
-
-/**
- * Subscription-related errors
- */
-export class SubscriptionError extends AppError {
-  constructor(
-    message: string,
-    userMessage: string = 'Subscription error. Please contact support.',
-    context: ErrorContext = {},
-    originalError?: Error
-  ) {
-    super(message, 'SUBSCRIPTION_ERROR', 'high', userMessage, context, originalError, false)
-    this.name = 'SubscriptionError'
   }
 }
 

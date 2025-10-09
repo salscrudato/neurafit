@@ -11,7 +11,6 @@ import { logger } from '../lib/logger';
 // Map of route paths to their lazy-loaded modules
 const routeModules: Record<string, () => Promise<unknown>> = {
   '/generate': () => import('../pages/Generate'),
-  '/subscription': () => import('../pages/Subscription'),
   '/history': () => import('../pages/History'),
   '/profile': () => import('../pages/Profile'),
   '/workout/preview': () => import('../pages/workout/Preview'),

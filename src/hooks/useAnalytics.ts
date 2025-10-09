@@ -35,10 +35,6 @@ const ROUTE_METADATA: Record<string, RouteMetadata> = {
     screenName: 'profile',
     title: 'Profile - NeuraFit',
   },
-  '/subscription': {
-    screenName: 'subscription',
-    title: 'Subscription - NeuraFit',
-  },
   '/onboarding': {
     screenName: 'onboarding',
     title: 'Get Started - NeuraFit',

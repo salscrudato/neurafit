@@ -8,10 +8,7 @@ import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from 
 import { trackCustomEvent } from '../lib/firebase-analytics'
 import { Brain, Clock } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/Loading'
-import { useSubscription } from '../hooks/useSubscription'
-import { subscriptionService } from '../lib/subscriptionService'
-import { SubscriptionManager } from '../components/SubscriptionManager'
-import { trackWorkoutGenerated, trackFreeTrialLimitReached } from '../lib/firebase-analytics'
+import { trackWorkoutGenerated } from '../lib/firebase-analytics'
 import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 import { WorkoutGenerationError, TimeoutError, ErrorHandler, retryWithBackoff } from '../lib/errors'
 import { dedupedFetch } from '../lib/requestManager'
@@ -54,7 +51,6 @@ export default function Generate() {
   const [loading, setLoading] = useState(false)
   const [showProgressiveLoading, setShowProgressiveLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const [showSlowConnectionWarning, setShowSlowConnectionWarning] = useState(false)
 
   // Abort controller for request cancellation
@@ -62,9 +58,6 @@ export default function Generate() {
 
   // Use pre-loaded data hook
   const { preloadedData } = useWorkoutPreload()
-
-  // Subscription hooks
-  const { canGenerateWorkout, hasUnlimitedWorkouts, subscription } = useSubscription()
 
   // Handle preloaded data and navigation
   useEffect(() => {
@@ -111,13 +104,6 @@ export default function Generate() {
 
   async function generate() {
     if (disabled || !preloadedData.profile) return
-
-    // Check subscription limits
-    if (!canGenerateWorkout) {
-      trackFreeTrialLimitReached()
-      setShowUpgradePrompt(true)
-      return
-    }
 
     setError(null)
     setLoading(true)
@@ -178,15 +164,6 @@ export default function Generate() {
                 })
 
                 if (!res.ok) {
-                  if (res.status === 402) {
-                    throw new WorkoutGenerationError(
-                      'Subscription required',
-                      'You need an active subscription to generate workouts.',
-                      { component: 'Generate', action: 'generateWorkout', userId: uid },
-                      undefined,
-                      false // Not retryable
-                    )
-                  }
 
                   // 502 Bad Gateway - server error, should retry
                   // 503 Service Unavailable - temporary, should retry
@@ -247,7 +224,7 @@ export default function Generate() {
       }
 
       // Track workout generation in Firebase Analytics
-      trackWorkoutGenerated(String(hasUnlimitedWorkouts), subscription?.workoutCount || 0)
+      trackWorkoutGenerated('true', 0)
 
       sessionStorage.setItem('nf_workout_plan', JSON.stringify({ plan: result, type, duration }))
 
@@ -279,37 +256,7 @@ export default function Generate() {
         return
       }
 
-      // Handle subscription errors
-      if (error instanceof WorkoutGenerationError && error.code === 'WORKOUT_GENERATION_ERROR') {
-        if (error.message.includes('Subscription required')) {
-          // Try refreshing subscription status
-          try {
-            if (import.meta.env.MODE === 'development') {
-              console.log('🔄 Payment required error - checking for recent subscription updates...')
-            }
-            const freshSubscription = await subscriptionService.getSubscription()
 
-            if (freshSubscription && (freshSubscription.status === 'active' || freshSubscription.status === 'trialing')) {
-              if (import.meta.env.MODE === 'development') {
-                console.log('✅ Found active subscription after refresh, retrying workout generation...')
-              }
-              // Retry the workout generation with fresh subscription data
-              setTimeout(() => {
-                generate()
-              }, 1000)
-              return
-            }
-          } catch (refreshError) {
-            ErrorHandler.handle(refreshError as Error, {
-              component: 'Generate',
-              action: 'refreshSubscription'
-            })
-          }
-
-          setShowUpgradePrompt(true)
-          return
-        }
-      }
 
       // Handle all other errors
       const appError = ErrorHandler.normalize(error, {
@@ -382,9 +329,6 @@ export default function Generate() {
           </div>
         </section>
 
-        {/* Enhanced Subscription Status */}
-        <SubscriptionManager mode="status" className="mt-8 sm:mt-10" />
-
         {/* Slow Connection Warning */}
         {showSlowConnectionWarning && (
           <div className="fixed inset-x-0 top-20 z-50 flex justify-center px-4">
@@ -404,18 +348,6 @@ export default function Generate() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Subscription Upgrade Modal */}
-        {showUpgradePrompt && (
-          <SubscriptionManager
-            mode="plans"
-            onClose={() => setShowUpgradePrompt(false)}
-            onSuccess={() => {
-              // Subscription successful, user can now generate workouts
-              setShowUpgradePrompt(false)
-            }}
-          />
         )}
 
         {/* Enhanced Intensity Calibration Indicator */}
@@ -534,17 +466,17 @@ export default function Generate() {
 
         {/* Error */}
         {error && (
-          <div className="mt-6">
-            <SubscriptionManager
-              mode="error"
-              error={error}
-              onRetry={() => {
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-red-800 text-sm">{error}</p>
+            <button
+              onClick={() => {
                 setError(null)
                 generate()
               }}
-              onClose={() => setShowUpgradePrompt(true)}
-              showUpgradeOption={!hasUnlimitedWorkouts}
-            />
+              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         )}
 

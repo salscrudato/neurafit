@@ -2,20 +2,8 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import type { Request, Response } from 'express';
 import OpenAI from 'openai';
-import { incrementWorkoutCount } from './lib/stripe';
 import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { generateProfessionalPromptEnhancement } from './lib/promptEnhancements';
-
-// Export subscription functions
-export { stripeWebhook } from './stripe-webhooks';
-export {
-  createPaymentIntent,
-  cancelUserSubscription,
-  reactivateUserSubscription,
-  getCustomerPortalUrl,
-  getSubscriptionDetails,
-  getBillingHistory,
-} from './subscription-functions';
 
 // Define the secret
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
@@ -137,7 +125,6 @@ export const generateWorkout = onRequest(
         injuries,
         workoutType,
         duration,
-        uid,
         targetIntensity,
         progressionNote,
         recentWorkouts,
@@ -149,7 +136,6 @@ export const generateWorkout = onRequest(
         injuries?: { list?: string[]; notes?: string };
         workoutType?: string;
         duration?: number;
-        uid?: string;
         targetIntensity?: number;
         progressionNote?: string;
         recentWorkouts?: Array<{ workoutType: string; timestamp: number; exercises: Array<{ name: string }> }>;
@@ -158,41 +144,6 @@ export const generateWorkout = onRequest(
       // Use intensity values from frontend (calculated by useWorkoutPreload hook)
       let finalTargetIntensity = targetIntensity || 1.0;
       let finalProgressionNote = progressionNote || '';
-
-      // Initialize subscription data for new users if uid is provided
-      if (uid) {
-        try {
-          const { getFirestore } = await import('firebase-admin/firestore');
-          const db = getFirestore();
-
-          const userDoc = await db.collection('users').doc(uid).get();
-          const userData = userDoc.data();
-          const subscription = userData?.subscription as
-            | { status?: string; freeWorkoutsUsed?: number; freeWorkoutLimit?: number }
-            | undefined;
-
-          if (!subscription) {
-            const initialSubscriptionData = {
-              status: 'incomplete',
-              workoutCount: 0,
-              freeWorkoutsUsed: 0,
-              freeWorkoutLimit: 50,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            };
-
-            await db.collection('users').doc(uid).set(
-              { subscription: initialSubscriptionData },
-              { merge: true },
-            );
-
-            console.log('Initialized subscription data for new user:', uid);
-          }
-        } catch (error) {
-          console.error('Error initializing subscription:', error);
-          // Continue with workout generation even if subscription initialization fails
-        }
-      }
 
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
@@ -708,16 +659,6 @@ OUTPUT REQUIREMENTS:
             },
           },
         };
-
-        // Increment workout count after successful generation
-        if (uid) {
-          try {
-            await incrementWorkoutCount(uid);
-          } catch (error) {
-            console.error('Error incrementing workout count:', error);
-            // Do not fail the request if workout count increment fails
-          }
-        }
 
         res.json(response);
         return;

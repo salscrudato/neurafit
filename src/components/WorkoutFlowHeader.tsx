@@ -3,16 +3,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
-import { 
-  Menu, 
-  X, 
-  Zap, 
-  Home, 
-  Dumbbell, 
-  History, 
-  User, 
-  LogOut, 
-  Crown,
+import {
+  Menu,
+  X,
+  Zap,
+  Home,
+  Dumbbell,
+  History,
+  User,
+  LogOut,
   ArrowLeft,
   Pause,
   Play,
@@ -49,7 +48,6 @@ export default function WorkoutFlowHeader({
     { label: 'Dashboard', path: '/dashboard', icon: Home },
     { label: 'Generate Workout', path: '/generate', icon: Dumbbell },
     { label: 'Workout History', path: '/history', icon: History },
-    { label: 'Subscription', path: '/subscription', icon: Crown },
     { label: 'Profile', path: '/profile', icon: User },
   ]
 

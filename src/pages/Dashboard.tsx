@@ -9,17 +9,14 @@ import {
   Zap,
   History,
   User as UserIcon,
-  Activity,
-  Crown
+  Activity
 } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { Button } from '../design-system/components/Button'
 import { Card } from '../design-system/components/Card'
 import { MotivationalBanner } from '../components/MotivationalBanner'
-import { SubscriptionManager } from '../components/SubscriptionManager'
 import { DeferredRender } from '../components/DeferredRender'
 import { usePrefetchOnIdle } from '../hooks/usePrefetch'
-import { useSubscription } from '../hooks/useSubscription'
 
 interface WorkoutItem {
   id: string
@@ -99,9 +96,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const WORKOUTS_PER_PAGE = 20
   const [error, setError] = useState<string | null>(null)
-
-  // Get subscription status for Pro badge
-  const { hasUnlimitedWorkouts } = useSubscription()
 
   // Prefetch likely next routes on idle
   usePrefetchOnIdle(['/generate', '/history', '/profile'], 3000)
@@ -305,12 +299,6 @@ export default function Dashboard() {
                   }
                 </p>
               </div>
-              {hasUnlimitedWorkouts && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full shadow-xl shadow-amber-500/40 flex-shrink-0 hover:shadow-2xl hover:shadow-amber-500/50 transition-all duration-500 hover:scale-105">
-                  <Crown className="w-4.5 h-4.5 text-amber-900 drop-shadow-sm" strokeWidth={2.5} />
-                  <span className="text-sm font-bold text-amber-900 tracking-wide">Pro</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -450,11 +438,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Subscription Status - Premium */}
-      <section className="relative mx-auto max-w-6xl px-4 sm:px-6 mt-6 sm:mt-8 mb-8 sm:mb-10 animate-stagger-5">
-        <SubscriptionManager mode="status" />
       </section>
 
       {error && (
