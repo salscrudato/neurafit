@@ -57,34 +57,45 @@ npm run format           # Format code with Prettier
 
 ## 📦 Deployment
 
-### Quick Deployment
+### 🚀 Automated Deployment (Recommended)
+
+**Deployments are automated via GitHub Actions!** Simply push to `main`:
 
 ```bash
-# 1. Bump version
-npm run version:patch
+# Make your changes
+git add .
+git commit -m "feat: add new feature"
+git push origin main
 
-# 2. Commit changes
-git add -A && git commit -m "chore: bump version"
-
-# 3. Deploy
-npm run deploy
+# GitHub Actions will automatically:
+# ✅ Run tests and linting
+# ✅ Build the application
+# ✅ Deploy to Firebase
+# ✅ Update both neurastack.ai and neurafit-ai-2025.web.app
 ```
 
-### Deployment Commands
+**Setup automated deployment:** See [.github/DEPLOYMENT_SETUP.md](./.github/DEPLOYMENT_SETUP.md)
+
+### 🛠️ Manual Deployment
+
+```bash
+# Verify deployment setup
+npm run deploy:verify
+
+# Deploy manually
+npm run deploy           # Deploy hosting only
+npm run deploy:all       # Deploy hosting + functions
+npm run deploy:functions # Deploy functions only
+```
+
+### 📝 Version Management
 
 ```bash
 npm run version:patch    # Bump patch version (1.0.0 → 1.0.1)
 npm run version:minor    # Bump minor version (1.0.0 → 1.1.0)
 npm run version:major    # Bump major version (1.0.0 → 2.0.0)
-npm run deploy           # Deploy hosting only
-npm run deploy:all       # Deploy hosting + functions
-npm run deploy:functions # Deploy functions only
 npm run clean:cache      # Clear all build caches
 ```
-
-**📖 Full deployment guide:** See [DEPLOYMENT.md](./DEPLOYMENT.md)
-
-**⚡ Quick reference:** See [.github/DEPLOYMENT_QUICK_REFERENCE.md](./.github/DEPLOYMENT_QUICK_REFERENCE.md)
 
 ## 🏗️ Tech Stack
 

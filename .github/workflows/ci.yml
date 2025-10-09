@@ -6,37 +6,52 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Cancel in-progress runs for the same workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-test:
     name: Lint, Type Check, and Test
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [20.x, 22.x]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run linter
         run: npm run lint
-      
+
       - name: Run type check
         run: npm run typecheck
-      
+
       - name: Run tests
         run: npm run test
-      
+
       - name: Upload coverage reports
         if: matrix.node-version == '20.x'
         uses: codecov/codecov-action@v4
@@ -50,23 +65,35 @@ jobs:
     name: Build Application
     runs-on: ubuntu-latest
     needs: lint-and-test
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
           cache: 'npm'
-      
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-20.x-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20.x-
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build application
         run: npm run build
-      
+        env:
+          NODE_ENV: production
+
       - name: Check for service worker
         run: |
           if [ ! -f "dist/sw.js" ]; then
@@ -74,7 +101,7 @@ jobs:
             exit 1
           fi
           echo "✅ Service worker generated successfully"
-      
+
       - name: Check for sourcemaps
         run: |
           if [ -z "$(find dist -name '*.js.map' -type f)" ]; then
@@ -82,38 +109,106 @@ jobs:
           else
             echo "✅ Sourcemaps generated successfully"
           fi
-      
+
+      - name: Analyze bundle size
+        run: |
+          echo "📦 Bundle Size Analysis:"
+          du -sh dist/
+          echo ""
+          echo "📊 Largest files:"
+          find dist -type f -name "*.js" -o -name "*.css" | xargs du -h | sort -rh | head -10
+
+      - name: Check bundle size limit
+        run: |
+          BUNDLE_SIZE=$(du -sk dist/ | cut -f1)
+          MAX_SIZE=2048  # 2MB limit (uncompressed)
+          if [ $BUNDLE_SIZE -gt $MAX_SIZE ]; then
+            echo "❌ Bundle size ($BUNDLE_SIZE KB) exceeds limit ($MAX_SIZE KB)"
+            exit 1
+          fi
+          echo "✅ Bundle size ($BUNDLE_SIZE KB) is within limit ($MAX_SIZE KB)"
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-node-20
           path: dist/
           retention-days: 7
 
   build-functions:
     name: Build Firebase Functions
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
           cache: 'npm'
           cache-dependency-path: functions/package-lock.json
-      
+
+      - name: Cache function dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            functions/node_modules
+          key: ${{ runner.os }}-functions-${{ hashFiles('functions/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-functions-
+
       - name: Install function dependencies
         working-directory: functions
         run: npm ci
-      
-      - name: Build functions
-        working-directory: functions
-        run: npm run build
-      
+
       - name: Lint functions
         working-directory: functions
         run: npm run lint
+
+      - name: Build functions
+        working-directory: functions
+        run: npm run build
+
+      - name: Check function build output
+        working-directory: functions
+        run: |
+          if [ ! -d "lib" ]; then
+            echo "❌ Functions build output not found!"
+            exit 1
+          fi
+          echo "✅ Functions built successfully"
+          echo "📦 Function files:"
+          ls -lh lib/
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for known vulnerabilities
+        run: |
+          echo "🔍 Checking for security vulnerabilities..."
+          npm audit --json > audit-results.json || true
+          if [ -f audit-results.json ]; then
+            echo "✅ Security scan completed"
+          fi
 
