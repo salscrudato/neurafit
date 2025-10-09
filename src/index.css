@@ -108,6 +108,39 @@ input[type="reset"],
   padding: 1.5rem;
 }
 
+/* Standardized gradient utility classes */
+.gradient-primary {
+  background: linear-gradient(to bottom right, rgb(59 130 246) 0%, rgb(79 70 229) 100%);
+}
+
+.gradient-primary-hover {
+  background: linear-gradient(to bottom right, rgb(37 99 235) 0%, rgb(67 56 202) 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(to bottom right, rgb(34 197 94) 0%, rgb(16 185 129) 100%);
+}
+
+.gradient-success-hover {
+  background: linear-gradient(to bottom right, rgb(22 163 74) 0%, rgb(5 150 105) 100%);
+}
+
+.gradient-danger {
+  background: linear-gradient(to bottom right, rgb(239 68 68) 0%, rgb(244 63 94) 100%);
+}
+
+.gradient-danger-hover {
+  background: linear-gradient(to bottom right, rgb(220 38 38) 0%, rgb(225 29 72) 100%);
+}
+
+.gradient-warning {
+  background: linear-gradient(to bottom right, rgb(245 158 11) 0%, rgb(249 115 22) 100%);
+}
+
+.gradient-warning-hover {
+  background: linear-gradient(to bottom right, rgb(217 119 6) 0%, rgb(234 88 12) 100%);
+}
+
 .card-hover {
   background-color: white;
   border-radius: 1rem;

@@ -14,6 +14,7 @@ import { Zap, Brain, Target, Shield, Smartphone } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
 import PhoneAuthModal from '../components/PhoneAuthModal'
+import { logger } from '../lib/logger'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -44,7 +45,7 @@ export default function Auth() {
         try {
           const container = document.getElementById('recaptcha-container')
           if (!container) {
-            console.error('reCAPTCHA container not found')
+            logger.error('reCAPTCHA container not found')
             return
           }
 
@@ -52,7 +53,7 @@ export default function Auth() {
             size: 'invisible',
             callback: () => {
               // reCAPTCHA solved - automatically proceeds
-              console.log('reCAPTCHA verified')
+              logger.debug('reCAPTCHA verified')
             },
             'expired-callback': () => {
               setPhoneError('Verification expired. Please try again.')
@@ -61,14 +62,14 @@ export default function Auth() {
 
           // Render the reCAPTCHA
           verifier.render().then(() => {
-            console.log('reCAPTCHA rendered successfully')
+            logger.debug('reCAPTCHA rendered successfully')
             setRecaptchaVerifier(verifier)
           }).catch((error) => {
-            console.error('Error rendering reCAPTCHA:', error)
+            logger.error('Error rendering reCAPTCHA', error as Error)
             setPhoneError('Failed to initialize verification. Please refresh and try again.')
           })
         } catch (error) {
-          console.error('Error initializing reCAPTCHA:', error)
+          logger.error('Error initializing reCAPTCHA', error as Error)
           setPhoneError('Failed to initialize verification. Please refresh and try again.')
         }
       }, 100)
@@ -81,7 +82,7 @@ export default function Auth() {
       try {
         recaptchaVerifier.clear()
       } catch (error) {
-        console.error('Error clearing reCAPTCHA:', error)
+        logger.error('Error clearing reCAPTCHA', error as Error)
       }
       setRecaptchaVerifier(null)
     }
@@ -113,7 +114,7 @@ export default function Auth() {
         const firebaseError = error as { code?: string; message?: string }
         // Suppress expected COOP errors in development
         if (import.meta.env.MODE === 'development' && !firebaseError.message?.includes('Cross-Origin-Opener-Policy')) {
-          console.log('Popup failed, trying redirect:', firebaseError.code)
+          logger.debug('Popup failed, trying redirect', { code: firebaseError.code })
         }
 
         // Fallback to redirect if popup fails
@@ -126,17 +127,17 @@ export default function Auth() {
             // Redirect initiated, no need to reset loading
             return
           } catch (redirectError) {
-            console.error('Redirect also failed:', redirectError)
+            logger.error('Redirect also failed', redirectError as Error)
             alert('Failed to sign in with Google. Please try again.')
           }
         } else if (firebaseError.code !== 'auth/cancelled-popup-request') {
-          console.error('Google sign-in error:', firebaseError)
+          logger.error('Google sign-in error', error as Error, { code: firebaseError.code })
           alert('Failed to sign in with Google. Please try again.')
         }
         setLoading(false)
       }
     } catch (error) {
-      console.error('Failed to initialize Firebase Auth:', error)
+      logger.error('Failed to initialize Firebase Auth', error as Error)
       alert('Authentication service not available. Please try again.')
       setLoading(false)
     }
@@ -170,7 +171,7 @@ export default function Auth() {
       // Check if recaptchaVerifier is ready, if not try to proceed anyway
       // (Firebase will use test phone numbers if configured)
       if (!recaptchaVerifier) {
-        console.warn('reCAPTCHA not initialized, attempting to use test phone numbers')
+        logger.warn('reCAPTCHA not initialized, attempting to use test phone numbers')
       }
 
       const confirmation = await signInWithPhoneNumber(
@@ -183,7 +184,7 @@ export default function Auth() {
       setPhoneStep('code')
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
-      console.error('Phone sign-in error:', firebaseError)
+      logger.error('Phone sign-in error', error as Error, { code: firebaseError.code })
 
       switch (firebaseError.code) {
         case 'auth/invalid-phone-number':
@@ -236,7 +237,7 @@ export default function Auth() {
       setConfirmationResult(null)
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
-      console.error('Code verification error:', firebaseError)
+      logger.error('Code verification error', error as Error, { code: firebaseError.code })
 
       switch (firebaseError.code) {
         case 'auth/invalid-verification-code':

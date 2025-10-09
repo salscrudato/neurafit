@@ -117,20 +117,44 @@ npm run clean:cache      # Clear all build caches
 ```
 neurafit/
 ├── src/
-│   ├── components/      # Reusable UI components
-│   ├── pages/          # Route pages
-│   ├── lib/            # Utilities and helpers
-│   ├── store/          # Zustand state management
-│   ├── types/          # TypeScript type definitions
-│   └── main.tsx        # Application entry point
-├── functions/          # Firebase Cloud Functions
-├── public/             # Static assets
-├── scripts/            # Build and deployment scripts
-├── .github/            # GitHub configuration
-├── firebase.json       # Firebase configuration
-├── vite.config.ts      # Vite configuration
-└── tailwind.config.js  # Tailwind CSS configuration
+│   ├── ui/              # Design system - Reusable UI primitives
+│   │   ├── Button.tsx   # Button component with variants
+│   │   ├── Card.tsx     # Card component with variants
+│   │   ├── index.ts     # Centralized exports
+│   │   └── README.md    # Component documentation
+│   ├── components/      # Feature-specific components
+│   │   ├── AppHeader.tsx
+│   │   ├── WorkoutProgress.tsx
+│   │   └── ui/          # Backward compatibility re-exports
+│   ├── pages/           # Route pages
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utilities and helpers
+│   ├── store/           # Zustand state management
+│   ├── constants/       # Centralized constants
+│   ├── types/           # TypeScript type definitions
+│   └── main.tsx         # Application entry point
+├── functions/           # Firebase Cloud Functions
+├── public/              # Static assets
+├── scripts/             # Build and deployment scripts
+├── .github/             # GitHub configuration
+├── firebase.json        # Firebase configuration
+├── vite.config.ts       # Vite configuration
+└── tailwind.config.js   # Tailwind CSS configuration
 ```
+
+### Component Organization
+
+- **`src/ui/`** - Reusable UI primitives (design system)
+  - Low-level building blocks
+  - No business logic
+  - Highly reusable across the app
+  - Examples: Button, Card, Input, Modal
+
+- **`src/components/`** - Feature-specific components
+  - Page-specific or feature-specific
+  - May contain business logic
+  - Composed of UI primitives
+  - Examples: AppHeader, WorkoutProgress, SmartWeightInput
 
 ## 🔧 Configuration
 

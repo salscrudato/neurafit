@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { logger } from '../lib/logger'
 
 export interface Exercise {
   name: string
@@ -47,8 +48,8 @@ export function useWorkoutPlan() {
       setPlan(parsedData.plan)
       setError(null)
     } catch (err) {
-      console.error('Error loading workout plan:', err)
-      setError('Failed to load workout plan')
+      logger.error('Error loading workout plan', err)
+      setError('Failed to load workout plan.')
     } finally {
       setLoading(false)
     }

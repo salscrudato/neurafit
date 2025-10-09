@@ -136,7 +136,7 @@ export async function fetchRecentSessions(maxSessions = 8): Promise<WorkoutSessi
     return sessions
 
   } catch (error) {
-    console.error('❌ Error fetching recent sessions:', error)
+    logger.error('Error fetching recent sessions', error)
     return []
   }
 }

@@ -1,5 +1,5 @@
 // src/pages/workout/Exercise.tsx
-import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Lightbulb, Shield } from 'lucide-react'
 import AppHeader from '../../components/AppHeader'
 import { useOptimisticUpdate, createWeightUpdateAction } from '../../lib/optimisticUpdates'
@@ -135,34 +135,50 @@ export default function Exercise() {
   const withinExercise = ((setNo - 1) / Math.max(1, ex?.sets || 1)) * perExercise
   const progressPct = Math.min(100, Math.round(((i * perExercise) + withinExercise) * 100))
 
-  // Calculate completed and skipped sets (removed memoization - simple filter)
-  const exerciseWeights = weightState.data[i] || {}
-  const completedSets = Object.entries(exerciseWeights)
-    .filter(([_, weight]) => weight !== null)
-    .map(([setNum]) => parseInt(setNum))
+  // Calculate completed and skipped sets (memoized for performance)
+  const exerciseWeights = useMemo(() => weightState.data[i] || {}, [weightState.data, i])
 
-  const skippedSets = Object.entries(exerciseWeights)
-    .filter(([_, weight]) => weight === null)
-    .map(([setNum]) => parseInt(setNum))
+  const completedSets = useMemo(() =>
+    Object.entries(exerciseWeights)
+      .filter(([_, weight]) => weight !== null)
+      .map(([setNum]) => parseInt(setNum)),
+    [exerciseWeights]
+  )
 
-  // Calculate total stats (removed memoization - simple reduce)
-  const totalCompletedSets = Object.values(weightState.data).reduce((total, exerciseWeights) => {
-    return total + Object.values(exerciseWeights || {}).filter(weight => weight !== null).length
-  }, 0)
+  const skippedSets = useMemo(() =>
+    Object.entries(exerciseWeights)
+      .filter(([_, weight]) => weight === null)
+      .map(([setNum]) => parseInt(setNum)),
+    [exerciseWeights]
+  )
 
-  const totalSets = list.reduce((total, exercise) => total + exercise.sets, 0)
+  // Calculate total stats (memoized for performance)
+  const totalCompletedSets = useMemo(() =>
+    Object.values(weightState.data).reduce((total, exerciseWeights) => {
+      return total + Object.values(exerciseWeights || {}).filter(weight => weight !== null).length
+    }, 0),
+    [weightState.data]
+  )
 
-  const completedExercises = Object.keys(weightState.data).filter(exerciseIndex => {
-    const exerciseIndex_num = parseInt(exerciseIndex)
-    const exercise = list[exerciseIndex_num]
-    if (!exercise) return false
+  const totalSets = useMemo(() =>
+    list.reduce((total, exercise) => total + exercise.sets, 0),
+    [list]
+  )
 
-    const exerciseWeights = weightState.data[exerciseIndex_num] || {}
-    const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
+  const completedExercises = useMemo(() =>
+    Object.keys(weightState.data).filter(exerciseIndex => {
+      const exerciseIndex_num = parseInt(exerciseIndex)
+      const exercise = list[exerciseIndex_num]
+      if (!exercise) return false
 
-    // Only count as completed if all sets are done
-    return completedCount === exercise.sets
-  }).length
+      const exerciseWeights = weightState.data[exerciseIndex_num] || {}
+      const completedCount = Object.values(exerciseWeights).filter(weight => weight !== null).length
+
+      // Only count as completed if all sets are done
+      return completedCount === exercise.sets
+    }).length,
+    [weightState.data, list]
+  )
 
   // Keep goRest memoized - passed to child components
   const goRest = useCallback((nextIndex: number, nextSet: number, seconds?: number) => {
@@ -184,13 +200,18 @@ export default function Exercise() {
       async (exerciseIndex, setNumber, weightValue) => {
         // Server update simulation - in real app this might sync to backend
         // Use fresh weights from sessionStorage to avoid race conditions
-        const savedWeights = sessionStorage.getItem('nf_workout_weights')
-        const existingWeights = savedWeights ? JSON.parse(savedWeights) : {}
+        let existingWeights = {}
+        try {
+          const savedWeights = sessionStorage.getItem('nf_workout_weights')
+          existingWeights = savedWeights ? JSON.parse(savedWeights) : {}
+        } catch (error) {
+          logger.error('Failed to parse workout weights', error)
+        }
 
         const updated = {
           ...existingWeights,
           [exerciseIndex]: {
-            ...existingWeights[exerciseIndex],
+            ...(existingWeights as Record<number, Record<number, number | null>>)[exerciseIndex],
             [setNumber]: weightValue
           }
         }

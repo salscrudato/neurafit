@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore'
 import { isAdaptivePersonalizationEnabled } from '../config/features'
+import { logger } from '../lib/logger'
 import type { UserProfile } from '../types/profile'
 
 export interface PreloadedData {
@@ -109,7 +110,7 @@ export function useWorkoutPreload() {
 
       return { targetIntensity, progressionNote }
     } catch (error) {
-      console.error('Error fetching adaptive intensity:', error)
+      logger.error('Error fetching adaptive intensity', error)
       return { targetIntensity: 1.0, progressionNote: '' }
     }
   }, [])
@@ -162,7 +163,7 @@ export function useWorkoutPreload() {
         targetIntensity = adaptiveResult.value.targetIntensity
         progressionNote = adaptiveResult.value.progressionNote
       } else {
-        console.error('Error loading adaptive intensity:', adaptiveResult.reason)
+        logger.error('Error loading adaptive intensity', adaptiveResult.reason)
         // Don't set error for adaptive intensity failure, use defaults
       }
 
@@ -175,7 +176,7 @@ export function useWorkoutPreload() {
       })
 
     } catch (error) {
-      console.error('Error preloading workout data:', error)
+      logger.error('Error preloading workout data', error)
       setPreloadedData(prev => ({
         ...prev,
         isLoading: false,

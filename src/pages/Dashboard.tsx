@@ -1,5 +1,5 @@
 // src/pages/Dashboard.tsx
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { auth, db } from '../lib/firebase'
 import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore'
@@ -12,8 +12,8 @@ import {
   Activity
 } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
-import { Button } from '../design-system/components/Button'
-import { Card } from '../design-system/components/Card'
+import { Button } from '../ui/Button'
+import { Card } from '../ui/Card'
 import { MotivationalBanner } from '../components/MotivationalBanner'
 import { DeferredRender } from '../components/DeferredRender'
 import { usePrefetchOnIdle } from '../hooks/usePrefetch'
@@ -90,11 +90,13 @@ function calculateDashboardStats(workouts: WorkoutItem[]): DashboardStats {
   }
 }
 
+// Constants
+const WORKOUTS_PER_PAGE = 20 // Optimal for performance and UX
+
 export default function Dashboard() {
   const nav = useNavigate()
   const [workouts, setWorkouts] = useState<WorkoutItem[]>([])
   const [loading, setLoading] = useState(true)
-  const WORKOUTS_PER_PAGE = 20
   const [error, setError] = useState<string | null>(null)
 
   // Prefetch likely next routes on idle
@@ -123,10 +125,18 @@ export default function Dashboard() {
           limit(WORKOUTS_PER_PAGE + 1)
         )
         const workoutsSnap = await getDocs(workoutsQuery)
-        const fetchedWorkouts = workoutsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as WorkoutItem[]
+
+        // Map and validate Firestore data with runtime type checking
+        const fetchedWorkouts = workoutsSnap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }) as Partial<WorkoutItem> & { id: string })
+          .filter((item): item is WorkoutItem => {
+            // Runtime validation to ensure data integrity
+            return (
+              typeof item.workoutType === 'string' &&
+              typeof item.duration === 'number' &&
+              item.timestamp !== undefined
+            )
+          })
 
         setWorkouts(fetchedWorkouts)
         logger.debug('Dashboard data loaded', { workoutCount: fetchedWorkouts.length })
@@ -140,7 +150,7 @@ export default function Dashboard() {
     }
 
     fetchDashboardData()
-  }, [WORKOUTS_PER_PAGE])
+  }, [])
 
   if (loading) {
     return (
@@ -159,8 +169,8 @@ export default function Dashboard() {
         </div>
 
         {/* Floating Orbs */}
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as React.CSSProperties} />
-        <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as React.CSSProperties} />
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as unknown as CSSProperties} />
+        <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as unknown as CSSProperties} />
 
         <AppHeader />
         <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-4 sm:pt-5">
@@ -270,9 +280,9 @@ export default function Dashboard() {
       </div>
 
       {/* Floating Orbs - More Subtle and Elegant */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as React.CSSProperties} />
-      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as React.CSSProperties} />
-      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-15px', animationDelay: '4s'} as React.CSSProperties} />
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as unknown as CSSProperties} />
+      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as unknown as CSSProperties} />
+      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-15px', animationDelay: '4s'} as unknown as CSSProperties} />
 
       <AppHeader />
 

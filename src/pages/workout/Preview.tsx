@@ -6,6 +6,7 @@ import AppHeader from '../../components/AppHeader'
 import { trackWorkoutStarted } from '../../lib/firebase-analytics'
 import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
 import { useAppStore } from '../../store'
+import { logger } from '../../lib/logger'
 
 type Exercise = {
   name: string
@@ -88,7 +89,7 @@ export default function Preview() {
       const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
       sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
     } catch (error) {
-      console.error('Error adding exercise:', error)
+      logger.error('Error adding exercise', error as Error)
       alert('Failed to add exercise. Please try again.')
     } finally {
       setLoadingAdd(false)
@@ -111,7 +112,7 @@ export default function Preview() {
       const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
       sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
     } catch (error) {
-      console.error('Error deleting exercise:', error)
+      logger.error('Error deleting exercise', error as Error)
       alert('Failed to delete exercise. Please try again.')
     } finally {
       setDeletingIndex(null)
@@ -147,7 +148,7 @@ export default function Preview() {
       const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
       sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
     } catch (error) {
-      console.error('Error swapping exercise:', error)
+      logger.error('Error swapping exercise', error as Error)
       alert('Failed to swap exercise. Please try again.')
     } finally {
       setSwappingIndex(null)

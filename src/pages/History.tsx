@@ -257,7 +257,7 @@ export default function History() {
 
               // Debug logging for workout stats
               if (import.meta.env.MODE === 'development') {
-                console.log(`Workout "${workout.workoutType}" stats:`, {
+                logger.debug(`Workout "${workout.workoutType}" stats`, {
                   totalExercises: stats.totalExercises,
                   completedExercises: stats.completedExercises,
                   fullyCompletedExercises: stats.fullyCompletedExercises,

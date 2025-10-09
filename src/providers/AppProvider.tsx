@@ -145,7 +145,7 @@ export function AppProvider({ children }: AppProviderProps) {
     setProfile,
     setAuthStatus,
     syncPendingOperations,
-    updateLastSyncTime,
+    updateLastSyncTime
   ]);
 
   // Online/offline detection

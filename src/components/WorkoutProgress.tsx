@@ -197,7 +197,7 @@ interface MotivationalMessageProps {
   exerciseName: string
 }
 
-export function MotivationalMessage({
+export const MotivationalMessage = memo(function MotivationalMessage({
   progress: _progress,
   completedSets,
   totalSets,
@@ -240,7 +240,7 @@ export function MotivationalMessage({
       </div>
     </div>
   )
-}
+})
 
 interface NextExercisePreviewProps {
   nextExercise?: {
@@ -252,7 +252,7 @@ interface NextExercisePreviewProps {
   timeRemaining: number
 }
 
-export function NextExercisePreview({ nextExercise, timeRemaining }: NextExercisePreviewProps) {
+export const NextExercisePreview = memo(function NextExercisePreview({ nextExercise, timeRemaining }: NextExercisePreviewProps) {
   if (!nextExercise) return null
 
   return (
@@ -264,11 +264,11 @@ export function NextExercisePreview({ nextExercise, timeRemaining }: NextExercis
         </div>
         <div className="text-sm text-gray-600">Next up:</div>
       </div>
-      
+
       <div className="text-lg font-semibold text-gray-900 mb-1">
         {nextExercise.name}
       </div>
-      
+
       <div className="text-sm text-gray-600">
         {nextExercise.sets} sets × {nextExercise.reps} reps
         {nextExercise.restSeconds && (
@@ -277,7 +277,7 @@ export function NextExercisePreview({ nextExercise, timeRemaining }: NextExercis
       </div>
     </div>
   )
-}
+})
 
 interface WorkoutStatsProps {
   startTime: number
@@ -287,7 +287,7 @@ interface WorkoutStatsProps {
   totalExercises: number
 }
 
-export function WorkoutStats({
+export const WorkoutStats = memo(function WorkoutStats({
   startTime,
   completedSets,
   totalSets,
@@ -317,4 +317,4 @@ export function WorkoutStats({
       </div>
     </div>
   )
-}
+})

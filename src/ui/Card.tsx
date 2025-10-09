@@ -1,59 +1,52 @@
-import React, { forwardRef, memo, type HTMLAttributes } from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '../../lib/utils'
+/**
+ * Card Component - UI Primitive
+ *
+ * Reusable card component with comprehensive variants and features.
+ * Part of the NeuraFit design system.
+ *
+ * Features:
+ * - Multiple variants (default, glass, gradient, elevated, flat, outline)
+ * - Flexible sizing and padding
+ * - Hover effects (lift, glow, scale)
+ * - Interactive mode with keyboard support
+ * - Sub-components (Header, Title, Description, Content, Footer)
+ * - Memoized for performance
+ */
 
-// Inline card variants (moved from ../variants/cardVariants.ts)
-const cardVariants = cva(
-  'bg-white border border-gray-200 shadow-sm transition-all duration-200',
-  {
-    variants: {
-      variant: {
-        default: '',
-        elevated: 'shadow-lg',
-        interactive: 'cursor-pointer hover:shadow-md hover:border-gray-300',
-      },
-      size: {
-        sm: 'p-4',
-        md: 'p-6',
-        lg: 'p-8',
-      },
-      rounded: {
-        sm: 'rounded-lg',
-        md: 'rounded-xl',
-        lg: 'rounded-2xl',
-        '2xl': 'rounded-2xl',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'md',
-      rounded: 'md',
-    },
-  }
-)
+import React, { forwardRef, memo, type HTMLAttributes } from 'react'
+import { type VariantProps } from 'class-variance-authority'
+import { cn } from '../lib/utils'
+import { cardVariants } from './cardVariants'
 
 export interface CardProps
   extends HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {
   interactive?: boolean
+  rounded?: 'sm' | 'md' | 'lg' | '2xl'
 }
 
 const CardBase = forwardRef<HTMLDivElement, CardProps>(
   ({
     className,
     variant,
-    size,
-    rounded,
+    padding,
+    hover,
     interactive,
+    rounded,
     children,
     ...props
   }, ref) => {
-    const cardVariant = interactive ? 'interactive' : variant
-
     return (
       <div
         ref={ref}
-        className={cn(cardVariants({ variant: cardVariant, size, rounded }), className)}
+        className={cn(
+          cardVariants({ variant, padding, hover, interactive }),
+          rounded === 'sm' && 'rounded-lg',
+          rounded === 'md' && 'rounded-xl',
+          rounded === 'lg' && 'rounded-2xl',
+          rounded === '2xl' && 'rounded-2xl',
+          className
+        )}
         role={interactive ? 'button' : undefined}
         tabIndex={interactive ? 0 : undefined}
         {...props}
@@ -135,4 +128,11 @@ const CardFooter = memo(CardFooterBase)
 
 
 
-export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+}
