@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2025-10-09
+
+### iOS PWA Layout & Safe Area Fixes 📱
+
+#### Critical iOS PWA Issues Resolved ✅
+- **Fixed Top Content Cut-off**: Resolved issue where content was hidden behind iPhone status bar/notch in PWA mode
+  - Changed `apple-mobile-web-app-status-bar-style` from `black-translucent` to `default` to prevent status bar overlay
+  - Added proper safe area insets to root container (`#root`) to respect iOS notch and status bar
+  - Removed redundant inline safe-area styles from header components (now handled at root level)
+- **Fixed Bottom Whitespace**: Corrected viewport height handling to eliminate unwanted whitespace at bottom
+  - Updated body and html styling to use `-webkit-fill-available` for proper iOS viewport height
+  - Removed `position: fixed` from body that was causing layout issues
+  - Added safe area padding to root container for consistent spacing
+
+#### Enhanced Safe Area Support 🎯
+- **Comprehensive Safe Area CSS Classes**: Added new utility classes for iOS safe areas
+  - `.safe-top`, `.safe-bottom`, `.safe-left`, `.safe-right` - Direct safe area padding
+  - `.safe-mt`, `.safe-mb` - Safe area margins for specific use cases
+  - `.fixed-bottom-safe`, `.fixed-top-safe` - For fixed positioned elements
+- **Applied Safe Area Classes**: Updated all fixed bottom elements to use new safe area classes
+  - Workout Preview page: Start button now respects bottom safe area
+  - Exercise page: Control buttons properly positioned above iOS home indicator
+  - Onboarding page: Navigation footer respects bottom safe area
+- **Root-Level Safe Area Handling**: Implemented safe area insets at the root container level
+  - All safe area insets (top, bottom, left, right) applied to `#root` element
+  - Ensures consistent spacing across all pages without per-component configuration
+
+#### Mobile Viewport Improvements 📐
+- **Enhanced Viewport Meta Tag**: Already had `viewport-fit=cover` for proper iOS safe area support
+- **Improved CSS Viewport Handling**:
+  - Updated `.min-h-screen-mobile` class with flexbox for better content distribution
+  - Added `-webkit-fill-available` support for iOS viewport height issues
+  - Improved body positioning to `relative` instead of `fixed` for better scrolling
+- **Better Text Rendering**: Added `-webkit-text-size-adjust: 100%` to prevent iOS font size adjustments
+
+#### Technical Implementation
+- Modified `index.html`:
+  - Changed status bar style from `black-translucent` to `default` (line 34)
+  - Updated inline styles for html, body, and #root with proper safe area support (lines 236-303)
+- Modified `src/index.css`:
+  - Enhanced `.min-h-screen-mobile` class with flexbox (lines 41-56)
+  - Added comprehensive safe area utility classes (lines 104-158)
+  - Improved body styling with iOS-specific fixes (lines 149-162)
+- Modified `src/App.tsx`:
+  - Changed main container from `min-h-screen` to `min-h-screen-mobile` (line 91)
+- Modified components:
+  - `src/components/AppHeader.tsx`: Removed inline safe-area-inset-top style (line 73)
+  - `src/components/WorkoutFlowHeader.tsx`: Removed inline safe-area-inset-top style (line 83)
+  - `src/pages/workout/Exercise.tsx`: Changed to use `.fixed-bottom-safe` class (line 458)
+  - `src/pages/workout/Preview.tsx`: Added `.fixed-bottom-safe` class (line 225)
+  - `src/pages/Onboarding.tsx`: Added `.fixed-bottom-safe` class (line 531)
+
+#### User Experience Impact
+- **No More Cut-off Content**: All content is now visible and accessible, including top navigation and headers
+- **Proper Bottom Spacing**: Fixed bottom controls and buttons are properly positioned above iOS home indicator
+- **Professional iOS Integration**: App now follows iOS design guidelines for PWA safe areas
+- **Consistent Layout**: All pages maintain proper spacing on devices with notches (iPhone X and newer)
+
 ## [1.0.3] - 2025-10-08
 
 ### AI Workout Generation Optimization 🎯

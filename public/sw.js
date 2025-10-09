@@ -47,6 +47,10 @@ self.addEventListener('install', (event) => {
 
   event.waitUntil(
     Promise.all([
+      // Disable navigation preload during install to prevent warnings
+      self.registration.navigationPreload ?
+        self.registration.navigationPreload.disable().catch(() => {}) :
+        Promise.resolve(),
       // Only cache files in production
       isProduction ?
         caches.open(STATIC_CACHE)

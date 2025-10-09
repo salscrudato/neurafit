@@ -455,7 +455,7 @@ export default function Exercise() {
       </main>
 
       {/* Sticky controls */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur fixed-bottom-safe">
         <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-between gap-3">
           <button
             onClick={skipExercise}

@@ -88,7 +88,7 @@ function AppContent() {
 
   return (
     <ErrorBoundary level="critical">
-      <div className="min-h-screen">
+      <div className="min-h-screen-mobile">
         {/* Offline Indicator */}
         <OfflineIndicator />
 

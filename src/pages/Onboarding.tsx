@@ -528,7 +528,7 @@ export default function Onboarding() {
       </div>
 
       {/* Fixed Footer Nav */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200/50 bg-white/90 backdrop-blur-md shadow-lg">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200/50 bg-white/90 backdrop-blur-md shadow-lg fixed-bottom-safe">
         <div className="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
           <SecondaryButton onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={atStart}>
             Back

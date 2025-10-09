@@ -70,7 +70,7 @@ export default function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-enhanced border-b border-gray-100" role="banner">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2 flex items-center justify-between" style={{ paddingTop: 'max(8px, env(safe-area-inset-top))' }}>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2 flex items-center justify-between">
           {/* Logo */}
           <button
             onClick={() => handleNavigation('/dashboard')}

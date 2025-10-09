@@ -222,7 +222,7 @@ export default function Preview() {
       </main>
 
       {/* Compact Sticky Start Button */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-white/60 bg-gradient-to-r from-white/95 via-white/90 to-white/85 backdrop-blur-xl shadow-xl shadow-slate-300/15">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-white/60 bg-gradient-to-r from-white/95 via-white/90 to-white/85 backdrop-blur-xl shadow-xl shadow-slate-300/15 fixed-bottom-safe">
         <div className="mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
           <div className="text-slate-600 hidden md:block text-sm leading-relaxed">
             Tap exercises for tips

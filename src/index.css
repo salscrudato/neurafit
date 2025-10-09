@@ -42,13 +42,17 @@
 html {
   scroll-behavior: smooth;
   /* Fix mobile viewport height issues */
+  height: 100%;
   height: -webkit-fill-available;
 }
 
-/* Mobile-friendly viewport height */
+/* Mobile-friendly viewport height that accounts for iOS safe areas */
 .min-h-screen-mobile {
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  /* Ensure content fills the viewport properly on iOS */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Touch target optimization - ensure minimum 44x44px for all interactive elements */
@@ -97,7 +101,7 @@ input[type="reset"],
   background: linear-gradient(to bottom right, rgb(249 250 251), rgb(243 244 246));
 }
 
-/* Enhanced safe area support for mobile devices */
+/* Enhanced safe area support for mobile devices (iOS notch/status bar) */
 @supports (padding: max(0px)) {
   .safe-area-inset-top {
     padding-top: max(1rem, env(safe-area-inset-top));
@@ -114,6 +118,41 @@ input[type="reset"],
   .safe-area-inset-right {
     padding-right: max(1rem, env(safe-area-inset-right));
   }
+
+  /* Additional safe area utilities for specific use cases */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Margin variants for safe areas */
+  .safe-mt {
+    margin-top: env(safe-area-inset-top);
+  }
+
+  .safe-mb {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* iOS PWA specific: Ensure fixed elements respect safe areas */
+  .fixed-bottom-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .fixed-top-safe {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
 }
 
 /* Improved text rendering */
@@ -125,6 +164,10 @@ body {
   -webkit-overflow-scrolling: touch;
   /* Improve scroll performance */
   scroll-behavior: smooth;
+  /* Prevent iOS Safari from adjusting font size */
+  -webkit-text-size-adjust: 100%;
+  /* Ensure body takes full height on iOS */
+  position: relative;
 }
 
 /* Smooth scrolling for all scrollable elements */

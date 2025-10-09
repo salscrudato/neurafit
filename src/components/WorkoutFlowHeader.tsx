@@ -80,7 +80,7 @@ export default function WorkoutFlowHeader({
   return (
     <>
       <header className={`sticky top-0 z-50 bg-gradient-to-r from-white/95 via-white/90 to-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-lg shadow-gray-200/20 ${className}`}>
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between">
           {/* Left Section */}
           <div className="flex items-center gap-4">
             {showBackButton && (

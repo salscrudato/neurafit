@@ -36,7 +36,16 @@ cleanupOutdatedCaches();
 // This ensures users get the latest version immediately
 self.addEventListener('install', (event) => {
   console.log(`SW: Installing new service worker - ${CACHE_VERSION}`);
-  self.skipWaiting();
+  event.waitUntil(
+    Promise.all([
+      // Disable navigation preload during install to prevent warnings
+      self.registration.navigationPreload ?
+        self.registration.navigationPreload.disable().catch(() => {}) :
+        Promise.resolve(),
+      // Skip waiting to activate immediately
+      self.skipWaiting()
+    ])
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -45,8 +54,10 @@ self.addEventListener('activate', (event) => {
     Promise.all([
       // Take control of all clients immediately
       self.clients.claim(),
-      // Disable navigation preload to avoid the warning
-      self.registration.navigationPreload?.disable(),
+      // Ensure navigation preload is disabled
+      self.registration.navigationPreload ?
+        self.registration.navigationPreload.disable().catch(() => {}) :
+        Promise.resolve(),
       // Delete old caches
       caches.keys().then((cacheNames) => {
         return Promise.all(

@@ -26,6 +26,9 @@ export default defineConfig(({ mode }) => {
   const buildDate: string = new Date().toISOString().split('T')[0] || ''
 
   return {
+    // Base public path - use absolute paths for production
+    base: '/',
+
     // Path resolution - matches tsconfig paths
     resolve: {
       alias: {

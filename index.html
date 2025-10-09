@@ -31,7 +31,7 @@
     <!-- Mobile: App-like experience -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="NeuraFit" />
     <meta name="application-name" content="NeuraFit" />
     
@@ -247,23 +247,37 @@
         user-select: text;
       }
 
-      /* Prevent overscroll bounce on iOS */
-      body {
-        overscroll-behavior: none;
-        -webkit-overflow-scrolling: touch;
-        position: fixed;
-        width: 100%;
+      /* iOS PWA Safe Area Support */
+      html {
         height: 100%;
-        overflow: hidden;
+        /* Support for iOS safe areas */
+        height: 100vh;
+        height: -webkit-fill-available;
       }
 
-      /* Root container with proper scrolling */
-      #root {
+      /* Prevent overscroll bounce on iOS */
+      body {
+        margin: 0;
+        padding: 0;
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
         width: 100%;
         height: 100%;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
+        /* Use viewport height that accounts for iOS address bar */
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+      }
+
+      /* Root container with proper scrolling and safe area support */
+      #root {
+        width: 100%;
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+        /* Support for iOS safe areas - add padding for notch/status bar */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
       }
 
       /* Landscape warning overlay (triggered by orientation.ts utility) */
