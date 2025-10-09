@@ -202,7 +202,12 @@ export default function WorkoutFlowHeader({
           />
           
           {/* Menu Panel */}
-          <div className="fixed top-20 right-6 z-50 w-64 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200 shadow-xl">
+          <div
+            className="fixed top-20 right-4 z-50 w-64 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200 shadow-xl"
+            style={{
+              right: 'max(1rem, env(safe-area-inset-right))',
+            }}
+          >
             <div className="p-2">
               {menuItems.map((item) => {
                 const Icon = item.icon

@@ -441,7 +441,13 @@ export default function Dashboard() {
       </section>
 
       {error && (
-        <div className="fixed bottom-8 right-8 bg-gradient-to-r from-red-50 to-red-100/95 border border-red-200/70 text-red-800 px-6 py-5 rounded-2xl shadow-2xl shadow-red-200/50 backdrop-blur-xl max-w-sm animate-in slide-in-from-right-5 fade-in duration-500 ring-1 ring-red-300/30">
+        <div
+          className="fixed bottom-8 right-4 bg-gradient-to-r from-red-50 to-red-100/95 border border-red-200/70 text-red-800 px-6 py-5 rounded-2xl shadow-2xl shadow-red-200/50 backdrop-blur-xl max-w-sm animate-in slide-in-from-right-5 fade-in duration-500 ring-1 ring-red-300/30"
+          style={{
+            right: 'max(1rem, env(safe-area-inset-right))',
+            maxWidth: 'calc(100vw - 2rem)',
+          }}
+        >
           <div className="flex items-start gap-4">
             <div className="w-6 h-6 rounded-full bg-red-500 flex-shrink-0 mt-0.5 shadow-lg shadow-red-500/40">
               <div className="w-full h-full rounded-full bg-red-400 animate-ping opacity-75"></div>

@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2025-10-09
+
+### Critical Horizontal Scrolling Fix 🔒
+
+#### Issue Resolved ✅
+- **Fixed horizontal scrolling bug**: Menu was opening outside viewport causing unwanted horizontal scroll
+- **Root cause**: Safe area padding on #root combined with fixed positioning caused overflow
+- **Impact**: Users could scroll horizontally and see content outside the intended viewport
+
+#### Implementation Details
+- **Global overflow prevention**: Added `overflow-x: hidden` to html, body, and #root
+- **Max-width constraints**: Applied `max-width: 100vw` to prevent any element from exceeding viewport
+- **Menu positioning fixes**: Updated all dropdown menus to respect safe areas and viewport bounds
+  - AppHeader menu: Added `max-w-[calc(100vw-2rem)]` and safe-area-aware positioning
+  - WorkoutFlowHeader menu: Same treatment for consistency
+  - Dashboard error toast: Constrained to viewport with safe area support
+  - UpdateToast: Added viewport constraints for mobile
+- **New CSS utilities**: Created `.fixed-safe-right` and `.fixed-safe-left` classes for reusable safe positioning
+
+#### Files Modified
+- `index.html`: Added overflow-x prevention to html, body, and #root (lines 250-292)
+- `src/index.css`: Added global overflow prevention and new utility classes (lines 1-32, 168-191)
+- `src/components/AppHeader.tsx`: Fixed menu positioning with safe areas (lines 113-122)
+- `src/components/WorkoutFlowHeader.tsx`: Fixed menu positioning (lines 204-210)
+- `src/pages/Dashboard.tsx`: Fixed error toast positioning (lines 443-451)
+- `src/hooks/useUpdateToast.tsx`: Added viewport constraints (lines 74-82)
+
+#### Technical Approach
+- **Defensive CSS**: Multiple layers of overflow prevention (html → body → #root)
+- **Safe area integration**: All fixed elements now use `max(1rem, env(safe-area-inset-right))` pattern
+- **Viewport-relative sizing**: Used `calc(100vw - 2rem)` to ensure elements fit within viewport
+- **Professional solution**: Reusable utility classes for future fixed/absolute positioned elements
+
+#### Testing Recommendations
+- Test menu opening on narrow viewports (iPhone SE, small Android phones)
+- Verify no horizontal scrolling on any page
+- Check that menus don't get cut off on devices with safe areas
+- Test on both iOS PWA and mobile browser
+
 ## [1.0.4] - 2025-10-09
 
 ### iOS PWA Layout & Safe Area Fixes 📱

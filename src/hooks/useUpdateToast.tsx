@@ -73,9 +73,12 @@ export function UpdateToast() {
 
   return (
     <div
-      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-[9999] animate-slide-up"
+      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 sm:max-w-[calc(100vw-2rem)] z-[9999] animate-slide-up"
       role="alert"
       aria-live="polite"
+      style={{
+        right: 'max(1rem, env(safe-area-inset-right))',
+      }}
     >
       <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 flex items-start gap-3">
         {/* Icon */}
