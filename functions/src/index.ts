@@ -457,7 +457,7 @@ You should generate approximately ${Math.floor(availableWorkoutMinutes / (avgSet
 - Use 1 set of 8-12 reps or 30-45s holds for warm-up exercises`
           : '';
 
-      const prompt = `You are creating a personalized ${duration}-minute ${workoutType || 'Full Body'} workout for a ${experience || 'Beginner'} level client.
+      const prompt = `Create a personalized ${duration}-minute ${workoutType || 'Full Body'} workout for a ${experience || 'Beginner'} level client.
 
 ═══════════════════════════════════════════════════════════════
 CLIENT PROFILE
@@ -474,103 +474,145 @@ PROGRAMMING REQUIREMENTS
 ═══════════════════════════════════════════════════════════════
 ${programmingContext}${durationGuidance}${warmupRequirement}
 
+EXERCISE SELECTION REQUIREMENTS:
+1. NO DUPLICATE EXERCISES - Each exercise name must be completely unique
+2. Use ONLY real, evidence-based exercises with standard names (e.g., "Barbell Back Squat", "Dumbbell Bench Press")
+3. Balance muscle groups appropriately:
+   - Full Body: Include push, pull, legs, and core movements
+   - Upper Body: Balance horizontal/vertical push and pull
+   - Lower Body: Balance quad-dominant, hip-dominant, and unilateral movements
+4. Vary movement patterns: Different angles, grips, stances, and ranges of motion
+5. Progressive ordering: Compound movements first, then isolation, then core/stability
+6. Match workout type exactly - don't include leg exercises in an upper body workout
+
+EXERCISE APPROPRIATENESS:
+- Beginner: Focus on fundamental movement patterns, bilateral exercises, machine/bodyweight emphasis
+- Intermediate: Include unilateral work, free weights, moderate complexity
+- Advanced: Complex movements, advanced variations, higher skill requirements
+- Consider equipment availability - don't prescribe exercises requiring unavailable equipment
+- Respect injury contraindications - NEVER include exercises that stress injured areas
+
 ═══════════════════════════════════════════════════════════════
 QUALITY STANDARDS
 ═══════════════════════════════════════════════════════════════
 ${qualityGuidelines}
 
-Exercise Descriptions Must Include:
-- Setup position and starting posture
-- Step-by-step execution with key movement cues
-- Breathing pattern (exhale on exertion, inhale on return)
-- Minimum 100 characters with clear, instructional language
+Exercise Descriptions (100-150 characters):
+- Starting position and setup
+- Movement execution with key cues
+- Breathing pattern (exhale on exertion)
+- Be concise but complete
 
-Form Tips (minimum 3 per exercise):
-- Address the most common technique errors
-- Provide specific, actionable cues
-- Focus on joint alignment and muscle activation
+Form Tips (EXACTLY 3 per exercise):
+- Most common technique errors to avoid
+- Specific joint alignment cues
+- Movement quality focus points
+- Each tip should be actionable and specific
 
-Safety Tips (minimum 2 per exercise):
-- Include injury prevention guidance
-- Provide modification options for different fitness levels
-- Specify when to stop or reduce intensity
-
-═══════════════════════════════════════════════════════════════
-CRITICAL RULES - MUST FOLLOW
-═══════════════════════════════════════════════════════════════
-1. ✅ Use ONLY real, evidence-based exercises with standard names
-2. ✅ Match the requested workout type exactly
-3. ✅ GENERATE ENOUGH EXERCISES to fill ${duration} minutes based on sets and rest periods
-4. ✅ Follow the rest period requirements strictly (compound: 120-180s, isolation: 60-90s)
-5. ✅ If injuries are present, STRICTLY AVOID all contraindicated exercises
-6. ✅ Use proper rep format: ranges like "8-12" or time like "30s" (NOT "Hold for 30 seconds")
-7. ✅ Set difficulty to "${(experience || 'beginner').toLowerCase()}" for all exercises
-8. ✅ Include usesWeight: true for exercises using dumbbells, barbells, kettlebells, or resistance bands
-9. ✅ Include usesWeight: false for bodyweight-only exercises
-10. ✅ EVERY exercise MUST have sets (number 1-10) and reps (string like "8-12" or "30s") - NO EXCEPTIONS
+Safety Tips (EXACTLY 2 per exercise):
+- Primary injury prevention guidance
+- Modification or regression option
+- Each tip should address a specific safety concern
 
 ═══════════════════════════════════════════════════════════════
-JSON OUTPUT SCHEMA (no markdown, no code blocks, no explanatory text)
+CRITICAL RULES - MANDATORY COMPLIANCE
 ═══════════════════════════════════════════════════════════════
+1. ✅ Generate 4-6 exercises for ${duration}-minute workouts (minimum 4, maximum 6)
+2. ✅ ALL exercise names must be unique - check for duplicates before finalizing
+3. ✅ Match workout type exactly (${workoutType || 'Full Body'})
+4. ✅ Rest periods: Compound 120-180s, Isolation 60-90s, Cardio/Core 45-60s
+5. ✅ If injuries present, STRICTLY AVOID all contraindicated exercises
+6. ✅ Rep format: Use "8-12" for ranges, "30s" for time, "10 each side" for unilateral
+7. ✅ Difficulty: ALL exercises must have difficulty="${(experience || 'beginner').toLowerCase()}"
+8. ✅ usesWeight: true for dumbbells/barbells/kettlebells/bands, false for bodyweight only
+9. ✅ Sets: Integer 1-10 (typically 3-4 for main exercises, 1-2 for warmup)
+10. ✅ Reps: String format only (never a number)
+11. ✅ formTips: Array with EXACTLY 3 strings
+12. ✅ safetyTips: Array with EXACTLY 2 strings
+13. ✅ muscleGroups: Array with 1-3 specific muscles (e.g., ["quadriceps", "glutes"])
+14. ✅ Total workout time must fit within ${duration} minutes (±2 min acceptable)
+
+═══════════════════════════════════════════════════════════════
+JSON OUTPUT SCHEMA - STRICT COMPLIANCE REQUIRED
+═══════════════════════════════════════════════════════════════
+You MUST output valid JSON matching this EXACT schema. All fields are REQUIRED.
+
 {
-  "exercises": [{
-    "name": "Exercise Name",
-    "description": "Setup, execution, breathing cues (100+ chars)",
-    "sets": 3,
-    "reps": "8-12",
-    "formTips": ["tip1", "tip2", "tip3"],
-    "safetyTips": ["safety1", "safety2"],
-    "restSeconds": 120,
-    "usesWeight": true,
-    "muscleGroups": ["muscle1", "muscle2"],
-    "difficulty": "${(experience || 'beginner').toLowerCase()}"
-  }],
+  "exercises": [
+    {
+      "name": "Exercise Name (unique, standard name)",
+      "description": "Complete description 100-150 chars with setup, execution, breathing",
+      "sets": 3,
+      "reps": "8-12",
+      "formTips": [
+        "First form tip - specific and actionable",
+        "Second form tip - addresses common error",
+        "Third form tip - joint alignment or quality cue"
+      ],
+      "safetyTips": [
+        "First safety tip - injury prevention",
+        "Second safety tip - modification option"
+      ],
+      "restSeconds": 120,
+      "usesWeight": true,
+      "muscleGroups": ["chest", "triceps"],
+      "difficulty": "${(experience || 'beginner').toLowerCase()}"
+    }
+  ],
   "workoutSummary": {
-    "totalVolume": "Total sets and reps estimate",
-    "primaryFocus": "Primary muscle groups and movement patterns",
-    "expectedRPE": "Expected difficulty on 1-10 scale"
+    "totalVolume": "Calculate total: e.g., '18 sets, 144-216 reps'",
+    "primaryFocus": "Describe main focus: e.g., 'Upper body strength with chest and back emphasis'",
+    "expectedRPE": "Rate difficulty: e.g., '6-7 out of 10 for ${experience || 'Beginner'} level'"
   }
-}`.trim();
+}
 
-      // Use GPT-4.1-nano for ultra-fast generation with low latency
-      console.log('⚡ Using GPT-4.1-nano for ultra-fast workout generation');
+PRE-OUTPUT VALIDATION CHECKLIST:
+Before generating output, verify:
+✓ Exercise count is 4-6 exercises
+✓ ALL exercise names are unique (no duplicates)
+✓ ALL exercises match workout type (${workoutType || 'Full Body'})
+✓ ALL sets are integers 1-10
+✓ ALL reps are strings (not numbers)
+✓ ALL formTips arrays have EXACTLY 3 items
+✓ ALL safetyTips arrays have EXACTLY 2 items
+✓ ALL restSeconds are integers 45-300
+✓ ALL usesWeight are boolean true/false
+✓ ALL muscleGroups arrays have 1-3 items
+✓ ALL difficulty values are "${(experience || 'beginner').toLowerCase()}"
+✓ Total time fits ${duration} minutes (±2 min)
+✓ No contraindicated exercises for injuries
+✓ Equipment matches available equipment
+
+Output the JSON now:`.trim();
+
+      // Use GPT-4o-mini for optimal balance of speed, cost, and JSON reliability
+      // Cost: ~$0.00218 per workout vs $0.00145 for gpt-4.1-nano (only $0.73/month difference for 1000 workouts)
+      // Benefits: Superior JSON output reliability, better reasoning for complex workout programming
+      console.log('⚡ Using GPT-4o-mini for reliable workout generation with excellent JSON output');
 
       const completion = await client.chat.completions.create({
-        model: 'gpt-4.1-nano',
-        temperature: 0.6, // Higher temperature for more creative/varied responses
-        max_tokens: 2500, // Sufficient for complete workouts with 6-8 exercises
+        model: 'gpt-4o-mini',
+        temperature: 0.2, // Lower temperature for more consistent JSON output and deterministic responses
+        max_tokens: 4500, // Sufficient for comprehensive workouts
+        response_format: { type: 'json_object' }, // Enforce JSON output format for better reliability
         messages: [
           {
             role: 'system',
-                content:
-                  `You are an elite certified personal trainer (NASM-CPT, CSCS, ACSM-CEP) with 15+ years of experience in exercise science, biomechanics, and periodization. You specialize in creating highly personalized, evidence-based workout programs that are safe, effective, and tailored to individual needs. You have extensive experience working with clients of all fitness levels and injury histories.
-
-CORE PRINCIPLES:
-1. Safety First - Never compromise client safety for intensity or variety
-2. Evidence-Based Programming - Use scientifically validated set/rep/rest schemes
-3. Injury Prevention - Strictly avoid contraindicated exercises and provide safe alternatives
-4. Progressive Overload - Design workouts that challenge clients appropriately for their level
-5. Movement Quality - Emphasize proper form and technique in all exercises
-
-CRITICAL: DURATION REQUIREMENT
-- You MUST calculate the total time for all exercises you generate
-- Use the formula: Time per exercise = (sets × 1 min) + ((sets - 1) × rest_seconds / 60)
-- The total workout time must match the requested duration
-- DO NOT generate more exercises than can fit in the available time
-- This is a MANDATORY requirement - verify your math before generating the workout
-
-OUTPUT REQUIREMENTS:
-- Output ONLY valid JSON with no markdown formatting, code blocks, or explanatory text
-- Follow the exact schema provided in the user prompt
-- Ensure all exercises are real, evidence-based movements with standard names
-- Provide comprehensive descriptions, form tips, and safety guidance for each exercise
-- Generate the FULL number of exercises required to fill the workout duration`,
+            content: 'You are a certified personal trainer (NASM-CPT, CSCS, ACSM-CEP) with expertise in exercise science, periodization, and injury prevention. You create evidence-based, personalized workout programs. You MUST output ONLY valid JSON with no markdown formatting, code blocks, or explanatory text. Follow the exact schema provided in the user prompt.',
           },
           { role: 'user', content: prompt },
         ],
       });
 
       const text = completion.choices?.[0]?.message?.content ?? '';
+      const finishReason = completion.choices?.[0]?.finish_reason;
+
+      // Check if response was truncated due to token limit
+      if (finishReason === 'length') {
+        throw new Error(
+          `AI response was truncated due to token limit. The workout generation was incomplete. Please try a shorter duration or simpler workout type.`
+        );
+      }
 
       // Clean JSON text by removing markdown code blocks if present
       const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -755,9 +797,10 @@ OUTPUT ONLY valid JSON (no markdown, no code blocks):
 }`;
 
       const completion = await client.chat.completions.create({
-        model: 'gpt-4.1-nano',
-        temperature: 0.5,
+        model: 'gpt-4o-mini',
+        temperature: 0.3,
         max_tokens: 800,
+        response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
@@ -867,9 +910,10 @@ OUTPUT ONLY valid JSON (no markdown, no code blocks):
 }`;
 
       const completion = await client.chat.completions.create({
-        model: 'gpt-4.1-nano',
-        temperature: 0.6,
+        model: 'gpt-4o-mini',
+        temperature: 0.4,
         max_tokens: 800,
+        response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
