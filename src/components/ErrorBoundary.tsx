@@ -220,10 +220,4 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-
-
-// Simplified error boundary - use the main ErrorBoundary with level prop instead
-
-
-
 export default ErrorBoundary

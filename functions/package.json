@@ -15,6 +15,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
+    "// Testing": "========================================",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "// Deployment": "========================================",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
@@ -24,18 +28,20 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "firebase-admin": "^12.6.0",
+    "firebase-admin": "^13.5.0",
     "firebase-functions": "^6.0.1",
-    "openai": "^5.23.0"
+    "openai": "^6.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.36.0",
     "firebase-functions-test": "^3.1.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.45.0"
+    "typescript-eslint": "^8.45.0",
+    "vitest": "^3.2.4"
   },
   "private": true
 }

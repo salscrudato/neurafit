@@ -83,6 +83,7 @@ export function validateWorkoutPlan(
     injuries?: string[];
     duration: number;
     goals?: string[];
+    workoutType?: string;
   },
 ): ExerciseValidationResult {
   const result: ExerciseValidationResult = {
@@ -114,6 +115,9 @@ export function validateWorkoutPlan(
 
   // CRITICAL: Check for injury contraindications
   validateInjuryCompliance(plan, userProfile.injuries || [], result);
+
+  // Check muscle group balance
+  validateMuscleGroupBalance(plan, userProfile.workoutType, result);
 
   return result;
 }
@@ -188,5 +192,148 @@ function validateInjuryCompliance(
       }
     });
   });
+}
+
+/**
+ * Muscle group categories for balance validation
+ */
+const MUSCLE_GROUP_CATEGORIES = {
+  push: ['chest', 'triceps', 'anterior deltoid', 'front deltoid'],
+  pull: ['back', 'lats', 'latissimus', 'biceps', 'rear deltoid', 'posterior deltoid', 'traps', 'trapezius'],
+  legs: ['quadriceps', 'quads', 'hamstrings', 'glutes', 'gluteus', 'calves', 'gastrocnemius'],
+  core: ['abs', 'abdominals', 'obliques', 'core', 'lower back', 'erector spinae'],
+  shoulders: ['deltoids', 'delts', 'shoulders', 'lateral deltoid', 'side deltoid'],
+};
+
+/**
+ * Validates muscle group balance in workout
+ * Checks for appropriate distribution based on workout type
+ */
+function validateMuscleGroupBalance(
+  plan: WorkoutPlan,
+  workoutType: string | undefined,
+  result: ExerciseValidationResult,
+): void {
+  // Count exercises targeting each muscle group category
+  const categoryCount: Record<string, number> = {
+    push: 0,
+    pull: 0,
+    legs: 0,
+    core: 0,
+    shoulders: 0,
+  };
+
+  plan.exercises.forEach((exercise) => {
+    const muscleGroups = exercise.muscleGroups?.map((m) => m.toLowerCase()) || [];
+
+    Object.entries(MUSCLE_GROUP_CATEGORIES).forEach(([category, muscles]) => {
+      if (muscleGroups.some((mg) => muscles.some((m) => mg.includes(m)))) {
+        const currentCount = categoryCount[category];
+        if (currentCount !== undefined) {
+          categoryCount[category] = currentCount + 1;
+        }
+      }
+    });
+  });
+
+  // Validate balance based on workout type
+  const type = workoutType?.toLowerCase() || 'full body';
+
+  if (type.includes('full body')) {
+    // Full body should have representation from all major categories
+    const pushCount = categoryCount.push || 0;
+    const pullCount = categoryCount.pull || 0;
+    const legsCount = categoryCount.legs || 0;
+
+    if (pushCount === 0) {
+      result.warnings.push('Full body workout should include at least one pushing exercise');
+    }
+    if (pullCount === 0) {
+      result.warnings.push('Full body workout should include at least one pulling exercise');
+    }
+    if (legsCount === 0) {
+      result.warnings.push('Full body workout should include at least one leg exercise');
+    }
+
+    // Check push/pull balance (should be within 1 exercise of each other)
+    const pushPullDiff = Math.abs(pushCount - pullCount);
+    if (pushPullDiff > 2) {
+      result.warnings.push(
+        `Push/pull imbalance detected: ${pushCount} push vs ${pullCount} pull exercises. Consider balancing for injury prevention.`,
+      );
+    }
+  } else if (type.includes('upper body') || type.includes('upper')) {
+    // Upper body should balance push and pull
+    const pushCount = categoryCount.push || 0;
+    const pullCount = categoryCount.pull || 0;
+    const legsCount = categoryCount.legs || 0;
+
+    if (pushCount === 0) {
+      result.warnings.push('Upper body workout should include pushing exercises');
+    }
+    if (pullCount === 0) {
+      result.warnings.push('Upper body workout should include pulling exercises');
+    }
+
+    const pushPullDiff = Math.abs(pushCount - pullCount);
+    if (pushPullDiff > 1) {
+      result.warnings.push(
+        `Push/pull imbalance in upper body workout: ${pushCount} push vs ${pullCount} pull. Aim for 1:1 ratio.`,
+      );
+    }
+
+    // Upper body shouldn't have leg exercises
+    if (legsCount > 0) {
+      result.warnings.push('Upper body workout contains leg exercises - may not match user expectations');
+    }
+  } else if (type.includes('lower body') || type.includes('legs') || type.includes('glutes')) {
+    // Lower body should focus on legs
+    const legsCount = categoryCount.legs || 0;
+    const pushCount = categoryCount.push || 0;
+    const pullCount = categoryCount.pull || 0;
+    const shouldersCount = categoryCount.shoulders || 0;
+
+    if (legsCount === 0) {
+      result.errors.push('Lower body workout must include leg exercises');
+      result.isValid = false;
+    }
+
+    // Lower body shouldn't have many upper body exercises
+    const upperBodyCount = pushCount + pullCount + shouldersCount;
+    if (upperBodyCount > legsCount) {
+      result.warnings.push(
+        'Lower body workout has more upper body exercises than leg exercises - may not match user expectations',
+      );
+    }
+  } else if (type.includes('push')) {
+    // Push workout should focus on pushing movements
+    const pushCount = categoryCount.push || 0;
+    const pullCount = categoryCount.pull || 0;
+
+    if (pushCount === 0) {
+      result.errors.push('Push workout must include pushing exercises');
+      result.isValid = false;
+    }
+    if (pullCount > pushCount) {
+      result.warnings.push('Push workout has more pulling than pushing exercises');
+    }
+  } else if (type.includes('pull')) {
+    // Pull workout should focus on pulling movements
+    const pushCount = categoryCount.push || 0;
+    const pullCount = categoryCount.pull || 0;
+
+    if (pullCount === 0) {
+      result.errors.push('Pull workout must include pulling exercises');
+      result.isValid = false;
+    }
+    if (pushCount > pullCount) {
+      result.warnings.push('Pull workout has more pushing than pulling exercises');
+    }
+  }
+
+  // General suggestion for core work
+  if (categoryCount.core === 0 && plan.exercises.length >= 5) {
+    result.suggestions.push('Consider adding core exercises for comprehensive training');
+  }
 }
 

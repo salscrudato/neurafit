@@ -1,99 +1,40 @@
+/**
+ * Firebase Cloud Functions for NeuraFit AI Workout Generator
+ * Refactored for better maintainability and modularity
+ */
+
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import type { Request, Response } from 'express';
 import OpenAI from 'openai';
-import { getProgrammingRecommendations } from './lib/exerciseDatabase';
-import { generateProfessionalPromptEnhancement } from './lib/promptEnhancements';
 
-// Define the secret
+// Import utility modules
+import { getProgrammingRecommendations, getExperienceGuidance } from './lib/exerciseDatabase';
+import { validateWorkoutPlan } from './lib/exerciseValidation';
+import { generateProfessionalPromptEnhancement } from './lib/promptEnhancements';
+import { buildWorkoutPrompt, buildSystemMessage, type WorkoutContext } from './lib/promptBuilder';
+import { calculateWorkoutQuality } from './lib/qualityScoring';
+import { validateAndAdjustDuration } from './lib/durationAdjustment';
+
+// Define the OpenAI API key secret
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
 
-/**
- * Simple rule-based quality scoring for workouts
- */
-function calculateWorkoutQuality(
-  workout: {
-    exercises: Array<{
-      name: string;
-      description: string;
-      sets: number;
-      reps: number | string;
-      formTips: string[];
-      safetyTips: string[];
-      restSeconds: number;
-      usesWeight: boolean;
-      muscleGroups?: string[];
-      difficulty?: string;
-    }>;
-    workoutSummary?: {
-      totalVolume: string;
-      primaryFocus: string;
-      expectedRPE: string;
-    };
-  },
-  _userProfile: {
-    experience?: string;
-    injuries?: string[];
-    duration: number;
-    goals?: string[];
-    equipment?: string[];
-    workoutType?: string;
-  },
-): { overall: number; grade: string } {
-  let score = 100;
-
-  // Check minimum exercise count (at least 3 exercises)
-  const exerciseCount = workout.exercises.length;
-  if (exerciseCount < 3) {
-    score -= 20;
-  }
-
-  // Check for complete exercise data
-  workout.exercises.forEach((ex) => {
-    if (!ex.description || ex.description.length < 50) score -= 5;
-    if (!ex.formTips || ex.formTips.length < 2) score -= 3;
-    if (!ex.safetyTips || ex.safetyTips.length < 1) score -= 3;
-    if (!ex.muscleGroups || ex.muscleGroups.length === 0) score -= 2;
-  });
-
-  // Check for workout summary
-  if (!workout.workoutSummary) {
-    score -= 5;
-  }
-
-  // Ensure score is within bounds
-  score = Math.max(0, Math.min(100, score));
-
-  // Assign grade
-  let grade = 'F';
-  if (score >= 95) grade = 'A+';
-  else if (score >= 90) grade = 'A';
-  else if (score >= 85) grade = 'A-';
-  else if (score >= 80) grade = 'B+';
-  else if (score >= 75) grade = 'B';
-  else if (score >= 70) grade = 'B-';
-  else if (score >= 65) grade = 'C+';
-  else if (score >= 60) grade = 'C';
-  else if (score >= 55) grade = 'C-';
-  else if (score >= 50) grade = 'D';
-
-  return { overall: score, grade };
-}
+// CORS configuration for all deployment URLs
+const CORS_ORIGINS = [
+  'http://localhost:5173', // local dev
+  'https://neurafit-ai-2025.web.app', // Firebase Hosting
+  'https://neurafit-ai-2025.firebaseapp.com',
+  'https://neurastack.ai', // Custom domain
+  'https://www.neurastack.ai', // Custom domain with www
+];
 
 /**
- * AI-powered workout generator function
- * - Preserves existing input/output schema for frontend compatibility
- * - Adds structured, evidence-based prompt scaffolding for higher quality plans
+ * Main AI-powered workout generator function
+ * Generates personalized workouts based on user profile and preferences
  */
 export const generateWorkout = onRequest(
   {
-    cors: [
-      'http://localhost:5173', // local dev
-      'https://neurafit-ai-2025.web.app', // Firebase Hosting
-      'https://neurafit-ai-2025.firebaseapp.com',
-      'https://neurastack.ai', // Custom domain
-      'https://www.neurastack.ai', // Custom domain with www
-    ],
+    cors: CORS_ORIGINS,
     region: 'us-central1',
     secrets: [openaiApiKey],
     timeoutSeconds: 300, // 5 minutes - enough for OpenAI API calls
@@ -117,6 +58,7 @@ export const generateWorkout = onRequest(
         apiKey: openaiApiKey.value(),
       });
 
+      // Extract request body
       const {
         experience,
         goals,
@@ -132,18 +74,28 @@ export const generateWorkout = onRequest(
         experience?: string;
         goals?: string | string[];
         equipment?: string | string[];
-        personalInfo?: { sex?: string; heightRange?: string; height?: string; weightRange?: string; weight?: string };
+        personalInfo?: {
+          sex?: string;
+          heightRange?: string;
+          height?: string;
+          weightRange?: string;
+          weight?: string;
+        };
         injuries?: { list?: string[]; notes?: string };
         workoutType?: string;
         duration?: number;
         targetIntensity?: number;
         progressionNote?: string;
-        recentWorkouts?: Array<{ workoutType: string; timestamp: number; exercises: Array<{ name: string }> }>;
+        recentWorkouts?: Array<{
+          workoutType: string;
+          timestamp: number;
+          exercises: Array<{ name: string }>;
+        }>;
       }) || {};
 
       // Use intensity values from frontend (calculated by useWorkoutPreload hook)
-      let finalTargetIntensity = targetIntensity || 1.0;
-      let finalProgressionNote = progressionNote || '';
+      const finalTargetIntensity = targetIntensity || 1.0;
+      const finalProgressionNote = progressionNote || '';
 
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
@@ -153,453 +105,70 @@ export const generateWorkout = onRequest(
         ? equipment.filter((e): e is string => Boolean(e))
         : [equipment].filter((e): e is string => Boolean(e));
 
-      // Enhanced workout type context with specific exercise examples
-      const getWorkoutTypeContext = (type: string) => {
-        const contexts: Record<string, string> = {
-          'Full Body':
-            'Focus: Total body conditioning with balanced muscle group coverage.\nMovement Patterns: Squat, hinge, push, pull, carry.\nExample Exercises: Squats, deadlifts, push-ups, rows, lunges, planks.\nProgramming: 6-12 reps, compound movements prioritized, 2-3 exercises per major muscle group.',
-          'Upper Body':
-            'Focus: Chest, back, shoulders, arms with push/pull balance.\nMovement Patterns: Horizontal push/pull, vertical push/pull, isolation.\nExample Exercises: Bench press, rows, shoulder press, pull-ups, dips, bicep curls, tricep extensions.\nProgramming: 6-15 reps, balance pushing and pulling movements 1:1 ratio.',
-          'Lower Body':
-            'Focus: Legs, glutes, calves with knee and hip dominant movements.\nMovement Patterns: Squat, hinge, lunge, single-leg, calf.\nExample Exercises: Squats, deadlifts, lunges, leg press, Romanian deadlifts, calf raises, glute bridges.\nProgramming: 8-15 reps, prioritize compound movements, include unilateral work.',
-          Cardio:
-            'Focus: Cardiovascular endurance and metabolic conditioning.\nMovement Patterns: Continuous movement, intervals, circuits.\nExample Exercises: Jumping jacks, burpees, mountain climbers, high knees, jump rope, running in place.\nProgramming: Time-based (30-60s work periods), minimal rest (15-30s), bodyweight preferred.',
-          'Core Focus':
-            'Focus: Abdominals, obliques, lower back, stability.\nMovement Patterns: Anti-extension, anti-rotation, anti-lateral flexion.\nExample Exercises: Planks, dead bugs, bird dogs, pallof press, Russian twists, bicycle crunches.\nProgramming: 10-20 reps or 30-60s holds, focus on control and stability.',
-          Push:
-            'Focus: Chest, shoulders, triceps with pressing movements.\nMovement Patterns: Horizontal press, vertical press, isolation.\nExample Exercises: Bench press, shoulder press, push-ups, dips, chest flyes, lateral raises, tricep extensions.\nProgramming: 6-12 reps, multiple pressing angles, finish with isolation work.',
-          Pull:
-            'Focus: Back, biceps, rear delts with pulling movements.\nMovement Patterns: Horizontal pull, vertical pull, isolation.\nExample Exercises: Pull-ups, rows, lat pulldowns, face pulls, bicep curls, rear delt flyes.\nProgramming: 6-12 reps, balance horizontal and vertical pulling, include rear delt work.',
-          'Legs/Glutes':
-            'Focus: Lower body power, glute development, leg strength.\nMovement Patterns: Hip hinge, squat, lunge, hip thrust.\nExample Exercises: Hip thrusts, Romanian deadlifts, Bulgarian split squats, goblet squats, glute bridges, step-ups.\nProgramming: 8-15 reps, emphasize hip-dominant movements, include glute activation.',
-          'Chest/Triceps':
-            'Focus: Chest development and tricep strength.\nMovement Patterns: Horizontal press, incline press, tricep extension.\nExample Exercises: Bench press, incline press, push-ups, chest flyes, tricep dips, overhead extensions, close-grip press.\nProgramming: 6-15 reps, multiple chest angles, finish with tricep isolation.',
-          'Back/Biceps':
-            'Focus: Back width/thickness and bicep size.\nMovement Patterns: Vertical pull, horizontal pull, bicep curl.\nExample Exercises: Pull-ups, rows, lat pulldowns, face pulls, bicep curls, hammer curls, concentration curls.\nProgramming: 6-15 reps, prioritize compound pulling, finish with bicep isolation.',
-          Shoulders:
-            'Focus: Deltoid development (front, side, rear) and shoulder stability.\nMovement Patterns: Vertical press, lateral raise, rear delt work.\nExample Exercises: Shoulder press, lateral raises, front raises, rear delt flyes, face pulls, Arnold press.\nProgramming: 8-15 reps, hit all three deltoid heads, include rotator cuff work.',
-          Arms:
-            'Focus: Biceps, triceps, forearms with isolation movements.\nMovement Patterns: Elbow flexion, elbow extension, grip work.\nExample Exercises: Bicep curls, hammer curls, tricep extensions, dips, close-grip press, wrist curls.\nProgramming: 8-15 reps, balance bicep and tricep volume, include different curl/extension variations.',
-          Yoga:
-            'Focus: Flexibility, mindfulness, balance, breath control.\nMovement Patterns: Flowing sequences, static holds, balance poses.\nExample Exercises: Sun salutations, warrior poses, downward dog, child\'s pose, tree pose, pigeon pose.\nProgramming: 30-90s holds, flowing transitions, focus on breath and alignment.',
-          Pilates:
-            'Focus: Core strength, stability, control, mind-body connection.\nMovement Patterns: Controlled movements, core engagement, precise execution.\nExample Exercises: Hundred, roll-ups, leg circles, single leg stretch, plank variations, side-lying leg lifts.\nProgramming: 8-15 controlled reps, emphasis on core engagement and breathing.',
-        };
-        return contexts[type] || contexts['Full Body'];
+      // Build workout context
+      const workoutContext: WorkoutContext = {
+        experience,
+        goals: filteredGoals,
+        equipment: filteredEquipment,
+        personalInfo,
+        injuries,
+        workoutType,
+        duration,
+        targetIntensity: finalTargetIntensity,
+        progressionNote: finalProgressionNote,
+        recentWorkouts,
       };
 
-      // Build comprehensive injury context with explicit contraindications
-      const getInjuryContraindications = (injuryList: string[]) => {
-        const contraindications: Record<string, { avoid: string[]; alternatives: string[] }> = {
-          knee: {
-            avoid: [
-              'deep squats',
-              'lunges',
-              'Bulgarian split squats',
-              'jump squats',
-              'box jumps',
-              'burpees',
-              'pistol squats',
-              'jumping lunges',
-              'plyometric exercises',
-            ],
-            alternatives: [
-              'glute bridges',
-              'hip thrusts',
-              'wall sits (limited depth)',
-              'leg press (if available)',
-              'step-ups (low height)',
-              'seated leg extensions (light weight)',
-            ],
-          },
-          'lower back': {
-            avoid: [
-              'deadlifts',
-              'Romanian deadlifts',
-              'good mornings',
-              'bent-over rows',
-              'overhead press',
-              'sit-ups',
-              'Russian twists',
-              'toe touches',
-              'supermans',
-              'hyperextensions',
-            ],
-            alternatives: [
-              'glute bridges',
-              'bird dogs',
-              'dead bugs',
-              'planks',
-              'side planks',
-              'cable rows (supported)',
-              'chest-supported rows',
-              'pallof press',
-            ],
-          },
-          shoulder: {
-            avoid: [
-              'overhead press',
-              'military press',
-              'behind-the-neck press',
-              'upright rows',
-              'lateral raises (if painful)',
-              'handstand push-ups',
-              'dips (if painful)',
-              'pull-ups (if impingement)',
-            ],
-            alternatives: [
-              'landmine press',
-              'neutral grip dumbbell press',
-              'push-ups (modified)',
-              'cable chest press',
-              'face pulls',
-              'band pull-aparts',
-              'scapular wall slides',
-            ],
-          },
-          ankle: {
-            avoid: [
-              'jumping exercises',
-              'box jumps',
-              'burpees',
-              'calf raises',
-              'running',
-              'sprinting',
-              'agility drills',
-              'jump rope',
-            ],
-            alternatives: [
-              'seated exercises',
-              'swimming motions',
-              'upper body focus',
-              'core work',
-              'seated bike (if tolerated)',
-              'resistance band exercises',
-            ],
-          },
-          wrist: {
-            avoid: [
-              'push-ups',
-              'planks',
-              'handstands',
-              'burpees',
-              'mountain climbers',
-              'front squats',
-              'clean and jerk',
-            ],
-            alternatives: [
-              'forearm planks',
-              'push-ups on fists or handles',
-              'dumbbell exercises',
-              'cable exercises',
-              'machine exercises',
-              'leg-focused movements',
-            ],
-          },
-          neck: {
-            avoid: [
-              'overhead press',
-              'behind-the-neck movements',
-              'headstands',
-              'neck bridges',
-              'heavy shrugs',
-              'upright rows',
-            ],
-            alternatives: [
-              'neutral spine exercises',
-              'supported movements',
-              'machine-based exercises',
-              'gentle mobility work',
-            ],
-          },
-        };
+      // Get programming recommendations with experience-level adjustments
+      const programmingResult = getProgrammingRecommendations(
+        filteredGoals,
+        experience || 'Beginner',
+      );
 
-        let context = '';
-        injuryList.forEach((injury) => {
-          const injuryKey = injury.toLowerCase();
-          const contraInfo = contraindications[injuryKey];
-          if (contraInfo) {
-            context += `\n\n⚠️ ${injury.toUpperCase()} INJURY - CRITICAL SAFETY REQUIREMENTS:
-DO NOT INCLUDE ANY OF THESE EXERCISES:
-${contraInfo.avoid.map((ex) => `  ❌ ${ex}`).join('\n')}
-
-SAFE ALTERNATIVES TO USE INSTEAD:
-${contraInfo.alternatives.map((ex) => `  ✅ ${ex}`).join('\n')}`;
-          }
-        });
-        return context;
+      // Extract programming context (ensure all required fields are present)
+      const programming = {
+        sets: programmingResult.sets || [3, 4],
+        reps: programmingResult.reps || [8, 12],
+        restSeconds: programmingResult.restSeconds || [60, 120],
+        intensity: programmingResult.intensity || '65-85% 1RM',
       };
 
-      const injuryContext =
-        injuries?.list && injuries.list.length > 0
-          ? `\n\n🚨 CRITICAL - INJURY CONSIDERATIONS:
-User has reported injuries: ${injuries.list.join(', ')}
-${injuries.notes ? `Additional context: ${injuries.notes}` : ''}
-
-MANDATORY REQUIREMENTS:
-1. STRICTLY AVOID all contraindicated exercises listed below
-2. Use ONLY the safe alternatives provided for each injury
-3. Prioritize safety over workout variety or intensity
-4. Include modifications and regression options in safety tips
-5. If unsure about an exercise, choose a safer alternative
-${getInjuryContraindications(injuries.list)}`
-          : '';
-
-      // Build intensity context if provided
-      const intensityContext =
-        finalTargetIntensity !== 1.0 || finalProgressionNote
-          ? `\n\nINTENSITY GUIDANCE:
-- Target intensity scalar: ${finalTargetIntensity.toFixed(2)}x baseline
-${finalProgressionNote ? `- Progression note: ${finalProgressionNote}` : ''}
-- Adjust sets, reps, or rest periods accordingly`
-          : '';
-
-      // Build personal info context for better personalization
-      const personalContext = personalInfo
-        ? `\n\nPERSONAL PROFILE:
-- Gender: ${personalInfo.sex || 'Not specified'}
-- Height: ${personalInfo.height || personalInfo.heightRange || 'Not specified'}
-- Weight: ${personalInfo.weight || personalInfo.weightRange || 'Not specified'}
-
-PERSONALIZATION CONSIDERATIONS:
-- Adjust exercise selection based on body mechanics and anthropometry
-- Consider joint stress and loading appropriate for body weight
-- Tailor intensity recommendations to individual capacity
-- Select exercises that accommodate body proportions and leverage`
-        : '';
-
-      // Build workout history context for progression
-      const workoutHistoryContext =
-        recentWorkouts && recentWorkouts.length > 0
-          ? `\n\nRECENT WORKOUT HISTORY:
-${recentWorkouts
-  .slice(0, 3)
-  .map(
-    (w, i) =>
-      `${i + 1}. ${w.workoutType} (${Math.floor((Date.now() - w.timestamp) / (1000 * 60 * 60 * 24))} days ago)
-   Exercises: ${w.exercises.map((e) => e.name).join(', ')}`,
-  )
-  .join('\n')}
-
-PROGRESSION GUIDANCE:
-- Provide variety by avoiding exact repetition of recent exercises
-- Progress difficulty appropriately based on workout frequency
-- Consider exercise variations that build on previous movements
-- Maintain consistency with user's training patterns while adding novelty`
-          : '';
-
-      // Quality standards and injury-specific safety guidance
+      // Generate quality guidelines with injury and experience context
       const qualityGuidelines = generateProfessionalPromptEnhancement({
         injuries: injuries?.list,
+        experience,
       });
 
-      // Evidence-based programming ranges for the primary goal
-      const programming = getProgrammingRecommendations(filteredGoals, experience || '');
-      const programmingContext = `\n\nEVIDENCE-BASED PROGRAMMING GUIDELINES:
-Goal-Specific Parameters:
-- Sets: ${programming.sets?.[0]}-${programming.sets?.[1]}
-- Reps: ${programming.reps?.[0]}-${programming.reps?.[1]}
-- Rest: ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]} seconds
-- Intensity: ${programming.intensity}
+      // Add experience-level guidance to quality guidelines
+      const experienceGuidance = getExperienceGuidance(experience || 'Beginner');
+      const enhancedQualityGuidelines = `${qualityGuidelines}\n\n${experienceGuidance}`;
 
-CRITICAL REST PERIOD REQUIREMENTS (MUST FOLLOW):
-- Compound movements (squats, deadlifts, presses, rows): 120-180 seconds minimum
-- Isolation movements (curls, extensions, raises, flyes): 60-90 seconds
-- Plyometric/cardio exercises (jumps, sprints, burpees): 45-90 seconds
-- Core/stability exercises (planks, holds): 45-60 seconds
-- DO NOT use rest periods shorter than these minimums - adequate rest is essential for safety and performance
+      // Build comprehensive workout prompt
+      const { prompt, minExerciseCount, maxExerciseCount } = buildWorkoutPrompt(
+        workoutContext,
+        programming,
+        enhancedQualityGuidelines,
+      );
 
-REP FORMAT STANDARDS:
-- Use ranges for strength/hypertrophy: "6-8", "8-12", "10-15"
-- Use time for isometric holds: "30s", "45s", "60s" (NOT "Hold for 30 seconds")
-- Use "each side" or "per leg" for unilateral exercises: "10-12 each side"`;
+      // Build system message
+      const systemMessage = buildSystemMessage(duration || 30, workoutType);
 
-      // Calculate time guidance for AI - focus on rest periods as the main time component
-      // Work time per set is trivial (~1 min per set including execution), rest is the key factor
-      const avgSetsPerExercise = ((programming.sets?.[0] || 3) + (programming.sets?.[1] || 4)) / 2;
-      const avgRestPerSet = ((programming.restSeconds?.[0] || 60) + (programming.restSeconds?.[1] || 120)) / 2;
+      // Log generation start
+      console.log('⚡ Generating workout with GPT-4o-mini', {
+        duration: duration || 30,
+        workoutType: workoutType || 'Full Body',
+        experience: experience || 'Beginner',
+        exerciseRange: `${minExerciseCount}-${maxExerciseCount}`,
+      });
 
-      // Warmup time allocation
-      const warmupTimeMinutes = (duration || 30) >= 20 ? 2.5 : 0;
-      const availableWorkoutMinutes = (duration || 30) - warmupTimeMinutes;
-
-      const durationGuidance = `\n\n═══════════════════════════════════════════════════════════════
-DURATION CONSTRAINT - CRITICAL REQUIREMENT
-═══════════════════════════════════════════════════════════════
-Total workout time: ${duration} minutes
-${warmupTimeMinutes > 0 ? `Warmup allocation: ${warmupTimeMinutes} minutes (1-2 warmup exercises with 1 set each)` : ''}
-Available time for main exercises: ${availableWorkoutMinutes.toFixed(1)} minutes
-
-TIME CALCULATION FORMULA (MANDATORY):
-For each exercise, calculate time as:
-  Time = (sets × 1 minute) + ((sets - 1) × rest_seconds / 60)
-
-Example with ${avgSetsPerExercise.toFixed(0)} sets and ${avgRestPerSet.toFixed(0)}s rest:
-  Time = (${avgSetsPerExercise.toFixed(0)} × 1) + (${(avgSetsPerExercise - 1).toFixed(0)} × ${avgRestPerSet.toFixed(0)}/60)
-  Time = ${avgSetsPerExercise.toFixed(0)} + ${((avgSetsPerExercise - 1) * avgRestPerSet / 60).toFixed(1)} = ${(avgSetsPerExercise + (avgSetsPerExercise - 1) * avgRestPerSet / 60).toFixed(1)} minutes per exercise
-
-REQUIRED EXERCISE COUNT:
-Based on ${availableWorkoutMinutes.toFixed(1)} minutes available and ~${(avgSetsPerExercise + (avgSetsPerExercise - 1) * avgRestPerSet / 60).toFixed(1)} minutes per exercise:
-You should generate approximately ${Math.floor(availableWorkoutMinutes / (avgSetsPerExercise + (avgSetsPerExercise - 1) * avgRestPerSet / 60))} main exercises
-
-⚠️  CRITICAL: Calculate the total time for ALL exercises you generate
-⚠️  The sum must equal approximately ${duration} minutes (±2 minutes acceptable)
-⚠️  DO NOT generate more exercises than can fit in the available time`;
-
-      // Structured prompt with enhanced organization and requirements
-      const warmupRequirement =
-        (duration || 30) >= 20
-          ? `\n\nWARM-UP REQUIREMENT:
-- Include 1-2 dynamic warm-up exercises at the beginning
-- Choose movements that are low-intensity and mobility-focused
-- Select exercises appropriate for the workout type and target muscle groups
-- Mark these as difficulty: "beginner" regardless of user's experience level
-- Use 1 set of 8-12 reps or 30-45s holds for warm-up exercises`
-          : '';
-
-      const prompt = `Create a personalized ${duration}-minute ${workoutType || 'Full Body'} workout for a ${experience || 'Beginner'} level client.
-
-═══════════════════════════════════════════════════════════════
-CLIENT PROFILE
-═══════════════════════════════════════════════════════════════
-Experience Level: ${experience || 'Beginner'}
-Primary Goals: ${filteredGoals.join(', ') || 'General Fitness'}
-Available Equipment: ${filteredEquipment.join(', ') || 'Bodyweight only'}
-Workout Type: ${workoutType || 'Full Body'}
-Duration: ${duration} minutes
-${getWorkoutTypeContext(workoutType || 'Full Body')}${personalContext}${injuryContext}${intensityContext}${workoutHistoryContext}
-
-═══════════════════════════════════════════════════════════════
-PROGRAMMING REQUIREMENTS
-═══════════════════════════════════════════════════════════════
-${programmingContext}${durationGuidance}${warmupRequirement}
-
-EXERCISE SELECTION REQUIREMENTS:
-1. NO DUPLICATE EXERCISES - Each exercise name must be completely unique
-2. Use ONLY real, evidence-based exercises with standard names (e.g., "Barbell Back Squat", "Dumbbell Bench Press")
-3. Balance muscle groups appropriately:
-   - Full Body: Include push, pull, legs, and core movements
-   - Upper Body: Balance horizontal/vertical push and pull
-   - Lower Body: Balance quad-dominant, hip-dominant, and unilateral movements
-4. Vary movement patterns: Different angles, grips, stances, and ranges of motion
-5. Progressive ordering: Compound movements first, then isolation, then core/stability
-6. Match workout type exactly - don't include leg exercises in an upper body workout
-
-EXERCISE APPROPRIATENESS:
-- Beginner: Focus on fundamental movement patterns, bilateral exercises, machine/bodyweight emphasis
-- Intermediate: Include unilateral work, free weights, moderate complexity
-- Advanced: Complex movements, advanced variations, higher skill requirements
-- Consider equipment availability - don't prescribe exercises requiring unavailable equipment
-- Respect injury contraindications - NEVER include exercises that stress injured areas
-
-═══════════════════════════════════════════════════════════════
-QUALITY STANDARDS
-═══════════════════════════════════════════════════════════════
-${qualityGuidelines}
-
-Exercise Descriptions (100-150 characters):
-- Starting position and setup
-- Movement execution with key cues
-- Breathing pattern (exhale on exertion)
-- Be concise but complete
-
-Form Tips (EXACTLY 3 per exercise):
-- Most common technique errors to avoid
-- Specific joint alignment cues
-- Movement quality focus points
-- Each tip should be actionable and specific
-
-Safety Tips (EXACTLY 2 per exercise):
-- Primary injury prevention guidance
-- Modification or regression option
-- Each tip should address a specific safety concern
-
-═══════════════════════════════════════════════════════════════
-CRITICAL RULES - MANDATORY COMPLIANCE
-═══════════════════════════════════════════════════════════════
-1. ✅ Generate 4-6 exercises for ${duration}-minute workouts (minimum 4, maximum 6)
-2. ✅ ALL exercise names must be unique - check for duplicates before finalizing
-3. ✅ Match workout type exactly (${workoutType || 'Full Body'})
-4. ✅ Rest periods: Compound 120-180s, Isolation 60-90s, Cardio/Core 45-60s
-5. ✅ If injuries present, STRICTLY AVOID all contraindicated exercises
-6. ✅ Rep format: Use "8-12" for ranges, "30s" for time, "10 each side" for unilateral
-7. ✅ Difficulty: ALL exercises must have difficulty="${(experience || 'beginner').toLowerCase()}"
-8. ✅ usesWeight: true for dumbbells/barbells/kettlebells/bands, false for bodyweight only
-9. ✅ Sets: Integer 1-10 (typically 3-4 for main exercises, 1-2 for warmup)
-10. ✅ Reps: String format only (never a number)
-11. ✅ formTips: Array with EXACTLY 3 strings
-12. ✅ safetyTips: Array with EXACTLY 2 strings
-13. ✅ muscleGroups: Array with 1-3 specific muscles (e.g., ["quadriceps", "glutes"])
-14. ✅ Total workout time must fit within ${duration} minutes (±2 min acceptable)
-
-═══════════════════════════════════════════════════════════════
-JSON OUTPUT SCHEMA - STRICT COMPLIANCE REQUIRED
-═══════════════════════════════════════════════════════════════
-You MUST output valid JSON matching this EXACT schema. All fields are REQUIRED.
-
-{
-  "exercises": [
-    {
-      "name": "Exercise Name (unique, standard name)",
-      "description": "Complete description 100-150 chars with setup, execution, breathing",
-      "sets": 3,
-      "reps": "8-12",
-      "formTips": [
-        "First form tip - specific and actionable",
-        "Second form tip - addresses common error",
-        "Third form tip - joint alignment or quality cue"
-      ],
-      "safetyTips": [
-        "First safety tip - injury prevention",
-        "Second safety tip - modification option"
-      ],
-      "restSeconds": 120,
-      "usesWeight": true,
-      "muscleGroups": ["chest", "triceps"],
-      "difficulty": "${(experience || 'beginner').toLowerCase()}"
-    }
-  ],
-  "workoutSummary": {
-    "totalVolume": "Calculate total: e.g., '18 sets, 144-216 reps'",
-    "primaryFocus": "Describe main focus: e.g., 'Upper body strength with chest and back emphasis'",
-    "expectedRPE": "Rate difficulty: e.g., '6-7 out of 10 for ${experience || 'Beginner'} level'"
-  }
-}
-
-PRE-OUTPUT VALIDATION CHECKLIST:
-Before generating output, verify:
-✓ Exercise count is 4-6 exercises
-✓ ALL exercise names are unique (no duplicates)
-✓ ALL exercises match workout type (${workoutType || 'Full Body'})
-✓ ALL sets are integers 1-10
-✓ ALL reps are strings (not numbers)
-✓ ALL formTips arrays have EXACTLY 3 items
-✓ ALL safetyTips arrays have EXACTLY 2 items
-✓ ALL restSeconds are integers 45-300
-✓ ALL usesWeight are boolean true/false
-✓ ALL muscleGroups arrays have 1-3 items
-✓ ALL difficulty values are "${(experience || 'beginner').toLowerCase()}"
-✓ Total time fits ${duration} minutes (±2 min)
-✓ No contraindicated exercises for injuries
-✓ Equipment matches available equipment
-
-Output the JSON now:`.trim();
-
-      // Use GPT-4o-mini for optimal balance of speed, cost, and JSON reliability
-      // Cost: ~$0.00218 per workout vs $0.00145 for gpt-4.1-nano (only $0.73/month difference for 1000 workouts)
-      // Benefits: Superior JSON output reliability, better reasoning for complex workout programming
-      console.log('⚡ Using GPT-4o-mini for reliable workout generation with excellent JSON output');
-
+      // Call OpenAI API
       const completion = await client.chat.completions.create({
         model: 'gpt-4o-mini',
-        temperature: 0.2, // Lower temperature for more consistent JSON output and deterministic responses
+        temperature: 0.2, // Lower temperature for more consistent JSON output
         max_tokens: 4500, // Sufficient for comprehensive workouts
-        response_format: { type: 'json_object' }, // Enforce JSON output format for better reliability
+        response_format: { type: 'json_object' }, // Enforce JSON output format
         messages: [
-          {
-            role: 'system',
-            content: 'You are a certified personal trainer (NASM-CPT, CSCS, ACSM-CEP) with expertise in exercise science, periodization, and injury prevention. You create evidence-based, personalized workout programs. You MUST output ONLY valid JSON with no markdown formatting, code blocks, or explanatory text. Follow the exact schema provided in the user prompt.',
-          },
+          { role: 'system', content: systemMessage },
           { role: 'user', content: prompt },
         ],
       });
@@ -610,17 +179,17 @@ Output the JSON now:`.trim();
       // Check if response was truncated due to token limit
       if (finishReason === 'length') {
         throw new Error(
-          `AI response was truncated due to token limit. The workout generation was incomplete. Please try a shorter duration or simpler workout type.`
+          'AI response was truncated due to token limit. The workout generation was incomplete. Please try a shorter duration or simpler workout type.',
         );
       }
 
       // Clean JSON text by removing markdown code blocks if present
       const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
 
-      // Validate JSON output
+      // Parse and validate JSON output
       try {
         const json = JSON.parse(cleanedText) as {
-          exercises: {
+          exercises: Array<{
             name: string;
             description: string;
             sets: number;
@@ -631,7 +200,7 @@ Output the JSON now:`.trim();
             usesWeight: boolean;
             muscleGroups: string[];
             difficulty: string;
-          }[];
+          }>;
           workoutSummary: {
             totalVolume: string;
             primaryFocus: string;
@@ -639,17 +208,40 @@ Output the JSON now:`.trim();
           };
         };
 
-        // Validate minimum exercise count (at least 3 exercises for any workout)
+        // Validate minimum exercise count based on duration
         const exerciseCount = json.exercises?.length || 0;
-        if (exerciseCount < 3) {
+        if (exerciseCount < minExerciseCount) {
           throw new Error(
-            `AI generated only ${exerciseCount} exercises but at least 3 are required for a ${duration}-minute workout.`
+            `AI generated only ${exerciseCount} exercises but at least ${minExerciseCount} are required for a ${duration || 30}-minute workout.`,
           );
         }
 
-        // Professional workout validation with rule-based scoring
-        const { validateWorkoutPlan } = await import('./lib/exerciseValidation');
+        // Validate and adjust workout duration
+        const durationResult = validateAndAdjustDuration(
+          json,
+          duration || 30,
+          minExerciseCount,
+        );
 
+        // Log duration validation
+        console.log('Duration validation:', {
+          actual: durationResult.actualDuration.toFixed(1),
+          target: duration || 30,
+          diff: durationResult.difference.toFixed(1),
+          adjusted: durationResult.adjusted,
+        });
+
+        if (durationResult.adjusted) {
+          console.log('Duration adjustments:', durationResult.changes);
+        }
+
+        // Reject if duration is still too far off
+        if (durationResult.error) {
+          console.error(durationResult.error);
+          throw new Error(durationResult.error);
+        }
+
+        // Professional workout validation with rule-based scoring
         const userProfileForValidation = {
           experience,
           injuries: injuries?.list || [],
@@ -669,7 +261,7 @@ Output the JSON now:`.trim();
           console.info('Workout validation warnings:', validationResult.warnings);
         }
 
-        // Reject workouts with critical safety issues (from rule-based validation)
+        // Reject workouts with critical safety issues
         if (!validationResult.isValid) {
           console.error('Generated workout failed safety validation:', validationResult.errors);
           res.status(502).json({
@@ -680,11 +272,15 @@ Output the JSON now:`.trim();
           return;
         }
 
-        // Simple rule-based quality score
+        // Calculate quality score
         const qualityScore = calculateWorkoutQuality(json, userProfileForValidation);
-        console.info('Workout Quality Score:', qualityScore.overall, 'Grade:', qualityScore.grade);
+        console.info('Workout Quality Score:', {
+          overall: qualityScore.overall,
+          grade: qualityScore.grade,
+          breakdown: qualityScore.breakdown,
+        });
 
-        // Add metadata to response including validation and quality results
+        // Add metadata to response
         const response = {
           ...json,
           metadata: {
@@ -697,7 +293,13 @@ Output the JSON now:`.trim();
             qualityScore: {
               overall: qualityScore.overall,
               grade: qualityScore.grade,
+              breakdown: qualityScore.breakdown,
               method: 'rule-based',
+            },
+            duration: {
+              actual: durationResult.actualDuration,
+              target: duration || 30,
+              adjusted: durationResult.adjusted,
             },
           },
         };
@@ -725,13 +327,7 @@ Output the JSON now:`.trim();
  */
 export const addExerciseToWorkout = onRequest(
   {
-    cors: [
-      'http://localhost:5173',
-      'https://neurafit-ai-2025.web.app',
-      'https://neurafit-ai-2025.firebaseapp.com',
-      'https://neurastack.ai',
-      'https://www.neurastack.ai',
-    ],
+    cors: CORS_ORIGINS,
     region: 'us-central1',
     secrets: [openaiApiKey],
     timeoutSeconds: 60,
@@ -744,14 +340,7 @@ export const addExerciseToWorkout = onRequest(
     }
 
     try {
-      const {
-        currentWorkout,
-        workoutType,
-        experience,
-        goals,
-        equipment,
-        injuries,
-      } = req.body;
+      const { currentWorkout, workoutType, experience, goals, equipment, injuries } = req.body;
 
       if (!currentWorkout?.exercises || !Array.isArray(currentWorkout.exercises)) {
         res.status(400).json({ error: 'Invalid workout data' });
@@ -765,31 +354,37 @@ export const addExerciseToWorkout = onRequest(
 
       const prompt = `You are adding ONE additional exercise to an existing ${workoutType || 'Full Body'} workout.
 
-EXISTING EXERCISES IN WORKOUT:
+EXISTING EXERCISES IN WORKOUT (DO NOT DUPLICATE):
 ${existingExercises}
 
 CLIENT PROFILE:
 - Experience: ${experience || 'Beginner'}
 - Goals: ${(goals || ['General Health']).join(', ')}
 - Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+- Workout Type: ${workoutType || 'Full Body'}
 ${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
 
-REQUIREMENTS:
+CRITICAL REQUIREMENTS:
 1. Generate ONE exercise that complements the existing workout
-2. DO NOT duplicate or closely replicate any existing exercises
-3. Target muscle groups that are underrepresented in the current workout
-4. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${programming.reps?.[0]}-${programming.reps?.[1]} reps, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
-5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
-6. Avoid contraindicated exercises if injuries are present
+2. DO NOT duplicate or closely replicate any existing exercises listed above
+3. MUST match the workout type: ${workoutType || 'Full Body'}
+   - Upper Body: Only chest, back, shoulders, arms exercises
+   - Lower Body: Only legs, glutes, hamstrings, quads exercises
+   - Full Body: Balance of upper and lower body
+4. Target muscle groups that are underrepresented in the current workout
+5. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${programming.reps?.[0]}-${programming.reps?.[1]} reps, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
+6. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
+7. Avoid contraindicated exercises if injuries are present
+8. Use ONLY available equipment: ${(equipment || ['Bodyweight']).join(', ')}
 
-OUTPUT ONLY valid JSON (no markdown, no code blocks):
+ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 {
-  "name": "Exercise Name",
-  "description": "Detailed description with setup, execution, and breathing cues (100+ chars)",
+  "name": "Exercise Name (unique, not in existing list)",
+  "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
   "sets": 3,
   "reps": "8-12",
-  "formTips": ["tip1", "tip2", "tip3"],
-  "safetyTips": ["safety1", "safety2"],
+  "formTips": ["First form tip - specific and actionable", "Second form tip - addresses common error", "Third form tip - joint alignment or quality cue"],
+  "safetyTips": ["First safety tip - injury prevention", "Second safety tip - modification option"],
   "restSeconds": 90,
   "usesWeight": true,
   "muscleGroups": ["muscle1", "muscle2"],
@@ -804,7 +399,8 @@ OUTPUT ONLY valid JSON (no markdown, no code blocks):
         messages: [
           {
             role: 'system',
-            content: 'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. Output ONLY valid JSON with no markdown formatting.',
+            content:
+              'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. Output ONLY valid JSON with no markdown formatting.',
           },
           { role: 'user', content: prompt },
         ],
@@ -829,13 +425,7 @@ OUTPUT ONLY valid JSON (no markdown, no code blocks):
  */
 export const swapExercise = onRequest(
   {
-    cors: [
-      'http://localhost:5173',
-      'https://neurafit-ai-2025.web.app',
-      'https://neurafit-ai-2025.firebaseapp.com',
-      'https://neurastack.ai',
-      'https://www.neurastack.ai',
-    ],
+    cors: CORS_ORIGINS,
     region: 'us-central1',
     secrets: [openaiApiKey],
     timeoutSeconds: 60,
@@ -848,15 +438,7 @@ export const swapExercise = onRequest(
     }
 
     try {
-      const {
-        exerciseToReplace,
-        currentWorkout,
-        workoutType,
-        experience,
-        goals,
-        equipment,
-        injuries,
-      } = req.body;
+      const { exerciseToReplace, currentWorkout, workoutType, experience, goals, equipment, injuries } = req.body;
 
       if (!exerciseToReplace?.name || !currentWorkout?.exercises) {
         res.status(400).json({ error: 'Invalid request data' });
@@ -876,6 +458,7 @@ EXERCISE TO REPLACE:
 - Name: ${exerciseToReplace.name}
 - Muscle Groups: ${exerciseToReplace.muscleGroups?.join(', ') || 'N/A'}
 - Sets: ${exerciseToReplace.sets}, Reps: ${exerciseToReplace.reps}
+- Rest: ${exerciseToReplace.restSeconds || 90}s
 - Uses Weight: ${exerciseToReplace.usesWeight ? 'Yes' : 'No'}
 
 OTHER EXERCISES IN WORKOUT (DO NOT DUPLICATE):
@@ -885,27 +468,30 @@ CLIENT PROFILE:
 - Experience: ${experience || 'Beginner'}
 - Goals: ${(goals || ['General Health']).join(', ')}
 - Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+- Workout Type: ${workoutType || 'Full Body'}
 ${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
 
-REQUIREMENTS:
-1. Generate ONE exercise that targets the SAME muscle groups as the exercise being replaced
-2. Use a DIFFERENT movement pattern or variation
-3. DO NOT duplicate the exercise being replaced or any other exercises in the workout
-4. Match the same sets/reps/rest scheme as the original exercise
+CRITICAL REQUIREMENTS:
+1. Generate ONE exercise that targets the SAME or SIMILAR muscle groups as "${exerciseToReplace.name}"
+2. Use a DIFFERENT movement pattern or variation (not just a minor modification)
+3. DO NOT duplicate "${exerciseToReplace.name}" or any of these exercises: ${otherExercises}
+4. MUST match the same sets/reps/rest scheme as the original exercise
 5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
-6. Respect equipment availability and injury constraints
+6. Respect equipment availability: ${(equipment || ['Bodyweight']).join(', ')}
+7. Avoid contraindicated exercises if injuries are present
+8. The replacement should be a true alternative, not just a renamed version
 
-OUTPUT ONLY valid JSON (no markdown, no code blocks):
+ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 {
-  "name": "Exercise Name",
-  "description": "Detailed description with setup, execution, and breathing cues (100+ chars)",
+  "name": "Exercise Name (different from ${exerciseToReplace.name} and all other exercises)",
+  "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
   "sets": ${exerciseToReplace.sets},
   "reps": "${exerciseToReplace.reps}",
-  "formTips": ["tip1", "tip2", "tip3"],
-  "safetyTips": ["safety1", "safety2"],
+  "formTips": ["First form tip - specific and actionable", "Second form tip - addresses common error", "Third form tip - joint alignment or quality cue"],
+  "safetyTips": ["First safety tip - injury prevention", "Second safety tip - modification option"],
   "restSeconds": ${exerciseToReplace.restSeconds || 90},
-  "usesWeight": true,
-  "muscleGroups": ["muscle1", "muscle2"],
+  "usesWeight": ${exerciseToReplace.usesWeight ? 'true' : 'false'},
+  "muscleGroups": ["${exerciseToReplace.muscleGroups?.join('", "') || 'muscle1", "muscle2'}"],
   "difficulty": "${(experience || 'beginner').toLowerCase()}"
 }`;
 
@@ -917,7 +503,8 @@ OUTPUT ONLY valid JSON (no markdown, no code blocks):
         messages: [
           {
             role: 'system',
-            content: 'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles. Output ONLY valid JSON with no markdown formatting.',
+            content:
+              'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles. Output ONLY valid JSON with no markdown formatting.',
           },
           { role: 'user', content: prompt },
         ],
@@ -935,3 +522,4 @@ OUTPUT ONLY valid JSON (no markdown, no code blocks):
     }
   },
 );
+
