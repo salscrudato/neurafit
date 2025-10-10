@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2025-10-10
+
+### Enhanced Workout Type Selection 🏋️
+
+#### New Workout Types (4 Added) ⭐
+- **HIIT** - High-intensity interval training with explosive movements and metabolic conditioning
+- **Strength Training** - Maximal strength development with heavy compound lifts and full recovery
+- **Abs** - Abdominal definition and core strength with higher volume training
+- **Functional Training** - Real-world movement patterns and multi-planar motion
+
+#### UI/UX Improvements 🎨
+- **Organized workout types into 6 logical categories** for better navigation:
+  - Full Body & General (3 types)
+  - Body Part Splits (7 types)
+  - Push/Pull Splits (2 types)
+  - Cardio & Conditioning (2 types)
+  - Core & Abs (2 types)
+  - Mind-Body & Recovery (2 types)
+- **Added visual category headers** with gradient separators for improved scannability
+- **Responsive grid layouts** optimized for each category size
+- **Enhanced visual hierarchy** with category grouping and separator lines
+- **Simplified hero section** - Removed redundant subtitle and description text
+
+#### Backend Integration 🔧
+- **Added comprehensive AI context** for all 4 new workout types in `promptBuilder.ts`
+- **Detailed programming guidance** including movement patterns, example exercises, and rep/set schemes
+- **Updated time-based workout detection** to include HIIT and Abs
+- **Professional trainer-level specifications** for each workout type with evidence-based programming
+
+#### Impact 🎯
+- **Expanded from 14 to 18 workout types** - covering the most popular fitness modalities
+- **Improved user experience** - logical organization makes selection faster and more intuitive
+- **Better AI workout generation** - detailed context ensures appropriate exercise selection
+- **Cleaner interface** - removed redundant marketing text for streamlined experience
+
 ## [1.0.8] - 2025-10-09
 
 ### SEO - Critical Fixes 🔍

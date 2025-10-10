@@ -13,23 +13,36 @@ import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 import { WorkoutGenerationError, TimeoutError, ErrorHandler, retryWithBackoff } from '../lib/errors'
 import { dedupedFetch } from '../lib/requestManager'
 
-// Top 14 most common workout types organized by popularity
-const TYPES = [
-  'Full Body',        // Most popular - comprehensive workout
-  'Upper Body',       // Very popular - convenient split
-  'Lower Body',       // Very popular - leg day
-  'Cardio',          // High demand - heart health
-  'Core Focus',      // Popular - aesthetic goals
-  'Push',            // Popular split - chest/shoulders/triceps
-  'Pull',            // Popular split - back/biceps
-  'Legs/Glutes',     // Specific lower body focus
-  'Chest/Triceps',   // Classic push split
-  'Back/Biceps',     // Classic pull split
-  'Shoulders',       // Targeted muscle group
-  'Arms',            // Popular aesthetic focus
-  'Yoga',            // Mind-body connection - flexibility and mindfulness
-  'Pilates',         // Mind-body connection - core strength and stability
+// Top 18 most common workout types organized by category and popularity
+const WORKOUT_CATEGORIES = [
+  {
+    name: 'Full Body & General',
+    types: ['Full Body', 'Strength Training', 'Functional Training']
+  },
+  {
+    name: 'Body Part Splits',
+    types: ['Upper Body', 'Lower Body', 'Legs/Glutes', 'Chest/Triceps', 'Back/Biceps', 'Shoulders', 'Arms']
+  },
+  {
+    name: 'Push/Pull Splits',
+    types: ['Push', 'Pull']
+  },
+  {
+    name: 'Cardio & Conditioning',
+    types: ['Cardio', 'HIIT']
+  },
+  {
+    name: 'Core & Abs',
+    types: ['Core Focus', 'Abs']
+  },
+  {
+    name: 'Mind-Body & Recovery',
+    types: ['Yoga', 'Pilates']
+  }
 ] as const
+
+// Flat list of all types for validation
+const ALL_TYPES = WORKOUT_CATEGORIES.flatMap(cat => cat.types)
 
 // Top 6 most common workout durations (optimized for user preferences)
 const DUR = [15, 30, 45, 60, 75, 90] as const
@@ -296,15 +309,7 @@ export default function Generate() {
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-[1.1] sm:leading-tight">
                 AI Workout Generator
               </h1>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-700/90 leading-tight tracking-tight">
-                Create Custom Fitness Plans
-              </h2>
             </div>
-
-            <p className="text-slate-600/90 text-base sm:text-lg lg:text-xl leading-relaxed font-medium max-w-4xl">
-              Generate <strong className="text-slate-800 font-semibold">personalized workout plans</strong> instantly with advanced AI technology.
-              Tailored to your fitness goals, experience level, available equipment, and any injuries—powered by OpenAI's GPT-4.1-nano for ultra-fast generation.
-            </p>
 
             <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-2xl border border-blue-200/30 backdrop-blur-sm">
               <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
@@ -382,24 +387,54 @@ export default function Generate() {
         <section className="mt-8 space-y-6">
           {/* Type */}
           <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Workout Type</h3>
               {type && <span className="text-xs text-gray-500">Selected: {type}</span>}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {TYPES.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={[
-                    'rounded-xl border px-3 py-2.5 text-left transition-all duration-200 text-sm font-medium',
-                    type === t
-                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
-                      : 'bg-white/70 border-gray-200 hover:border-blue-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
-                  ].join(' ')}
-                >
-                  {t}
-                </button>
+
+            {/* Categorized Workout Types */}
+            <div className="space-y-5">
+              {WORKOUT_CATEGORIES.map((category, categoryIndex) => (
+                <div key={category.name}>
+                  {/* Category Header */}
+                  <div className="mb-2.5 flex items-center gap-2">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      {category.name}
+                    </h4>
+                    <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
+                  </div>
+
+                  {/* Category Types Grid */}
+                  <div className={`grid gap-2.5 ${
+                    category.types.length === 1
+                      ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
+                      : category.types.length === 2
+                      ? 'grid-cols-2 md:grid-cols-2'
+                      : category.types.length === 3
+                      ? 'grid-cols-2 sm:grid-cols-3'
+                      : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                  }`}>
+                    {category.types.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setType(t)}
+                        className={[
+                          'rounded-xl border px-3 py-2.5 text-left transition-all duration-200 text-sm font-medium',
+                          type === t
+                            ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
+                            : 'bg-white/70 border-gray-200 hover:border-blue-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
+                        ].join(' ')}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Separator line between categories (except last) */}
+                  {categoryIndex < WORKOUT_CATEGORIES.length - 1 && (
+                    <div className="mt-4 h-px bg-gray-100"></div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
