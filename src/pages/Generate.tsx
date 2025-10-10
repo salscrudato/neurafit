@@ -41,9 +41,6 @@ const WORKOUT_CATEGORIES = [
   }
 ] as const
 
-// Flat list of all types for validation
-const ALL_TYPES = WORKOUT_CATEGORIES.flatMap(cat => cat.types)
-
 // Top 6 most common workout durations (optimized for user preferences)
 const DUR = [15, 30, 45, 60, 75, 90] as const
 
@@ -406,9 +403,7 @@ export default function Generate() {
 
                   {/* Category Types Grid */}
                   <div className={`grid gap-2.5 ${
-                    category.types.length === 1
-                      ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
-                      : category.types.length === 2
+                    category.types.length === 2
                       ? 'grid-cols-2 md:grid-cols-2'
                       : category.types.length === 3
                       ? 'grid-cols-2 sm:grid-cols-3'
