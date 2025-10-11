@@ -6,7 +6,6 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
-  RecaptchaVerifier,
   signInWithPhoneNumber,
   type ConfirmationResult
 } from 'firebase/auth'
@@ -25,7 +24,6 @@ export default function Auth() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
 
   // Initialize component and apply performance optimizations
   useEffect(() => {
@@ -37,58 +35,8 @@ export default function Auth() {
     }
   }, [])
 
-  // Initialize reCAPTCHA when phone modal opens
-  useEffect(() => {
-    if (showPhoneModal && phoneStep === 'phone' && !recaptchaVerifier) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        try {
-          const container = document.getElementById('recaptcha-container')
-          if (!container) {
-            logger.error('reCAPTCHA container not found')
-            return
-          }
-
-          const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-            callback: () => {
-              // reCAPTCHA solved - automatically proceeds
-              logger.debug('reCAPTCHA verified')
-            },
-            'expired-callback': () => {
-              setPhoneError('Verification expired. Please try again.')
-            }
-          })
-
-          // Render the reCAPTCHA
-          verifier.render().then(() => {
-            logger.debug('reCAPTCHA rendered successfully')
-            setRecaptchaVerifier(verifier)
-          }).catch((error) => {
-            logger.error('Error rendering reCAPTCHA', error as Error)
-            setPhoneError('Failed to initialize verification. Please refresh and try again.')
-          })
-        } catch (error) {
-          logger.error('Error initializing reCAPTCHA', error as Error)
-          setPhoneError('Failed to initialize verification. Please refresh and try again.')
-        }
-      }, 100)
-
-      return () => clearTimeout(timer)
-    }
-
-    // Cleanup reCAPTCHA when modal closes
-    if (!showPhoneModal && recaptchaVerifier) {
-      try {
-        recaptchaVerifier.clear()
-      } catch (error) {
-        logger.error('Error clearing reCAPTCHA', error as Error)
-      }
-      setRecaptchaVerifier(null)
-    }
-
-    return undefined
-  }, [showPhoneModal, phoneStep, recaptchaVerifier])
+  // App Check is now initialized globally in firebase.ts
+  // No need for manual reCAPTCHA setup - App Check handles it automatically
 
   const googleLogin = async () => {
     setLoading(true)
@@ -168,17 +116,8 @@ export default function Auth() {
       // Automatically prepend +1 for US numbers
       const formattedPhone = `+1${cleanedPhone}`
 
-      // Check if recaptchaVerifier is ready, if not try to proceed anyway
-      // (Firebase will use test phone numbers if configured)
-      if (!recaptchaVerifier) {
-        logger.warn('reCAPTCHA not initialized, attempting to use test phone numbers')
-      }
-
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        recaptchaVerifier || new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' })
-      )
+      // App Check handles verification automatically - no need for manual reCAPTCHA
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone)
       setConfirmationResult(confirmation)
       setPhoneNumber(phone)
       setPhoneStep('code')
@@ -260,10 +199,6 @@ export default function Auth() {
     setPhoneNumber('')
     setPhoneError('')
     setConfirmationResult(null)
-    if (recaptchaVerifier) {
-      recaptchaVerifier.clear()
-      setRecaptchaVerifier(null)
-    }
   }
 
   return (
@@ -455,11 +390,7 @@ export default function Auth() {
         error={phoneError}
         phoneNumber={phoneNumber}
       />
-
-      {/* Invisible reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
     </div>
-
   )
 }
 

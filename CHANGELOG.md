@@ -7,82 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.12] - 2025-10-11
+## [1.0.13] - 2025-10-11
 
-### Bug Fixes 🐛
+### Major Improvements 🚀
 
-#### Permissions Policy Warning Fix
-- **Fixed "Unrecognized feature: 'private-token'" warning** - Added `private-token=()` to Permissions-Policy header
-  - Suppresses reCAPTCHA console warning about unrecognized feature
-  - No functional impact, purely cosmetic fix for cleaner console
+#### Replaced reCAPTCHA v2 with Firebase App Check (reCAPTCHA v3)
+- **Removed annoying reCAPTCHA challenges** - No more "I'm not a robot" checkboxes!
+- **Invisible verification** - reCAPTCHA v3 works silently in the background
+- **Better security** - Protects all Firebase services (Auth, Firestore, Functions)
+- **Cleaner code** - Removed 50+ lines of manual reCAPTCHA management
+- **No more domain issues** - App Check works seamlessly across all domains
+- **Automatic token refresh** - Tokens refresh automatically for uninterrupted service
 
-#### Documentation
-- **Created RECAPTCHA_DOMAIN_FIX.md** - Comprehensive guide for fixing phone authentication 401 errors
-  - Step-by-step instructions for adding neurastack.ai to reCAPTCHA authorized domains
-  - Alternative solution for creating new reCAPTCHA key
-  - Troubleshooting guide for phone authentication issues
+#### Code Changes
+- **Added Firebase App Check** - Initialized in `src/lib/firebase.ts` with reCAPTCHA v3
+- **Removed RecaptchaVerifier** - Deleted manual reCAPTCHA v2 implementation from `src/pages/Auth.tsx`
+- **Simplified phone auth** - `signInWithPhoneNumber()` now works without manual verification
+- **Added environment variable** - `VITE_RECAPTCHA_V3_SITE_KEY` for App Check configuration
+- **Updated .env.example** - Added App Check setup instructions
 
-## [1.0.11] - 2025-10-11
+#### Migration Required
+To use phone authentication after this update:
+1. Enable App Check in Firebase Console
+2. Register your app with reCAPTCHA v3 provider
+3. Add `VITE_RECAPTCHA_V3_SITE_KEY` to your `.env` file
+4. Rebuild and deploy
 
-### Bug Fixes 🐛
-
-#### Console Error Fixes
-- **Fixed CSP blocking Google APIs** - Added `https://apis.google.com` to Content Security Policy `connect-src` directive
-  - Resolves "Refused to connect to 'https://apis.google.com/js/gen_204'" error
-  - Allows Google Sign-In analytics and tracking to function properly
-- **Fixed service worker navigation preload warning** - Disabled navigationPreload to prevent "preloadResponse cancelled" warnings
-  - Improves console cleanliness on production deployment
-  - No impact on performance (preload not needed for our caching strategy)
-
-## [1.0.10] - 2025-10-11
-
-### Production Readiness Audit & Fixes 🚀
-
-#### Code Quality Improvements ✅
-- **Fixed all ESLint errors** - Resolved quote style inconsistencies in Cloud Functions
-- **Fixed TypeScript configuration** - Added proper test file exclusion in functions/tsconfig.json
-- **Added missing TypeScript type** - Added `preferenceNotes` property to WorkoutContext interface
-- **Removed Prettier configuration conflict** - Consolidated to single .prettierrc file
-- **Added environment variable validation** - Firebase config now validates required env vars on startup
-- **Zero TypeScript errors** - All frontend and backend code passes strict type checking
-- **Zero ESLint warnings** - All code follows consistent style guidelines
-- **Zero build warnings** - Clean production build with no issues
-
-#### Unlimited Free Workouts 🎁
-- **Unlimited workout generation** - No quota limits or tracking
-- **Simplified user experience** - No upgrade prompts or credit counters
-- **Clean codebase** - Removed all quota-related code for simplicity
-
-#### Set Completion Logic Enhancements 📊
-- **Improved completion rate calculation** - Properly counts completed sets regardless of weight entry
-- **Bodyweight exercise support** - Sets marked complete with 0 weight for bodyweight exercises
-- **Clear skipped set tracking** - Skipped sets marked as null (incomplete)
-- **Accurate workout statistics** - Completion rates reflect actual set completion, not just weight entry
-
-#### Configuration & Security 🔒
-- **Enhanced Firestore security rules** - Production-ready validation and authentication
-- **Environment variable documentation** - All required vars documented in .env.example
-- **Production-ready security** - Authentication required, user data isolation, input validation
-
-#### Performance Optimizations ⚡
-- **Bundle size optimized** - 1.03 MB total (295.91 KB gzipped)
-- **All routes lazy-loaded** - Optimal code splitting for fast initial load
-- **Component memoization** - React.memo, useMemo, useCallback throughout
-- **Firestore query optimization** - Proper indexing, pagination, and limits
-- **Service worker optimization** - Removed unused font file glob pattern
-
-#### Accessibility Enhancements ♿
-- **Comprehensive ARIA labels** - All interactive elements properly labeled
-- **Keyboard navigation** - Full app functionality accessible via keyboard
-- **Focus indicators** - Visible focus rings on all interactive elements (focus-visible:ring-2)
-- **Screen reader support** - Proper semantic HTML and ARIA attributes
-- **WCAG 2.1 AA compliance** - Meets professional accessibility standards
-
-#### Developer Experience 🛠️
-- **Clean codebase** - No dead code, unused imports, or commented code
-- **Consistent code style** - Single quotes, semicolons, proper formatting
-- **Type safety** - Strict TypeScript with no `any` types
-- **Error handling** - Comprehensive error boundaries and user-friendly messages
+See `APP_CHECK_SETUP.md` for detailed instructions.
 
 ## [1.0.9] - 2025-10-10
 

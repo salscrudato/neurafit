@@ -4,6 +4,7 @@ import { getAuth, type Auth } from 'firebase/auth'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getFunctions, type Functions } from 'firebase/functions'
 import { getAnalytics, type Analytics, isSupported } from 'firebase/analytics'
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
 import { logger } from './logger'
 
 // Validate required environment variables
@@ -41,6 +42,27 @@ const firebaseConfig = {
 // Initialize Firebase
 logger.firebase('Initializing Firebase...')
 const app: FirebaseApp = initializeApp(firebaseConfig)
+
+// Initialize App Check with reCAPTCHA v3 (invisible, no user interaction)
+// This replaces the old reCAPTCHA v2 for phone authentication
+if (typeof window !== 'undefined') {
+  try {
+    // Use reCAPTCHA v3 site key from environment variable
+    const appCheckSiteKey = import.meta.env['VITE_RECAPTCHA_V3_SITE_KEY']
+
+    if (appCheckSiteKey) {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(appCheckSiteKey),
+        isTokenAutoRefreshEnabled: true,
+      })
+      logger.firebase('App Check initialized with reCAPTCHA v3')
+    } else {
+      logger.warn('App Check not initialized: VITE_RECAPTCHA_V3_SITE_KEY not set')
+    }
+  } catch (error) {
+    logger.error('Failed to initialize App Check', error as Error)
+  }
+}
 
 // Initialize services
 export const auth: Auth = getAuth(app)
