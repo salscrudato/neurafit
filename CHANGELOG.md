@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11] - 2025-10-11
+
+### Bug Fixes 🐛
+
+#### Console Error Fixes
+- **Fixed CSP blocking Google APIs** - Added `https://apis.google.com` to Content Security Policy `connect-src` directive
+  - Resolves "Refused to connect to 'https://apis.google.com/js/gen_204'" error
+  - Allows Google Sign-In analytics and tracking to function properly
+- **Fixed service worker navigation preload warning** - Disabled navigationPreload to prevent "preloadResponse cancelled" warnings
+  - Improves console cleanliness on production deployment
+  - No impact on performance (preload not needed for our caching strategy)
+
 ## [1.0.10] - 2025-10-11
 
 ### Production Readiness Audit & Fixes 🚀
@@ -38,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Production-ready security** - Authentication required, user data isolation, input validation
 
 #### Performance Optimizations ⚡
-- **Bundle size optimized** - 1.03 MB total (297.35 KB gzipped)
+- **Bundle size optimized** - 1.03 MB total (295.91 KB gzipped)
 - **All routes lazy-loaded** - Optimal code splitting for fast initial load
 - **Component memoization** - React.memo, useMemo, useCallback throughout
 - **Firestore query optimization** - Proper indexing, pagination, and limits

@@ -143,8 +143,10 @@ async function buildServiceWorker() {
       skipWaiting: true,
       clientsClaim: true,
 
-      // Navigation preload
-      navigationPreload: true,
+      // Navigation preload disabled to avoid console warnings
+      // The preloadResponse promise can be cancelled before settling,
+      // causing "navigation preload request was cancelled" warnings
+      navigationPreload: false,
     });
 
     console.log(`✅ Service worker built successfully!`);
