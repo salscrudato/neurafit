@@ -46,8 +46,6 @@ async function buildServiceWorker() {
         '**/*.css',
         // Images and icons
         '**/*.{png,jpg,jpeg,gif,svg,ico,webp}',
-        // Fonts
-        '**/*.{woff,woff2,ttf,eot}',
         // Manifest
         'manifest.json',
       ],

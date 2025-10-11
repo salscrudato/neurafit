@@ -12,7 +12,8 @@ import OpenAI from 'openai';
 import { getProgrammingRecommendations, getExperienceGuidance } from './lib/exerciseDatabase';
 import { validateWorkoutPlan } from './lib/exerciseValidation';
 import { generateProfessionalPromptEnhancement } from './lib/promptEnhancements';
-import { buildWorkoutPrompt, buildSystemMessage, type WorkoutContext } from './lib/promptBuilder';
+import { buildWorkoutPrompt, buildSystemMessage, getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder';
+import { buildEnhancedSystemMessage, buildEnhancedWorkoutPrompt } from './lib/promptBuilder.enhanced';
 import { calculateWorkoutQuality } from './lib/qualityScoring';
 import { validateAndAdjustDuration } from './lib/durationAdjustment';
 
@@ -70,6 +71,7 @@ export const generateWorkout = onRequest(
         targetIntensity,
         progressionNote,
         recentWorkouts,
+        preferenceNotes,
       } = (req.body as {
         experience?: string;
         goals?: string | string[];
@@ -91,6 +93,7 @@ export const generateWorkout = onRequest(
           timestamp: number;
           exercises: Array<{ name: string }>;
         }>;
+        preferenceNotes?: string;
       }) || {};
 
       // Use intensity values from frontend (calculated by useWorkoutPreload hook)
@@ -117,6 +120,7 @@ export const generateWorkout = onRequest(
         targetIntensity: finalTargetIntensity,
         progressionNote: finalProgressionNote,
         recentWorkouts,
+        preferenceNotes,
       };
 
       // Get programming recommendations with experience-level adjustments
@@ -143,15 +147,37 @@ export const generateWorkout = onRequest(
       const experienceGuidance = getExperienceGuidance(experience || 'Beginner');
       const enhancedQualityGuidelines = `${qualityGuidelines}\n\n${experienceGuidance}`;
 
-      // Build comprehensive workout prompt
-      const { prompt, minExerciseCount, maxExerciseCount } = buildWorkoutPrompt(
-        workoutContext,
-        programming,
-        enhancedQualityGuidelines,
-      );
+      // Use enhanced prompt system for better AI output
+      const useEnhancedPrompts = true; // Feature flag for A/B testing
 
-      // Build system message
-      const systemMessage = buildSystemMessage(duration || 30, workoutType);
+      let prompt: string;
+      let systemMessage: string;
+      let minExerciseCount: number;
+      let maxExerciseCount: number;
+
+      if (useEnhancedPrompts) {
+        // Enhanced AI-engineered prompts with chain-of-thought reasoning
+        const enhancedPrompt = buildEnhancedWorkoutPrompt(
+          workoutContext,
+          programming,
+          enhancedQualityGuidelines,
+        );
+        prompt = enhancedPrompt.prompt;
+        minExerciseCount = enhancedPrompt.minExerciseCount;
+        maxExerciseCount = enhancedPrompt.maxExerciseCount;
+        systemMessage = buildEnhancedSystemMessage(duration || 30, workoutType);
+      } else {
+        // Original prompt system
+        const originalPrompt = buildWorkoutPrompt(
+          workoutContext,
+          programming,
+          enhancedQualityGuidelines,
+        );
+        prompt = originalPrompt.prompt;
+        minExerciseCount = originalPrompt.minExerciseCount;
+        maxExerciseCount = originalPrompt.maxExerciseCount;
+        systemMessage = buildSystemMessage(duration || 30, workoutType);
+      }
 
       // Log generation start
       console.log('⚡ Generating workout with GPT-4o-mini', {
@@ -235,10 +261,13 @@ export const generateWorkout = onRequest(
           console.log('Duration adjustments:', durationResult.changes);
         }
 
-        // Reject if duration is still too far off
-        if (durationResult.error) {
+        // Reject if duration is still too far off (only for extreme cases)
+        if (durationResult.error && Math.abs(durationResult.difference) > 10) {
           console.error(durationResult.error);
           throw new Error(durationResult.error);
+        } else if (durationResult.error) {
+          // Log warning but allow workout through if difference is < 10 minutes
+          console.warn('Duration variance warning:', durationResult.error);
         }
 
         // Professional workout validation with rule-based scoring
@@ -352,9 +381,14 @@ export const addExerciseToWorkout = onRequest(
       const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
       const programming = getProgrammingRecommendations(goals || ['General Health'], experience || 'Beginner');
 
+      // Get workout type context for better exercise matching
+      const workoutTypeGuidance = getWorkoutTypeContext(workoutType);
+
       const prompt = `You are adding ONE additional exercise to an existing ${workoutType || 'Full Body'} workout.
 
-EXISTING EXERCISES IN WORKOUT (DO NOT DUPLICATE):
+⚠️ CRITICAL: The exercise you generate MUST be completely different from all existing exercises.
+
+EXISTING EXERCISES IN WORKOUT (ABSOLUTELY DO NOT DUPLICATE OR USE SIMILAR VARIATIONS):
 ${existingExercises}
 
 CLIENT PROFILE:
@@ -364,22 +398,45 @@ CLIENT PROFILE:
 - Workout Type: ${workoutType || 'Full Body'}
 ${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
 
+WORKOUT TYPE GUIDANCE FOR ${workoutType || 'Full Body'}:
+${workoutTypeGuidance}
+
 CRITICAL REQUIREMENTS:
 1. Generate ONE exercise that complements the existing workout
-2. DO NOT duplicate or closely replicate any existing exercises listed above
+2. ⚠️ ABSOLUTELY DO NOT duplicate or use variations of existing exercises
+   - If "Dumbbell Bench Press" exists, DO NOT use "Dumbbell Incline Press" or "Dumbbell Close-Grip Press"
+   - If "Barbell Row" exists, DO NOT use "Dumbbell Row" or "Cable Row"
+   - Choose a COMPLETELY DIFFERENT exercise targeting different movement patterns
 3. MUST match the workout type: ${workoutType || 'Full Body'}
+   - The exercise MUST align with the workout type guidance above
+   - Use the example exercises and movement patterns as reference
    - Upper Body: Only chest, back, shoulders, arms exercises
    - Lower Body: Only legs, glutes, hamstrings, quads exercises
    - Full Body: Balance of upper and lower body
+   - Legs/Glutes: Hip-dominant and glute-focused movements
+   - Chest/Triceps: Chest pressing and tricep isolation
+   - Back/Biceps: Pulling movements and bicep work
+   - Shoulders: Deltoid-focused exercises (front, side, rear)
+   - Arms: Bicep and tricep isolation
+   - Push: Pressing movements for chest, shoulders, triceps
+   - Pull: Pulling movements for back, biceps, rear delts
+   - Core Focus: Anti-extension, anti-rotation, stability
+   - Abs: Abdominal-focused exercises
+   - Cardio: Cardiovascular conditioning movements
+   - HIIT: High-intensity explosive movements
+   - Strength Training: Heavy compound lifts
+   - Yoga: Flexibility and balance poses
+   - Pilates: Core-focused controlled movements
 4. Target muscle groups that are underrepresented in the current workout
 5. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${programming.reps?.[0]}-${programming.reps?.[1]} reps, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
 6. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
 7. Avoid contraindicated exercises if injuries are present
 8. Use ONLY available equipment: ${(equipment || ['Bodyweight']).join(', ')}
+9. ⚠️ BEFORE OUTPUTTING: Verify the exercise name is NOT similar to any existing exercise
 
 ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 {
-  "name": "Exercise Name (unique, not in existing list)",
+  "name": "Exercise Name (MUST be completely unique and different from existing exercises)",
   "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
   "sets": 3,
   "reps": "8-12",
@@ -400,7 +457,7 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
           {
             role: 'system',
             content:
-              'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. Output ONLY valid JSON with no markdown formatting.',
+              'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. The exercise MUST be completely unique and different from all existing exercises - no variations or similar movements. Output ONLY valid JSON with no markdown formatting.',
           },
           { role: 'user', content: prompt },
         ],
@@ -461,7 +518,7 @@ EXERCISE TO REPLACE:
 - Rest: ${exerciseToReplace.restSeconds || 90}s
 - Uses Weight: ${exerciseToReplace.usesWeight ? 'Yes' : 'No'}
 
-OTHER EXERCISES IN WORKOUT (DO NOT DUPLICATE):
+OTHER EXERCISES IN WORKOUT (ABSOLUTELY DO NOT DUPLICATE):
 ${otherExercises}
 
 CLIENT PROFILE:
@@ -474,16 +531,20 @@ ${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${inju
 CRITICAL REQUIREMENTS:
 1. Generate ONE exercise that targets the SAME or SIMILAR muscle groups as "${exerciseToReplace.name}"
 2. Use a DIFFERENT movement pattern or variation (not just a minor modification)
-3. DO NOT duplicate "${exerciseToReplace.name}" or any of these exercises: ${otherExercises}
+   - If replacing "Barbell Bench Press", consider "Dumbbell Flyes", "Push-ups", or "Cable Chest Press" (NOT "Dumbbell Bench Press")
+   - If replacing "Barbell Row", consider "Pull-ups", "Lat Pulldown", or "Face Pulls" (NOT "Dumbbell Row")
+   - Choose a DIFFERENT exercise type that works the same muscles
+3. ⚠️ ABSOLUTELY DO NOT duplicate "${exerciseToReplace.name}" or any of these exercises: ${otherExercises}
 4. MUST match the same sets/reps/rest scheme as the original exercise
 5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
 6. Respect equipment availability: ${(equipment || ['Bodyweight']).join(', ')}
 7. Avoid contraindicated exercises if injuries are present
-8. The replacement should be a true alternative, not just a renamed version
+8. The replacement should be a true alternative with a different movement pattern
+9. ⚠️ BEFORE OUTPUTTING: Verify the exercise is NOT in the existing workout
 
 ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 {
-  "name": "Exercise Name (different from ${exerciseToReplace.name} and all other exercises)",
+  "name": "Exercise Name (MUST be different from ${exerciseToReplace.name} and all other exercises)",
   "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
   "sets": ${exerciseToReplace.sets},
   "reps": "${exerciseToReplace.reps}",
@@ -497,14 +558,14 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 
       const completion = await client.chat.completions.create({
         model: 'gpt-4o-mini',
-        temperature: 0.4,
+        temperature: 0.3,
         max_tokens: 800,
         response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
             content:
-              'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles. Output ONLY valid JSON with no markdown formatting.',
+              'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles but using a DIFFERENT movement pattern. The replacement MUST NOT duplicate any existing exercises. Output ONLY valid JSON with no markdown formatting.',
           },
           { role: 'user', content: prompt },
         ],

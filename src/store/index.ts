@@ -347,17 +347,23 @@ export const useAppStore = create<AppState & AppActions>()(
 )
 
 // Helper function to calculate completion rate
+// Completed sets are marked with a number (including 0 for bodyweight exercises)
+// Skipped sets are marked as null
+// Sets not attempted are undefined
 function calculateCompletionRate(weights: Record<number, Record<number, number | null>>, exercises: Exercise[]): number {
   let totalSets = 0
   let completedSets = 0
-  
+
   exercises.forEach((exercise, exerciseIndex) => {
     const exerciseWeights = weights[exerciseIndex] || {}
     const sets = exercise.sets || 0
     totalSets += sets
-    
+
     for (let setIndex = 1; setIndex <= sets; setIndex++) {
-      if (exerciseWeights[setIndex] !== null && exerciseWeights[setIndex] !== undefined) {
+      // A set is complete if it has a number value (including 0)
+      // null = skipped (incomplete), undefined = not attempted (incomplete)
+      const setWeight = exerciseWeights[setIndex]
+      if (setWeight !== null && setWeight !== undefined) {
         completedSets++
       }
     }

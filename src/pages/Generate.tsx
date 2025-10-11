@@ -13,11 +13,11 @@ import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 import { WorkoutGenerationError, TimeoutError, ErrorHandler, retryWithBackoff } from '../lib/errors'
 import { dedupedFetch } from '../lib/requestManager'
 
-// Top 18 most common workout types organized by category and popularity
+// Top 17 most common workout types organized by category and popularity
 const WORKOUT_CATEGORIES = [
   {
     name: 'Full Body & General',
-    types: ['Full Body', 'Strength Training', 'Functional Training']
+    types: ['Full Body', 'Strength Training']
   },
   {
     name: 'Body Part Splits',
@@ -58,6 +58,7 @@ export default function Generate() {
   const [type, setType] = useState<string>()
   const [duration, setDuration] = useState<number>()
   const [equipment, setEquipment] = useState<string[]>([])
+  const [preferenceNotes, setPreferenceNotes] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [showProgressiveLoading, setShowProgressiveLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,7 +140,8 @@ export default function Generate() {
       duration,
       uid,
       targetIntensity: preloadedData.targetIntensity,
-      progressionNote: preloadedData.progressionNote
+      progressionNote: preloadedData.progressionNote,
+      preferenceNotes: preferenceNotes.trim() || undefined
     }
 
     const url = import.meta.env['VITE_WORKOUT_FN_URL'] as string
@@ -405,8 +407,6 @@ export default function Generate() {
                   <div className={`grid gap-2.5 ${
                     category.types.length === 2
                       ? 'grid-cols-2 md:grid-cols-2'
-                      : category.types.length === 3
-                      ? 'grid-cols-2 sm:grid-cols-3'
                       : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
                   }`}>
                     {category.types.map((t) => (
@@ -490,6 +490,37 @@ export default function Generate() {
                 ))}
               </div>
 
+            </div>
+          </div>
+        </section>
+
+        {/* Workout Preferences */}
+        <section className="mt-6">
+          <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+            <div className="mb-3">
+              <h3 className="font-semibold text-gray-900">Workout Preferences (Optional)</h3>
+              <p className="text-xs text-gray-500 mt-1">Add any specific preferences or notes for the AI to consider</p>
+            </div>
+            <textarea
+              value={preferenceNotes}
+              onChange={(e) => setPreferenceNotes(e.target.value)}
+              placeholder="e.g., I prefer exercises that don't require lying down, focus on unilateral movements, include more core work, etc."
+              maxLength={500}
+              rows={3}
+              className="w-full rounded-lg border border-gray-200 bg-white/90 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs text-gray-400">
+                {preferenceNotes.length}/500 characters
+              </span>
+              {preferenceNotes.length > 0 && (
+                <button
+                  onClick={() => setPreferenceNotes('')}
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
         </section>
