@@ -7,33 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.13] - 2025-10-11
+## [1.0.14] - 2025-10-11
 
-### Major Improvements 🚀
+### Phone Authentication Simplified 📱
 
-#### Replaced reCAPTCHA v2 with Firebase App Check (reCAPTCHA v3)
-- **Removed annoying reCAPTCHA challenges** - No more "I'm not a robot" checkboxes!
-- **Invisible verification** - reCAPTCHA v3 works silently in the background
-- **Better security** - Protects all Firebase services (Auth, Firestore, Functions)
-- **Cleaner code** - Removed 50+ lines of manual reCAPTCHA management
-- **No more domain issues** - App Check works seamlessly across all domains
-- **Automatic token refresh** - Tokens refresh automatically for uninterrupted service
+#### Reverted to Simple Invisible reCAPTCHA
+- **Removed App Check complexity** - No additional setup required
+- **Restored working phone auth** - Uses Firebase's automatic reCAPTCHA (same as before)
+- **Invisible verification** - reCAPTCHA works in background, no user interaction
+- **Works with real phone numbers** - Production-ready out of the box
+- **No environment variables needed** - Firebase manages reCAPTCHA automatically
 
-#### Code Changes
-- **Added Firebase App Check** - Initialized in `src/lib/firebase.ts` with reCAPTCHA v3
-- **Removed RecaptchaVerifier** - Deleted manual reCAPTCHA v2 implementation from `src/pages/Auth.tsx`
-- **Simplified phone auth** - `signInWithPhoneNumber()` now works without manual verification
-- **Added environment variable** - `VITE_RECAPTCHA_V3_SITE_KEY` for App Check configuration
-- **Updated .env.example** - Added App Check setup instructions
+#### What Changed
+- Removed App Check initialization from `src/lib/firebase.ts`
+- Restored simple `RecaptchaVerifier` in `src/pages/Auth.tsx`
+- Removed `VITE_RECAPTCHA_V3_SITE_KEY` requirement
+- Cleaner, simpler implementation (back to basics)
 
-#### Migration Required
-To use phone authentication after this update:
-1. Enable App Check in Firebase Console
-2. Register your app with reCAPTCHA v3 provider
-3. Add `VITE_RECAPTCHA_V3_SITE_KEY` to your `.env` file
-4. Rebuild and deploy
+#### How It Works
+Firebase automatically provides an invisible reCAPTCHA for phone authentication. The reCAPTCHA key is managed by Firebase and works on all authorized domains (localhost, neurafit-ai-2025.web.app, neurastack.ai).
 
-See `APP_CHECK_SETUP.md` for detailed instructions.
+No additional configuration needed - just works!
 
 ## [1.0.9] - 2025-10-10
 

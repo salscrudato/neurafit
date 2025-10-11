@@ -6,6 +6,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
+  RecaptchaVerifier,
   signInWithPhoneNumber,
   type ConfirmationResult
 } from 'firebase/auth'
@@ -24,6 +25,7 @@ export default function Auth() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
 
   // Initialize component and apply performance optimizations
   useEffect(() => {
@@ -35,8 +37,28 @@ export default function Auth() {
     }
   }, [])
 
-  // App Check is now initialized globally in firebase.ts
-  // No need for manual reCAPTCHA setup - App Check handles it automatically
+  // Initialize invisible reCAPTCHA when phone modal opens
+  useEffect(() => {
+    if (showPhoneModal && !recaptchaVerifier) {
+      try {
+        // Create invisible reCAPTCHA verifier
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+        })
+        setRecaptchaVerifier(verifier)
+      } catch (error) {
+        logger.error('Error initializing reCAPTCHA', error as Error)
+      }
+    }
+
+    // Cleanup when modal closes
+    return () => {
+      if (!showPhoneModal && recaptchaVerifier) {
+        recaptchaVerifier.clear()
+        setRecaptchaVerifier(null)
+      }
+    }
+  }, [showPhoneModal, recaptchaVerifier])
 
   const googleLogin = async () => {
     setLoading(true)
@@ -116,8 +138,13 @@ export default function Auth() {
       // Automatically prepend +1 for US numbers
       const formattedPhone = `+1${cleanedPhone}`
 
-      // App Check handles verification automatically - no need for manual reCAPTCHA
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone)
+      // Use reCAPTCHA verifier for phone authentication
+      if (!recaptchaVerifier) {
+        setPhoneError('Verification not ready. Please try again.')
+        return
+      }
+
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier)
       setConfirmationResult(confirmation)
       setPhoneNumber(phone)
       setPhoneStep('code')
@@ -199,6 +226,10 @@ export default function Auth() {
     setPhoneNumber('')
     setPhoneError('')
     setConfirmationResult(null)
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear()
+      setRecaptchaVerifier(null)
+    }
   }
 
   return (
@@ -390,6 +421,9 @@ export default function Auth() {
         error={phoneError}
         phoneNumber={phoneNumber}
       />
+
+      {/* Invisible reCAPTCHA container */}
+      <div id="recaptcha-container"></div>
     </div>
   )
 }
