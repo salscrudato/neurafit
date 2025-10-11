@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.12] - 2025-10-11
+
+### Bug Fixes 🐛
+
+#### Permissions Policy Warning Fix
+- **Fixed "Unrecognized feature: 'private-token'" warning** - Added `private-token=()` to Permissions-Policy header
+  - Suppresses reCAPTCHA console warning about unrecognized feature
+  - No functional impact, purely cosmetic fix for cleaner console
+
+#### Documentation
+- **Created RECAPTCHA_DOMAIN_FIX.md** - Comprehensive guide for fixing phone authentication 401 errors
+  - Step-by-step instructions for adding neurastack.ai to reCAPTCHA authorized domains
+  - Alternative solution for creating new reCAPTCHA key
+  - Troubleshooting guide for phone authentication issues
+
 ## [1.0.11] - 2025-10-11
 
 ### Bug Fixes 🐛
