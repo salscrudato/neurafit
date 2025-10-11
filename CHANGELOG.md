@@ -7,27 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.14] - 2025-10-11
+## [1.0.15] - 2025-10-11
 
-### Phone Authentication Simplified 📱
+### Bug Fixes 🐛
 
-#### Reverted to Simple Invisible reCAPTCHA
-- **Removed App Check complexity** - No additional setup required
-- **Restored working phone auth** - Uses Firebase's automatic reCAPTCHA (same as before)
-- **Invisible verification** - reCAPTCHA works in background, no user interaction
-- **Works with real phone numbers** - Production-ready out of the box
-- **No environment variables needed** - Firebase manages reCAPTCHA automatically
+#### Fixed Phone Authentication Initialization Timing
+- **Fixed reCAPTCHA initialization race condition** - Added proper DOM ready check and render wait
+- **Fixed "Verification not ready" error on first load** - Ensures reCAPTCHA is fully initialized before allowing submission
+- **Added better error messaging** - Clearer feedback when verification is not ready
+- **Improved cleanup** - Proper error handling when clearing reCAPTCHA verifier
 
-#### What Changed
-- Removed App Check initialization from `src/lib/firebase.ts`
-- Restored simple `RecaptchaVerifier` in `src/pages/Auth.tsx`
-- Removed `VITE_RECAPTCHA_V3_SITE_KEY` requirement
-- Cleaner, simpler implementation (back to basics)
+#### Technical Changes
+- Add 100ms delay to ensure DOM is ready before initializing reCAPTCHA
+- Wait for `verifier.render()` promise to resolve before setting state
+- Add container existence check before creating verifier
+- Improve error handling and logging for reCAPTCHA lifecycle
 
-#### How It Works
-Firebase automatically provides an invisible reCAPTCHA for phone authentication. The reCAPTCHA key is managed by Firebase and works on all authorized domains (localhost, neurafit-ai-2025.web.app, neurastack.ai).
-
-No additional configuration needed - just works!
+This fixes the issue where phone authentication would fail on first attempt but work after page refresh.
 
 ## [1.0.9] - 2025-10-10
 

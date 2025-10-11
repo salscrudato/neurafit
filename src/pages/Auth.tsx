@@ -40,24 +40,46 @@ export default function Auth() {
   // Initialize invisible reCAPTCHA when phone modal opens
   useEffect(() => {
     if (showPhoneModal && !recaptchaVerifier) {
-      try {
-        // Create invisible reCAPTCHA verifier
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-        })
-        setRecaptchaVerifier(verifier)
-      } catch (error) {
-        logger.error('Error initializing reCAPTCHA', error as Error)
-      }
+      // Add delay to ensure DOM is ready and avoid race conditions
+      const timer = setTimeout(() => {
+        try {
+          const container = document.getElementById('recaptcha-container')
+          if (!container) {
+            logger.error('reCAPTCHA container not found')
+            return
+          }
+
+          // Create invisible reCAPTCHA verifier
+          const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+          })
+
+          // Render the verifier to ensure it's ready
+          verifier.render().then(() => {
+            setRecaptchaVerifier(verifier)
+            logger.debug('reCAPTCHA initialized successfully')
+          }).catch((error) => {
+            logger.error('Error rendering reCAPTCHA', error as Error)
+          })
+        } catch (error) {
+          logger.error('Error initializing reCAPTCHA', error as Error)
+        }
+      }, 100)
+
+      return () => clearTimeout(timer)
     }
 
     // Cleanup when modal closes
-    return () => {
-      if (!showPhoneModal && recaptchaVerifier) {
+    if (!showPhoneModal && recaptchaVerifier) {
+      try {
         recaptchaVerifier.clear()
-        setRecaptchaVerifier(null)
+      } catch (error) {
+        logger.error('Error clearing reCAPTCHA', error as Error)
       }
+      setRecaptchaVerifier(null)
     }
+
+    return undefined
   }, [showPhoneModal, recaptchaVerifier])
 
   const googleLogin = async () => {
@@ -140,7 +162,8 @@ export default function Auth() {
 
       // Use reCAPTCHA verifier for phone authentication
       if (!recaptchaVerifier) {
-        setPhoneError('Verification not ready. Please try again.')
+        setPhoneError('Verification not ready. Please wait a moment and try again.')
+        setLoading(false)
         return
       }
 
