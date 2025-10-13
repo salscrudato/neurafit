@@ -12,7 +12,7 @@ import { validateWorkoutPlanJSON, validateRepFormat, validateRestPeriods } from 
 import { validateWorkoutPlan } from '../lib/exerciseValidation';
 import { validateAndAdjustDuration, computeMinMaxExerciseCount } from '../lib/durationAdjustment';
 import { calculateWorkoutQuality } from '../lib/qualityScoring';
-import { deriveProgression, getAdaptiveState } from '../lib/periodization';
+import { deriveProgression } from '../lib/periodization';
 import { getCachedOrRun, hashRequest, type CacheableContext } from '../lib/cache';
 import { OPENAI_MODEL, OPENAI_CONFIG, QUALITY_THRESHOLDS } from '../config';
 import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
@@ -104,10 +104,9 @@ export async function generateWorkoutOrchestrated(
   );
 
   // Step 2: Derive periodization and progression
-  const adaptiveState = uid ? getAdaptiveState(uid, experience) : { difficultyScalar: 1.0 };
   const progression = deriveProgression(
     experience,
-    ctx.targetIntensity || adaptiveState.difficultyScalar,
+    ctx.targetIntensity || 1.0,
     ctx.recentWorkouts || [],
   );
 

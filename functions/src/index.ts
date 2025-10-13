@@ -175,6 +175,13 @@ export const addExerciseToWorkout = onRequest(
       // Get workout type context for better exercise matching
       const workoutTypeGuidance = getWorkoutTypeContext(workoutType);
 
+      // Determine if this is a time-based workout
+      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
+      const repFormat = isTimeBasedWorkout ? '"45s" (time format)' : '"8-12" (range format)';
+      const repInstruction = isTimeBasedWorkout
+        ? '⚠️ CRITICAL: This is a time-based workout - reps MUST use time format like "30s", "45s", "60s" (NOT ranges like "8-12")'
+        : 'Use rep range format like "8-12", "6-10", "12-15"';
+
       const prompt = `You are adding ONE additional exercise to an existing ${workoutType || 'Full Body'} workout.
 
 ⚠️ CRITICAL: The exercise you generate MUST be completely different from all existing exercises.
@@ -219,22 +226,25 @@ CRITICAL REQUIREMENTS:
    - Yoga: Flexibility and balance poses
    - Pilates: Core-focused controlled movements
 4. Target muscle groups that are underrepresented in the current workout
-5. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${programming.reps?.[0]}-${programming.reps?.[1]} reps, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
+5. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${isTimeBasedWorkout ? 'time-based reps (30s, 45s, 60s)' : `${programming.reps?.[0]}-${programming.reps?.[1]} reps`}, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
 6. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
 7. Avoid contraindicated exercises if injuries are present
 8. Use ONLY available equipment: ${(equipment || ['Bodyweight']).join(', ')}
 9. ⚠️ BEFORE OUTPUTTING: Verify the exercise name is NOT similar to any existing exercise
+
+REP FORMAT REQUIREMENT:
+${repInstruction}
 
 ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 {
   "name": "Exercise Name (MUST be completely unique and different from existing exercises)",
   "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
   "sets": 3,
-  "reps": "8-12",
+  "reps": ${repFormat},
   "formTips": ["First form tip - specific and actionable", "Second form tip - addresses common error", "Third form tip - joint alignment or quality cue"],
   "safetyTips": ["First safety tip - injury prevention", "Second safety tip - modification option"],
   "restSeconds": 90,
-  "usesWeight": true,
+  "usesWeight": ${isTimeBasedWorkout ? 'false' : 'true'},
   "muscleGroups": ["muscle1", "muscle2"],
   "difficulty": "${(experience || 'beginner').toLowerCase()}"
 }`;
@@ -313,6 +323,12 @@ export const swapExercise = onRequest(
         .map((ex: { name: string }) => ex.name)
         .join(', ');
 
+      // Determine if this is a time-based workout
+      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
+      const repInstruction = isTimeBasedWorkout
+        ? '⚠️ CRITICAL: This is a time-based workout - reps MUST use time format like "30s", "45s", "60s" (NOT ranges like "8-12")'
+        : 'Use the same rep format as the original exercise';
+
       const prompt = `You are replacing an exercise in a ${workoutType || 'Full Body'} workout with a similar alternative.
 
 EXERCISE TO REPLACE:
@@ -345,6 +361,9 @@ CRITICAL REQUIREMENTS:
 7. Avoid contraindicated exercises if injuries are present
 8. The replacement should be a true alternative with a different movement pattern
 9. ⚠️ BEFORE OUTPUTTING: Verify the exercise is NOT in the existing workout
+
+REP FORMAT REQUIREMENT:
+${repInstruction}
 
 ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 {
