@@ -19,10 +19,15 @@
 import { generateSW } from 'workbox-build';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
+
+// Read package.json for version
+const packageJson = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8'));
+const version = packageJson.version;
 
 async function buildServiceWorker() {
   try {
@@ -138,6 +143,9 @@ async function buildServiceWorker() {
           },
         },
       ],
+
+      // Cache name with version for cache busting
+      cacheId: `neurafit-v${version}`,
 
       // Skip waiting and claim clients immediately
       skipWaiting: true,

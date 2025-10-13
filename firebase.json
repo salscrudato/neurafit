@@ -52,7 +52,7 @@
           },
           {
             "key": "Permissions-Policy",
-            "value": "geolocation=(), microphone=(), camera=(), private-token=()"
+            "value": "geolocation=(), microphone=(), camera=()"
           },
           {
             "key": "X-Content-Type-Options",
