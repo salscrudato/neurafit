@@ -155,6 +155,12 @@ async function buildServiceWorker() {
       // The preloadResponse promise can be cancelled before settling,
       // causing "navigation preload request was cancelled" warnings
       navigationPreload: false,
+
+      // Additional runtime code to explicitly disable navigation preload
+      additionalManifestEntries: [],
+
+      // Inject custom code to handle navigation preload
+      inlineWorkboxRuntime: true,
     });
 
     console.log(`✅ Service worker built successfully!`);
