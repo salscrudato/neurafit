@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.16] - 2025-01-13
 
+### Fixed
+- Removed unsupported 'private-token' from Permissions-Policy header (fixes reCAPTCHA warning)
+- Fixed service worker navigation preload warnings
+- Fixed module loading failures due to stale cache
+- Improved service worker build script to properly read package.json version
+
+### Added
+- Clear cache utility page at `/clear-cache.html` for users experiencing cache issues
+- Automatic cache versioning based on package.json version
+
+### Changed
+- Updated service worker cache strategy with version-based cache IDs (neurafit-v1.0.16)
+- Improved cache management and invalidation
+
 ### Enhanced Phone Authentication 📱
 
 #### Major UX Improvements ⭐
