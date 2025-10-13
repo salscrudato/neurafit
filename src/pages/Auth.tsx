@@ -46,12 +46,22 @@ export default function Auth() {
           const container = document.getElementById('recaptcha-container')
           if (!container) {
             logger.error('reCAPTCHA container not found')
+            setPhoneError('Verification system not ready. Please refresh the page.')
             return
           }
 
           // Create invisible reCAPTCHA verifier
           const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             size: 'invisible',
+            callback: () => {
+              // reCAPTCHA solved - will proceed with phone auth
+              logger.debug('reCAPTCHA solved')
+            },
+            'expired-callback': () => {
+              // reCAPTCHA expired - user needs to try again
+              logger.warn('reCAPTCHA expired')
+              setPhoneError('Verification expired. Please try again.')
+            },
           })
 
           // Render the verifier to ensure it's ready
@@ -60,9 +70,11 @@ export default function Auth() {
             logger.debug('reCAPTCHA initialized successfully')
           }).catch((error) => {
             logger.error('Error rendering reCAPTCHA', error as Error)
+            setPhoneError('Failed to initialize verification. Please refresh the page.')
           })
         } catch (error) {
           logger.error('Error initializing reCAPTCHA', error as Error)
+          setPhoneError('Verification system error. Please refresh the page.')
         }
       }, 100)
 
@@ -167,32 +179,47 @@ export default function Auth() {
         return
       }
 
+      logger.debug('Sending verification code', { phone: formattedPhone })
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier)
       setConfirmationResult(confirmation)
       setPhoneNumber(phone)
       setPhoneStep('code')
+      logger.info('Verification code sent successfully')
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
       logger.error('Phone sign-in error', error as Error, { code: firebaseError.code })
 
+      // Provide user-friendly error messages
       switch (firebaseError.code) {
         case 'auth/invalid-phone-number':
-          setPhoneError('Invalid phone number format')
+          setPhoneError('Invalid phone number format. Please check and try again.')
           break
         case 'auth/too-many-requests':
-          setPhoneError('Too many attempts. Please try again later.')
+          setPhoneError('Too many attempts. Please wait a few minutes and try again.')
           break
         case 'auth/quota-exceeded':
-          setPhoneError('SMS quota exceeded. Please try again later.')
+          setPhoneError('SMS quota exceeded. Please try again later or contact support.')
           break
         case 'auth/invalid-app-credential':
-          setPhoneError('Please add test phone numbers in Firebase Console. Use: (555) 123-4567 with code 123456')
+          setPhoneError('Authentication service error. Please try again or use Google sign-in.')
           break
         case 'auth/captcha-check-failed':
-          setPhoneError('Verification failed. Please add test phone numbers in Firebase Console.')
+          setPhoneError('Verification failed. Please refresh the page and try again.')
+          // Clear and reinitialize reCAPTCHA
+          if (recaptchaVerifier) {
+            try {
+              recaptchaVerifier.clear()
+              setRecaptchaVerifier(null)
+            } catch (clearError) {
+              logger.error('Error clearing reCAPTCHA after failure', clearError as Error)
+            }
+          }
+          break
+        case 'auth/missing-phone-number':
+          setPhoneError('Please enter a phone number.')
           break
         default:
-          setPhoneError(`Failed to send verification code. ${firebaseError.message || 'Please try again.'}`)
+          setPhoneError(firebaseError.message || 'Failed to send verification code. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -205,18 +232,29 @@ export default function Auth() {
 
     try {
       if (!confirmationResult) {
-        setPhoneError('Verification session expired. Please try again.')
+        setPhoneError('Verification session expired. Please request a new code.')
+        setPhoneStep('phone')
         setLoading(false)
         return
       }
 
+      // Validate code format
+      if (!/^\d{6}$/.test(code)) {
+        setPhoneError('Please enter a valid 6-digit code.')
+        setLoading(false)
+        return
+      }
+
+      logger.debug('Verifying code')
       const result = await confirmationResult.confirm(code)
       const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime
 
       if (isNewUser) {
         trackUserSignUp('phone')
+        logger.info('New user signed up via phone')
       } else {
         trackUserLogin('phone')
+        logger.info('User logged in via phone')
       }
 
       // Success - close modal and AppProvider will handle navigation
@@ -230,13 +268,20 @@ export default function Auth() {
 
       switch (firebaseError.code) {
         case 'auth/invalid-verification-code':
-          setPhoneError('Invalid verification code. Please try again.')
+          setPhoneError('Invalid code. Please check and try again.')
           break
         case 'auth/code-expired':
-          setPhoneError('Verification code expired. Please request a new one.')
+          setPhoneError('Code expired. Please request a new one.')
+          setPhoneStep('phone')
+          setConfirmationResult(null)
+          break
+        case 'auth/session-expired':
+          setPhoneError('Session expired. Please start over.')
+          setPhoneStep('phone')
+          setConfirmationResult(null)
           break
         default:
-          setPhoneError('Failed to verify code. Please try again.')
+          setPhoneError(firebaseError.message || 'Failed to verify code. Please try again.')
       }
     } finally {
       setLoading(false)

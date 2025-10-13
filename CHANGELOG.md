@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16] - 2025-01-13
+
+### Enhanced Phone Authentication 📱
+
+#### Major UX Improvements ⭐
+- **Auto-submit verification code** - Code automatically submits when 6 digits are entered (300ms delay for visual feedback)
+- **Auto-focus inputs** - Phone and code inputs automatically focused when modal opens or step changes
+- **Resend code functionality** - Added resend button with 60-second cooldown timer
+- **Better error recovery** - Improved error handling with automatic state recovery for expired sessions
+- **Visual feedback** - Enhanced loading states and transitions throughout the flow
+
+#### Accessibility Enhancements ♿
+- **ARIA labels and roles** - Proper semantic HTML with `role="dialog"`, `aria-modal`, `aria-labelledby`
+- **Screen reader support** - All interactive elements properly labeled with `aria-label` and `aria-describedby`
+- **Keyboard navigation** - Full keyboard support with Enter to submit, Tab navigation
+- **Loading announcements** - Loading states announced with `role="status"` for screen readers
+- **Input hints** - Descriptive hints linked to inputs via `aria-describedby`
+
+#### Mobile Optimizations 📱
+- **Proper input modes** - `inputMode="tel"` for phone, `inputMode="numeric"` for code
+- **Auto-complete support** - `autoComplete="tel"` and `autoComplete="one-time-code"` for iOS SMS autofill
+- **Touch-friendly targets** - All interactive elements minimum 48px height
+- **Better keyboard handling** - Numeric pattern enforcement for code input
+
+#### Error Handling Improvements 🛡️
+- **Enhanced reCAPTCHA callbacks** - Added `callback` and `expired-callback` handlers
+- **Better error messages** - More user-friendly, actionable error messages
+- **Automatic recovery** - Expired codes automatically return to phone step
+- **reCAPTCHA reinitialization** - Failed reCAPTCHA automatically cleared and ready for retry
+- **Input validation** - Client-side validation with regex patterns before API calls
+
+#### Developer Experience 📚
+- **Comprehensive documentation** - Added `docs/PHONE_AUTH_GUIDE.md` with full implementation details
+- **Better logging** - Enhanced debug logging for troubleshooting
+- **Code organization** - Separated concerns between Auth.tsx and PhoneAuthModal.tsx
+- **TypeScript improvements** - Better type safety and error handling
+
+#### Technical Changes
+- Added `useRef` hooks for input auto-focus
+- Implemented resend cooldown timer with `useEffect` and `setInterval`
+- Enhanced state cleanup on modal close
+- Added double-check in auto-submit to prevent race conditions
+- Improved reCAPTCHA lifecycle management with better error handling
+- Added visual transitions and hover effects for better UX
+
 ## [1.0.15] - 2025-10-11
 
 ### Bug Fixes 🐛
