@@ -3,6 +3,8 @@
  * Ensures AI-generated workouts are safe and structurally complete
  */
 
+import { findSimilarExercises } from './exerciseTaxonomy';
+
 export interface ExerciseValidationResult {
   isValid: boolean;
   errors: string[];
@@ -116,6 +118,9 @@ export function validateWorkoutPlan(
   // CRITICAL: Check for injury contraindications
   validateInjuryCompliance(plan, userProfile.injuries || [], result);
 
+  // Check for similar/duplicate exercises
+  validateExerciseUniqueness(plan, result);
+
   // Check muscle group balance
   validateMuscleGroupBalance(plan, userProfile.workoutType, result);
 
@@ -192,6 +197,25 @@ function validateInjuryCompliance(
       }
     });
   });
+}
+
+/**
+ * Validates exercise uniqueness using similarity detection
+ */
+function validateExerciseUniqueness(
+  plan: WorkoutPlan,
+  result: ExerciseValidationResult,
+): void {
+  const similarPairs = findSimilarExercises(plan.exercises);
+
+  if (similarPairs.length > 0) {
+    similarPairs.forEach(([idx1, idx2, name1, name2]) => {
+      result.errors.push(
+        `Similar exercises detected: "${name1}" (exercise ${idx1 + 1}) and "${name2}" (exercise ${idx2 + 1}) are too similar`,
+      );
+    });
+    result.isValid = false;
+  }
 }
 
 /**

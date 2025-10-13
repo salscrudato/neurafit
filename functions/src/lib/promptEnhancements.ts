@@ -126,11 +126,122 @@ ADVANCED-SPECIFIC GUIDANCE:
 }
 
 /**
+ * Generate RPE/RIR guidance for intensity prescription
+ */
+function generateRPEGuidance(experience?: string): string {
+  const level = experience?.toLowerCase() || 'beginner';
+
+  const rpeGuidance: Record<string, string> = {
+    beginner: `
+RPE/RIR GUIDANCE FOR BEGINNERS:
+- Target RPE: 5-7 out of 10 (moderate effort, can hold conversation)
+- RIR (Reps in Reserve): 3-4 reps left in the tank
+- Focus on learning movement patterns, not maximal effort
+- If form breaks down, stop the set immediately`,
+    intermediate: `
+RPE/RIR GUIDANCE FOR INTERMEDIATE:
+- Target RPE: 6-8 out of 10 (challenging but sustainable)
+- RIR: 2-3 reps left in the tank for main lifts
+- Push closer to failure on isolation exercises (RPE 8-9)
+- Use autoregulation to adjust daily based on readiness`,
+    advanced: `
+RPE/RIR GUIDANCE FOR ADVANCED:
+- Target RPE: 7-9 out of 10 (high effort, controlled intensity)
+- RIR: 1-2 reps for main lifts, 0-1 for accessories
+- Periodize intensity: heavy days (RPE 8-9), light days (RPE 6-7)
+- Use RPE to manage fatigue and optimize performance`,
+  };
+
+  const guidance = rpeGuidance[level];
+  if (guidance !== undefined) {
+    return guidance;
+  }
+  const beginnerGuidance = rpeGuidance.beginner;
+  if (beginnerGuidance === undefined) {
+    throw new Error('Beginner RPE guidance not found');
+  }
+  return beginnerGuidance;
+}
+
+/**
+ * Generate tempo prescription guidance (reserved for future use)
+ */
+// @ts-ignore - Reserved for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function generateTempoGuidance(goal?: string): string {
+  const primaryGoal = goal?.toLowerCase() || 'general';
+
+  if (primaryGoal.includes('strength')) {
+    return `
+TEMPO PRESCRIPTION (STRENGTH):
+- Eccentric: 2-3 seconds (controlled lowering)
+- Pause: 0-1 second (optional pause at bottom)
+- Concentric: Explosive (X or 1 second - move weight as fast as possible)
+- Format: 2-0-X (e.g., 2 sec down, no pause, explosive up)
+- Focus on maximal force production during concentric phase`;
+  } else if (primaryGoal.includes('muscle') || primaryGoal.includes('hypertrophy')) {
+    return `
+TEMPO PRESCRIPTION (HYPERTROPHY):
+- Eccentric: 3-4 seconds (slow, controlled lowering for time under tension)
+- Pause: 1 second (squeeze at peak contraction)
+- Concentric: 1-2 seconds (controlled lifting)
+- Format: 3-1-2 (e.g., 3 sec down, 1 sec pause, 2 sec up)
+- Maximize time under tension for muscle growth`;
+  } else if (primaryGoal.includes('endurance') || primaryGoal.includes('stamina')) {
+    return `
+TEMPO PRESCRIPTION (ENDURANCE):
+- Eccentric: 2 seconds (controlled)
+- Pause: 0 seconds (continuous movement)
+- Concentric: 1 second (steady pace)
+- Format: 2-0-1 (continuous, rhythmic movement)
+- Maintain consistent tempo throughout set`;
+  } else {
+    return `
+TEMPO PRESCRIPTION (GENERAL FITNESS):
+- Eccentric: 2-3 seconds (controlled lowering)
+- Pause: 0-1 second (brief pause)
+- Concentric: 1-2 seconds (controlled lifting)
+- Format: 2-0-2 (balanced, controlled movement)
+- Focus on movement quality and control`;
+  }
+}
+
+/**
+ * Generate exercise ordering guidance
+ */
+function generateOrderingGuidance(): string {
+  return `
+EXERCISE ORDERING PRINCIPLES:
+1. Compound movements FIRST (squats, deadlifts, presses, rows)
+   - Require most energy and neural demand
+   - Perform when fresh for optimal performance and safety
+2. Assistance exercises SECOND (variations of main lifts)
+   - Support main movement patterns
+   - Moderate complexity and load
+3. Isolation exercises THIRD (curls, extensions, raises)
+   - Target specific muscles
+   - Lower neural demand
+4. Core/finisher exercises LAST (planks, carries, conditioning)
+   - Fatigue-resistant muscle groups
+   - Can be performed when fatigued
+
+EXAMPLE ORDERING:
+- Barbell Back Squat (compound)
+- Romanian Deadlift (compound/assistance)
+- Leg Press (assistance)
+- Leg Curl (isolation)
+- Calf Raise (isolation)
+- Plank (core)`;
+}
+
+/**
  * Generate simplified prompt enhancement with quality standards, injury safety, and experience guidance
  */
 export function generateProfessionalPromptEnhancement(context: PromptContext): string {
   const injurySafety = generateInjurySafetyGuidance(context.injuries);
   const experienceGuidance = generateExperienceGuidance(context.experience);
+  const rpeGuidance = generateRPEGuidance(context.experience);
+  const orderingGuidance = generateOrderingGuidance();
 
   return `
 QUALITY STANDARDS:
@@ -141,5 +252,9 @@ QUALITY STANDARDS:
 - Provide specific, actionable cues${injurySafety}
 
 ${experienceGuidance}
+
+${rpeGuidance}
+
+${orderingGuidance}
 `.trim();
 }

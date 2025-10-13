@@ -3,25 +3,24 @@
  * Refactored for better maintainability and modularity
  */
 
+import { initializeApp } from 'firebase-admin/app';
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import type { Request, Response } from 'express';
 import OpenAI from 'openai';
 
-// Import utility modules
-import { getProgrammingRecommendations, getExperienceGuidance } from './lib/exerciseDatabase';
-import { validateWorkoutPlan } from './lib/exerciseValidation';
-import { generateProfessionalPromptEnhancement } from './lib/promptEnhancements';
-import { buildWorkoutPrompt, buildSystemMessage, getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder';
-import { buildEnhancedSystemMessage, buildEnhancedWorkoutPrompt } from './lib/promptBuilder.enhanced';
-import { calculateWorkoutQuality } from './lib/qualityScoring';
-import { validateAndAdjustDuration } from './lib/durationAdjustment';
+// Initialize Firebase Admin
+initializeApp();
 
-// Define the OpenAI API key secret
-const openaiApiKey = defineSecret('OPENAI_API_KEY');
+// Import utility modules
+import { getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder';
+import { getProgrammingRecommendations } from './lib/exerciseDatabase';
+import { isSimilarExercise } from './lib/exerciseTaxonomy';
+import { generateWorkoutOrchestrated } from './workout/generation';
+import { FUNCTION_CONFIG } from './config';
 
 // CORS configuration for all deployment URLs
-const CORS_ORIGINS = [
+const CORS_ORIGINS: string[] = [
   'http://localhost:5173', // local dev
   'https://neurafit-ai-2025.web.app', // Firebase Hosting
   'https://neurafit-ai-2025.firebaseapp.com',
@@ -29,17 +28,21 @@ const CORS_ORIGINS = [
   'https://www.neurastack.ai', // Custom domain with www
 ];
 
+// Define the OpenAI API key secret
+const openaiApiKey = defineSecret('OPENAI_API_KEY');
+
 /**
  * Main AI-powered workout generator function
  * Generates personalized workouts based on user profile and preferences
+ * Uses schema-driven generation with multi-pass validation and repair
  */
 export const generateWorkout = onRequest(
   {
     cors: CORS_ORIGINS,
-    region: 'us-central1',
+    region: FUNCTION_CONFIG.region,
     secrets: [openaiApiKey],
-    timeoutSeconds: 300, // 5 minutes - enough for OpenAI API calls
-    memory: '1GiB', // Increased memory for better performance
+    timeoutSeconds: FUNCTION_CONFIG.timeoutSeconds,
+    memory: FUNCTION_CONFIG.memory,
   },
   async (req: Request, res: Response): Promise<void> => {
     // Handle preflight
@@ -72,6 +75,7 @@ export const generateWorkout = onRequest(
         progressionNote,
         recentWorkouts,
         preferenceNotes,
+        uid,
       } = (req.body as {
         experience?: string;
         goals?: string | string[];
@@ -92,13 +96,13 @@ export const generateWorkout = onRequest(
           workoutType: string;
           timestamp: number;
           exercises: Array<{ name: string }>;
+          completionRate?: number;
+          rpe?: number;
+          feedback?: 'easy' | 'right' | 'hard';
         }>;
         preferenceNotes?: string;
+        uid?: string;
       }) || {};
-
-      // Use intensity values from frontend (calculated by useWorkoutPreload hook)
-      const finalTargetIntensity = targetIntensity || 1.0;
-      const finalProgressionNote = progressionNote || '';
 
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
@@ -117,231 +121,18 @@ export const generateWorkout = onRequest(
         injuries,
         workoutType,
         duration,
-        targetIntensity: finalTargetIntensity,
-        progressionNote: finalProgressionNote,
+        targetIntensity,
+        progressionNote,
         recentWorkouts,
         preferenceNotes,
       };
 
-      // Get programming recommendations with experience-level adjustments
-      const programmingResult = getProgrammingRecommendations(
-        filteredGoals,
-        experience || 'Beginner',
-      );
+      // Use new orchestrated generation with multi-pass validation
+      const result = await generateWorkoutOrchestrated(workoutContext, client, uid);
 
-      // Extract programming context (ensure all required fields are present)
-      const programming = {
-        sets: programmingResult.sets || [3, 4],
-        reps: programmingResult.reps || [8, 12],
-        restSeconds: programmingResult.restSeconds || [60, 120],
-        intensity: programmingResult.intensity || '65-85% 1RM',
-      };
-
-      // Generate quality guidelines with injury and experience context
-      const qualityGuidelines = generateProfessionalPromptEnhancement({
-        injuries: injuries?.list,
-        experience,
-      });
-
-      // Add experience-level guidance to quality guidelines
-      const experienceGuidance = getExperienceGuidance(experience || 'Beginner');
-      const enhancedQualityGuidelines = `${qualityGuidelines}\n\n${experienceGuidance}`;
-
-      // Use enhanced prompt system for better AI output
-      const useEnhancedPrompts = true; // Feature flag for A/B testing
-
-      let prompt: string;
-      let systemMessage: string;
-      let minExerciseCount: number;
-      let maxExerciseCount: number;
-
-      if (useEnhancedPrompts) {
-        // Enhanced AI-engineered prompts with chain-of-thought reasoning
-        const enhancedPrompt = buildEnhancedWorkoutPrompt(
-          workoutContext,
-          programming,
-          enhancedQualityGuidelines,
-        );
-        prompt = enhancedPrompt.prompt;
-        minExerciseCount = enhancedPrompt.minExerciseCount;
-        maxExerciseCount = enhancedPrompt.maxExerciseCount;
-        systemMessage = buildEnhancedSystemMessage(duration || 30, workoutType);
-      } else {
-        // Original prompt system
-        const originalPrompt = buildWorkoutPrompt(
-          workoutContext,
-          programming,
-          enhancedQualityGuidelines,
-        );
-        prompt = originalPrompt.prompt;
-        minExerciseCount = originalPrompt.minExerciseCount;
-        maxExerciseCount = originalPrompt.maxExerciseCount;
-        systemMessage = buildSystemMessage(duration || 30, workoutType);
-      }
-
-      // Log generation start
-      console.log('⚡ Generating workout with GPT-4o-mini', {
-        duration: duration || 30,
-        workoutType: workoutType || 'Full Body',
-        experience: experience || 'Beginner',
-        exerciseRange: `${minExerciseCount}-${maxExerciseCount}`,
-      });
-
-      // Call OpenAI API
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        temperature: 0.2, // Lower temperature for more consistent JSON output
-        max_tokens: 4500, // Sufficient for comprehensive workouts
-        response_format: { type: 'json_object' }, // Enforce JSON output format
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt },
-        ],
-      });
-
-      const text = completion.choices?.[0]?.message?.content ?? '';
-      const finishReason = completion.choices?.[0]?.finish_reason;
-
-      // Check if response was truncated due to token limit
-      if (finishReason === 'length') {
-        throw new Error(
-          'AI response was truncated due to token limit. The workout generation was incomplete. Please try a shorter duration or simpler workout type.',
-        );
-      }
-
-      // Clean JSON text by removing markdown code blocks if present
-      const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-
-      // Parse and validate JSON output
-      try {
-        const json = JSON.parse(cleanedText) as {
-          exercises: Array<{
-            name: string;
-            description: string;
-            sets: number;
-            reps: number | string;
-            formTips: string[];
-            safetyTips: string[];
-            restSeconds: number;
-            usesWeight: boolean;
-            muscleGroups: string[];
-            difficulty: string;
-          }>;
-          workoutSummary: {
-            totalVolume: string;
-            primaryFocus: string;
-            expectedRPE: string;
-          };
-        };
-
-        // Validate minimum exercise count based on duration
-        const exerciseCount = json.exercises?.length || 0;
-        if (exerciseCount < minExerciseCount) {
-          throw new Error(
-            `AI generated only ${exerciseCount} exercises but at least ${minExerciseCount} are required for a ${duration || 30}-minute workout.`,
-          );
-        }
-
-        // Validate and adjust workout duration
-        const durationResult = validateAndAdjustDuration(
-          json,
-          duration || 30,
-          minExerciseCount,
-        );
-
-        // Log duration validation
-        console.log('Duration validation:', {
-          actual: durationResult.actualDuration.toFixed(1),
-          target: duration || 30,
-          diff: durationResult.difference.toFixed(1),
-          adjusted: durationResult.adjusted,
-        });
-
-        if (durationResult.adjusted) {
-          console.log('Duration adjustments:', durationResult.changes);
-        }
-
-        // Reject if duration is still too far off (only for extreme cases)
-        if (durationResult.error && Math.abs(durationResult.difference) > 10) {
-          console.error(durationResult.error);
-          throw new Error(durationResult.error);
-        } else if (durationResult.error) {
-          // Log warning but allow workout through if difference is < 10 minutes
-          console.warn('Duration variance warning:', durationResult.error);
-        }
-
-        // Professional workout validation with rule-based scoring
-        const userProfileForValidation = {
-          experience,
-          injuries: injuries?.list || [],
-          duration: duration || 30,
-          goals: filteredGoals,
-          equipment: filteredEquipment,
-          workoutType,
-        };
-
-        const validationResult = validateWorkoutPlan(json, userProfileForValidation);
-
-        // Log validation metrics for monitoring
-        if (validationResult.errors.length > 0) {
-          console.warn('Workout validation errors:', validationResult.errors);
-        }
-        if (validationResult.warnings.length > 0) {
-          console.info('Workout validation warnings:', validationResult.warnings);
-        }
-
-        // Reject workouts with critical safety issues
-        if (!validationResult.isValid) {
-          console.error('Generated workout failed safety validation:', validationResult.errors);
-          res.status(502).json({
-            error: 'Generated workout failed safety validation',
-            validationErrors: validationResult.errors,
-            raw: text,
-          });
-          return;
-        }
-
-        // Calculate quality score
-        const qualityScore = calculateWorkoutQuality(json, userProfileForValidation);
-        console.info('Workout Quality Score:', {
-          overall: qualityScore.overall,
-          grade: qualityScore.grade,
-          breakdown: qualityScore.breakdown,
-        });
-
-        // Add metadata to response
-        const response = {
-          ...json,
-          metadata: {
-            targetIntensity: finalTargetIntensity,
-            progressionNote: finalProgressionNote || undefined,
-            validation: {
-              warnings: validationResult.warnings,
-              suggestions: validationResult.suggestions,
-            },
-            qualityScore: {
-              overall: qualityScore.overall,
-              grade: qualityScore.grade,
-              breakdown: qualityScore.breakdown,
-              method: 'rule-based',
-            },
-            duration: {
-              actual: durationResult.actualDuration,
-              target: duration || 30,
-              adjusted: durationResult.adjusted,
-            },
-          },
-        };
-
-        res.json(response);
-        return;
-      } catch (parseError) {
-        console.error('JSON parsing error:', parseError);
-        console.error('Original text:', text);
-        console.error('Cleaned text:', cleanedText);
-        res.status(502).json({ error: 'Bad AI JSON', raw: cleanedText });
-        return;
-      }
+      // Return workout with metadata
+      res.json(result);
+      return;
     } catch (e) {
       console.error('Workout generation error', e);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -468,6 +259,19 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 
       const exercise = JSON.parse(cleanedText);
 
+      // Validate that the new exercise is not similar to existing ones
+      const existingNames = currentWorkout.exercises.map((ex: { name: string }) => ex.name);
+      const hasSimilar = existingNames.some((name: string) => isSimilarExercise(name, exercise.name));
+
+      if (hasSimilar) {
+        console.warn('Generated exercise is too similar to existing exercises:', exercise.name);
+        res.status(400).json({
+          error: 'Generated exercise is too similar to existing exercises',
+          exercise: exercise.name,
+        });
+        return;
+      }
+
       res.status(200).json({ exercise });
     } catch (e) {
       console.error('Add exercise error', e);
@@ -575,6 +379,33 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
 
       const exercise = JSON.parse(cleanedText);
+
+      // Validate that the replacement is not similar to existing exercises (except the one being replaced)
+      const otherExerciseNames = currentWorkout.exercises
+        .filter((ex: { name: string }) => ex.name !== exerciseToReplace.name)
+        .map((ex: { name: string }) => ex.name);
+
+      const hasSimilar = otherExerciseNames.some((name: string) => isSimilarExercise(name, exercise.name));
+
+      if (hasSimilar) {
+        console.warn('Replacement exercise is too similar to existing exercises:', exercise.name);
+        res.status(400).json({
+          error: 'Replacement exercise is too similar to existing exercises',
+          exercise: exercise.name,
+        });
+        return;
+      }
+
+      // Also check that it's not too similar to the original (should be a true swap, not a minor variation)
+      if (isSimilarExercise(exerciseToReplace.name, exercise.name)) {
+        console.warn('Replacement exercise is too similar to original:', exercise.name);
+        res.status(400).json({
+          error: 'Replacement exercise is too similar to the original exercise',
+          original: exerciseToReplace.name,
+          replacement: exercise.name,
+        });
+        return;
+      }
 
       res.status(200).json({ exercise });
     } catch (e) {
