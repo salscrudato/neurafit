@@ -45,15 +45,13 @@ function AppContent() {
   useFocusManagement();
   useSkipLink();
 
-  // Handle mobile optimizations, version management, and analytics on mount
+  // Handle mobile optimizations and analytics on mount
   useEffect(() => {
     const cleanupOrientation = lockOrientation();
     const cleanupZoom = preventZoom();
 
     // Track session start with location context
     trackSessionStart();
-
-    // Version management removed for simplicity
 
     // Event listener for version updates
     const handleVersionUpdate = () => {
@@ -62,27 +60,11 @@ function AppContent() {
 
     window.addEventListener('versionUpdate', handleVersionUpdate);
 
-    // Add passive event listeners for better scroll performance
-    const passiveOptions = { passive: true } as const;
-
-    const handleScroll = () => {
-      // Scroll handler (if needed in future)
-    };
-
-    const handleTouchMove = () => {
-      // Touch move handler (if needed in future)
-    };
-
-    window.addEventListener('scroll', handleScroll, passiveOptions);
-    window.addEventListener('touchmove', handleTouchMove, passiveOptions);
-
     // Cleanup on unmount
     return () => {
       cleanupOrientation();
       cleanupZoom();
       window.removeEventListener('versionUpdate', handleVersionUpdate);
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 
