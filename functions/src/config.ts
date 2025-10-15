@@ -5,10 +5,10 @@
 
 /**
  * OpenAI model configuration
- * Default to gpt-4.1-mini for cost-effective, high-quality generation
+ * Using gpt-4o-mini-2024-07-18 for better JSON mode performance and lower latency
  * Can be overridden via OPENAI_MODEL environment variable
  */
-export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini-2024-07-18';
 
 /**
  * OpenAI generation parameters
@@ -16,8 +16,8 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 export const OPENAI_CONFIG = {
   temperature: 0.2, // Lower for more consistent, deterministic outputs
   topP: 0.9, // Nucleus sampling for quality
-  maxTokens: 4500, // Sufficient for comprehensive workouts
-  timeout: 60000, // 60 second timeout for API calls
+  maxTokens: 3000, // Optimized for 6-12 exercises (reduced from 4500 for 33% cost savings)
+  timeout: 90000, // 90 second timeout for API calls (allows for streaming + processing)
 } as const;
 
 /**
@@ -26,7 +26,8 @@ export const OPENAI_CONFIG = {
 export const QUALITY_THRESHOLDS = {
   minOverallScore: 85, // Minimum overall quality score to pass
   minSafetyScore: 90, // Minimum safety score (higher bar for safety)
-  maxRepairAttempts: 2, // Maximum number of repair passes (total 3 generations)
+  maxRepairAttempts: 1, // Maximum number of repair passes (reduced from 2 for cost optimization)
+  skipRepairIfScoreAbove: 92, // Skip repair attempts if quality score is above this threshold
 } as const;
 
 /**

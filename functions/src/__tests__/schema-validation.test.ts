@@ -18,14 +18,14 @@ describe('Schema Validation', () => {
             safetyTips: ['Use spotter for heavy sets', 'Start with lighter weight'],
             restSeconds: 90,
             usesWeight: true,
-            muscleGroups: ['Chest', 'Triceps'],
+            muscleGroups: ['chest', 'triceps'],
             difficulty: 'intermediate',
           },
         ],
         workoutSummary: {
           totalVolume: '3 sets x 8-12 reps',
           primaryFocus: 'Chest and Triceps',
-          expectedRPE: '7-8',
+          expectedRPE: '7-8 out of 10',
         },
       };
 

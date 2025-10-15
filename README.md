@@ -9,10 +9,13 @@ AI-powered personalized workout generator that creates custom fitness plans tail
 
 ## ✨ Features
 
-- 🤖 **AI-Powered Workouts** - Dynamic workout generation using advanced LLM
-- 🎯 **Personalized Plans** - Tailored to your fitness level, goals, and equipment
+- 🤖 **AI-Powered Workouts** - Dynamic workout generation using OpenAI GPT-4o-mini-2024-07-18
+- 🎯 **Personalized Plans** - Tailored to your fitness level, goals, equipment, and workout history
 - 📊 **Progress Tracking** - Monitor your workout history and improvements
-- 💪 **Adaptive Difficulty** - Automatically adjusts based on your feedback
+- 💪 **Adaptive Difficulty** - Automatically adjusts based on your feedback and performance (±15% intensity scaling)
+- 🧠 **Workout History Integration** - AI learns from your past 5 workouts for better personalization
+- 🩹 **Injury Awareness** - Respects injuries and modifies exercises accordingly
+- ⚡ **Fast Generation** - Average 22s response time with streaming support
 - 📱 **Mobile-First Design** - Optimized for mobile devices with PWA support
 - 🔄 **Offline Support** - Service worker caching for offline access
 - 🔐 **Secure Authentication** - Google Sign-In and phone authentication

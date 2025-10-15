@@ -141,7 +141,9 @@ export default function Generate() {
       uid,
       targetIntensity: preloadedData.targetIntensity,
       progressionNote: preloadedData.progressionNote,
-      preferenceNotes: preferenceNotes.trim() || undefined
+      preferenceNotes: preferenceNotes.trim() || undefined,
+      // Send optimized workout history (only last 5 workouts with essential data)
+      recentWorkouts: preloadedData.recentWorkouts.slice(0, 5)
     }
 
     const url = import.meta.env['VITE_WORKOUT_FN_URL'] as string
@@ -151,7 +153,7 @@ export default function Generate() {
       const result = await retryWithBackoff(
         async () => {
           const TIMEOUT_WARNING = 30_000 // Show warning at 30s
-          const TIMEOUT_ABORT = 60_000   // Abort at 60s
+          const TIMEOUT_ABORT = 120_000  // Abort at 120s (2 minutes) - allows for streaming + processing
 
           const warningTimer = setTimeout(() => {
             setShowSlowConnectionWarning(true)

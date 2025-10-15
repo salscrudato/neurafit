@@ -15,7 +15,7 @@ initializeApp();
 // Import utility modules
 import { getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder';
 import { getProgrammingRecommendations } from './lib/exerciseDatabase';
-import { isSimilarExercise } from './lib/exerciseTaxonomy';
+import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
 import { FUNCTION_CONFIG } from './config';
 
@@ -57,9 +57,10 @@ export const generateWorkout = onRequest(
     }
 
     try {
-      // Initialize OpenAI client with the secret value
+      // Initialize OpenAI client with the secret value and timeout
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
+        timeout: 90000, // 90 second timeout for API calls (allows for streaming + processing)
       });
 
       // Extract request body
@@ -167,7 +168,10 @@ export const addExerciseToWorkout = onRequest(
         return;
       }
 
-      const client = new OpenAI({ apiKey: openaiApiKey.value() });
+      const client = new OpenAI({
+        apiKey: openaiApiKey.value(),
+        timeout: 90000, // 90 second timeout
+      });
 
       const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
       const programming = getProgrammingRecommendations(goals || ['General Health'], experience || 'Beginner');
@@ -316,7 +320,10 @@ export const swapExercise = onRequest(
         return;
       }
 
-      const client = new OpenAI({ apiKey: openaiApiKey.value() });
+      const client = new OpenAI({
+        apiKey: openaiApiKey.value(),
+        timeout: 90000, // 90 second timeout
+      });
 
       const otherExercises = currentWorkout.exercises
         .filter((ex: { name: string }) => ex.name !== exerciseToReplace.name)
@@ -350,16 +357,24 @@ ${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${inju
 
 CRITICAL REQUIREMENTS:
 1. Generate ONE exercise that targets the SAME or SIMILAR muscle groups as "${exerciseToReplace.name}"
-2. Use a DIFFERENT movement pattern or variation (not just a minor modification)
-   - If replacing "Barbell Bench Press", consider "Dumbbell Flyes", "Push-ups", or "Cable Chest Press" (NOT "Dumbbell Bench Press")
-   - If replacing "Barbell Row", consider "Pull-ups", "Lat Pulldown", or "Face Pulls" (NOT "Dumbbell Row")
-   - Choose a DIFFERENT exercise type that works the same muscles
+2. Use a DIFFERENT movement pattern or equipment (acceptable variations):
+   ✅ GOOD SWAPS (different movement pattern or equipment):
+   - Barbell Bench Press → Cable Chest Press, Dumbbell Flyes, Push-ups, Dips
+   - Barbell Row → Pull-ups, Lat Pulldown, Cable Row, Face Pulls
+   - Barbell Squat → Leg Press, Bulgarian Split Squats, Goblet Squats
+   - Dumbbell Curl → Cable Curl, Hammer Curl, Concentration Curl
+
+   ❌ BAD SWAPS (too similar - just equipment change):
+   - Barbell Bench Press → Dumbbell Bench Press (same movement, different equipment)
+   - Barbell Row → Dumbbell Row (same movement, different equipment)
+   - Barbell Squat → Dumbbell Squat (same movement, different equipment)
+
 3. ⚠️ ABSOLUTELY DO NOT duplicate "${exerciseToReplace.name}" or any of these exercises: ${otherExercises}
 4. MUST match the same sets/reps/rest scheme as the original exercise
 5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
 6. Respect equipment availability: ${(equipment || ['Bodyweight']).join(', ')}
 7. Avoid contraindicated exercises if injuries are present
-8. The replacement should be a true alternative with a different movement pattern
+8. The replacement should provide variety while maintaining workout effectiveness
 9. ⚠️ BEFORE OUTPUTTING: Verify the exercise is NOT in the existing workout
 
 REP FORMAT REQUIREMENT:
@@ -415,11 +430,14 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
         return;
       }
 
-      // Also check that it's not too similar to the original (should be a true swap, not a minor variation)
-      if (isSimilarExercise(exerciseToReplace.name, exercise.name)) {
-        console.warn('Replacement exercise is too similar to original:', exercise.name);
+      // Check that it's not too similar to the original
+      // For swaps, we allow different equipment variations (e.g., Cable Chest Press for Barbell Bench Press)
+      // but reject minor variations (e.g., Dumbbell Bench Press for Barbell Bench Press)
+      const isMinorVariation = isMinorExerciseVariation(exerciseToReplace.name, exercise.name);
+      if (isMinorVariation) {
+        console.warn('Replacement exercise is a minor variation of original:', exercise.name);
         res.status(400).json({
-          error: 'Replacement exercise is too similar to the original exercise',
+          error: 'Replacement exercise is too similar to the original exercise - please provide a different movement pattern',
           original: exerciseToReplace.name,
           replacement: exercise.name,
         });

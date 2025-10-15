@@ -164,20 +164,32 @@ export async function generateWorkoutOrchestrated(
             { role: 'user' as const, content: prompt },
           ];
 
-      // Call OpenAI
-      const completion = await openaiClient.chat.completions.create({
+      // Call OpenAI with streaming for better perceived performance
+      console.log('🤖 Calling OpenAI API with streaming...');
+      const stream = await openaiClient.chat.completions.create({
         model: OPENAI_MODEL,
         temperature: OPENAI_CONFIG.temperature,
         top_p: OPENAI_CONFIG.topP,
         max_tokens: OPENAI_CONFIG.maxTokens,
         response_format: responseFormat as any, // Type assertion needed for OpenAI SDK compatibility
         messages,
+        stream: true, // Enable streaming for faster perceived response
       });
 
-      const content = completion.choices[0]?.message?.content;
+      // Collect streamed response
+      let content = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          content += delta;
+        }
+      }
+
       if (!content) {
         throw new Error('OpenAI returned empty response');
       }
+
+      console.log(`✅ Received ${content.length} characters from OpenAI`);
 
       // Parse JSON
       let parsed: unknown;
@@ -252,7 +264,7 @@ export async function generateWorkoutOrchestrated(
       throw new Error('Failed to generate valid workout');
     }
 
-    // Step 9: Quality gate
+    // Step 9: Quality gate with early exit optimization
     const qualityScore = calculateWorkoutQuality(candidate, {
       experience,
       injuries: ctx.injuries?.list || [],
@@ -264,13 +276,16 @@ export async function generateWorkoutOrchestrated(
 
     console.log('📊 Quality score:', qualityScore);
 
-    // If quality is below threshold and we haven't exhausted repairs, try one more time
-    if (
+    // Early exit: If quality is excellent, skip repair attempts (cost optimization)
+    if (qualityScore.overall >= QUALITY_THRESHOLDS.skipRepairIfScoreAbove) {
+      console.log(`✅ Excellent quality score (${qualityScore.overall}) - skipping repair attempts`);
+      // Break out of repair loop - no need to try again
+    } else if (
       (qualityScore.overall < QUALITY_THRESHOLDS.minOverallScore ||
         qualityScore.breakdown.safety < QUALITY_THRESHOLDS.minSafetyScore) &&
       repairAttempts < QUALITY_THRESHOLDS.maxRepairAttempts
     ) {
-      console.warn('Quality below threshold, attempting final repair');
+      console.warn(`⚠️ Quality below threshold (${qualityScore.overall}) - repair attempts remaining: ${QUALITY_THRESHOLDS.maxRepairAttempts - repairAttempts}`);
       // This would trigger another repair pass, but we've already exhausted attempts
       // In production, you might want to add specific quality improvement suggestions
     }

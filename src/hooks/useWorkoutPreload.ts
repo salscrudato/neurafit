@@ -5,10 +5,20 @@ import { isAdaptivePersonalizationEnabled } from '../config/features'
 import { logger } from '../lib/logger'
 import type { UserProfile } from '../types/profile'
 
+export interface RecentWorkout {
+  workoutType: string
+  timestamp: number
+  completionRate?: number
+  rpe?: number
+  feedback?: 'easy' | 'right' | 'hard'
+  exercises: Array<{ name: string }>
+}
+
 export interface PreloadedData {
   profile: UserProfile | null
   targetIntensity: number
   progressionNote: string
+  recentWorkouts: RecentWorkout[]
   isLoading: boolean
   error: string | null
 }
@@ -22,23 +32,30 @@ export function useWorkoutPreload() {
     profile: null,
     targetIntensity: 1.0,
     progressionNote: '',
+    recentWorkouts: [],
     isLoading: true,
     error: null
   })
 
-  // Fetch adaptive intensity based on recent workout feedback
-  const fetchAdaptiveIntensity = useCallback(async (uid: string) => {
+  // Fetch recent workouts and calculate adaptive intensity
+  // OPTIMIZED: Fetch last 10 workouts, but only send 5 most recent to OpenAI
+  const fetchWorkoutHistory = useCallback(async (uid: string) => {
     try {
-      // Get recent workouts with feedback
+      // Get recent workouts with feedback (fetch 10 for better metrics, send 5 to API)
       const workoutsRef = collection(db, 'users', uid, 'workouts')
-      const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'), limit(5))
+      const workoutsQuery = query(workoutsRef, orderBy('timestamp', 'desc'), limit(10))
       const snapshot = await getDocs(workoutsQuery)
 
       if (snapshot.empty) {
-        return { targetIntensity: 1.0, progressionNote: '' }
+        return {
+          targetIntensity: 1.0,
+          progressionNote: '',
+          recentWorkouts: []
+        }
       }
 
-      // Find the most recent workout with feedback
+      // Build optimized workout history (only essential data)
+      const recentWorkouts: RecentWorkout[] = []
       let lastFeedback: 'easy' | 'right' | 'hard' | null = null
       let recentCompletionRate = 0.8 // default
       let totalSets = 0
@@ -46,6 +63,20 @@ export function useWorkoutPreload() {
 
       snapshot.docs.forEach(doc => {
         const workout = doc.data()
+
+        // Build workout history entry (optimized for token efficiency)
+        const workoutEntry: RecentWorkout = {
+          workoutType: workout['workoutType'] || 'Unknown',
+          timestamp: workout['timestamp'] || Date.now(),
+          completionRate: workout['completionRate'],
+          rpe: workout['rpe'],
+          feedback: workout['feedback'],
+          // Only include exercise names (not full details)
+          exercises: (workout['exercises'] || []).map((ex: { name?: string }) => ({
+            name: ex.name || 'Unknown Exercise'
+          }))
+        }
+        recentWorkouts.push(workoutEntry)
 
         // Get the most recent feedback
         if (!lastFeedback && workout['feedback']) {
@@ -108,10 +139,18 @@ export function useWorkoutPreload() {
         progressionNote = 'Reducing intensity to improve workout completion rate.'
       }
 
-      return { targetIntensity, progressionNote }
+      return {
+        targetIntensity,
+        progressionNote,
+        recentWorkouts // Return optimized workout history
+      }
     } catch (error) {
-      logger.error('Error fetching adaptive intensity', error)
-      return { targetIntensity: 1.0, progressionNote: '' }
+      logger.error('Error fetching workout history', error)
+      return {
+        targetIntensity: 1.0,
+        progressionNote: '',
+        recentWorkouts: []
+      }
     }
   }, [])
 
@@ -127,7 +166,7 @@ export function useWorkoutPreload() {
       setPreloadedData(prev => ({ ...prev, isLoading: true, error: null }))
 
       // Run profile fetch and adaptive intensity fetch in parallel
-      const [profileResult, adaptiveResult] = await Promise.allSettled([
+      const [profileResult, workoutHistoryResult] = await Promise.allSettled([
         // Fetch user profile
         (async () => {
           const userDocRef = doc(db, 'users', uid)
@@ -143,14 +182,17 @@ export function useWorkoutPreload() {
           }
           return profile
         })(),
-        // Fetch adaptive intensity if enabled
-        isAdaptivePersonalizationEnabled() ? fetchAdaptiveIntensity(uid) : Promise.resolve({ targetIntensity: 1.0, progressionNote: '' })
+        // Fetch workout history and adaptive intensity if enabled
+        isAdaptivePersonalizationEnabled()
+          ? fetchWorkoutHistory(uid)
+          : Promise.resolve({ targetIntensity: 1.0, progressionNote: '', recentWorkouts: [] })
       ])
 
       // Handle results
       let profile: UserProfile | null = null
       let targetIntensity = 1.0
       let progressionNote = ''
+      let recentWorkouts: RecentWorkout[] = []
       let error: string | null = null
 
       if (profileResult.status === 'fulfilled') {
@@ -159,18 +201,20 @@ export function useWorkoutPreload() {
         error = profileResult.reason?.message || 'Failed to load profile'
       }
 
-      if (adaptiveResult.status === 'fulfilled') {
-        targetIntensity = adaptiveResult.value.targetIntensity
-        progressionNote = adaptiveResult.value.progressionNote
+      if (workoutHistoryResult.status === 'fulfilled') {
+        targetIntensity = workoutHistoryResult.value.targetIntensity
+        progressionNote = workoutHistoryResult.value.progressionNote
+        recentWorkouts = workoutHistoryResult.value.recentWorkouts
       } else {
-        logger.error('Error loading adaptive intensity', adaptiveResult.reason)
-        // Don't set error for adaptive intensity failure, use defaults
+        logger.error('Error loading workout history', workoutHistoryResult.reason)
+        // Don't set error for workout history failure, use defaults
       }
 
       setPreloadedData({
         profile,
         targetIntensity,
         progressionNote,
+        recentWorkouts,
         isLoading: false,
         error
       })
@@ -183,7 +227,7 @@ export function useWorkoutPreload() {
         error: error instanceof Error ? error.message : 'Failed to preload data'
       }))
     }
-  }, [fetchAdaptiveIntensity])
+  }, [fetchWorkoutHistory])
 
   // Trigger preload when component mounts or user changes
   useEffect(() => {
@@ -195,6 +239,7 @@ export function useWorkoutPreload() {
           profile: null,
           targetIntensity: 1.0,
           progressionNote: '',
+          recentWorkouts: [],
           isLoading: false,
           error: 'No user authenticated'
         })
