@@ -19,7 +19,7 @@
 import { generateSW } from 'workbox-build';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,8 +74,20 @@ async function buildServiceWorker() {
       // Runtime caching strategies
       runtimeCaching: [
         // Network-first for HTML navigation (app shell)
+        // IMPORTANT: Only match actual HTML files, not module requests
         {
-          urlPattern: /\.html$/,
+          urlPattern: ({ request, url }) => {
+            // Only cache actual HTML navigation requests
+            // Exclude module imports and API calls
+            if (request.mode === 'navigate' && url.pathname.endsWith('.html')) {
+              return true;
+            }
+            // Also match direct .html file requests (but not modules)
+            if (url.pathname.endsWith('.html') && request.destination !== 'script') {
+              return true;
+            }
+            return false;
+          },
           handler: 'NetworkFirst',
           options: {
             cacheName: 'html-pages',
@@ -175,12 +187,100 @@ async function buildServiceWorker() {
       inlineWorkboxRuntime: true,
     });
 
+    // Post-process the service worker to add MIME type error prevention
+    const swPath = join(rootDir, 'dist/sw.js');
+    let swContent = readFileSync(swPath, 'utf-8');
+
+    // Add MIME type error prevention code at the end, before the closing
+    const mimeTypeErrorPrevention = `
+// ============================================
+// MIME Type Error Prevention
+// ============================================
+// Prevent serving HTML as JavaScript modules
+// This catches cases where the service worker might serve HTML for script requests
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+
+  // Only check GET requests
+  if (request.method !== 'GET') return;
+
+  // Check if this is a module/script request
+  const isModuleRequest = request.destination === 'script' ||
+                          request.destination === 'worker' ||
+                          request.destination === 'sharedworker';
+
+  if (isModuleRequest) {
+    // Wrap the response to check for MIME type mismatches
+    const originalRespond = event.respondWith.bind(event);
+    event.respondWith = async function(responsePromise) {
+      try {
+        const response = await Promise.resolve(responsePromise);
+
+        if (response && response.headers) {
+          const contentType = response.headers.get('content-type') || '';
+
+          // If we got HTML for a script request, that's an error
+          if (contentType.includes('text/html')) {
+            console.error('🚨 MIME Type Error Prevention: Blocked HTML response for script request', {
+              url: request.url,
+              destination: request.destination,
+              contentType: contentType,
+            });
+
+            // Try to fetch fresh from network
+            try {
+              const freshResponse = await fetch(request.clone());
+              const freshContentType = freshResponse.headers.get('content-type') || '';
+
+              if (!freshContentType.includes('text/html')) {
+                return freshResponse;
+              }
+            } catch (e) {
+              // Network fetch failed, fall through to error
+            }
+
+            // Return a proper error response
+            return new Response(
+              'Module loading error: Invalid MIME type',
+              {
+                status: 400,
+                statusText: 'Bad Request',
+                headers: { 'Content-Type': 'text/plain' }
+              }
+            );
+          }
+        }
+
+        return response;
+      } catch (error) {
+        console.error('Error in MIME type prevention handler:', error);
+        throw error;
+      }
+    };
+  }
+});
+`;
+
+    // Append the prevention code before the source map comment
+    if (swContent.includes('//# sourceMappingURL')) {
+      swContent = swContent.replace(
+        '//# sourceMappingURL',
+        mimeTypeErrorPrevention + '\n//# sourceMappingURL'
+      );
+    } else {
+      swContent += '\n' + mimeTypeErrorPrevention;
+    }
+
+    writeFileSync(swPath, swContent, 'utf-8');
+    console.log(`✅ Added MIME type error prevention to service worker`);
+
     console.log(`✅ Service worker built successfully!`);
     console.log(`   📦 Precached ${count} files`);
     console.log(`   💾 Total size: ${(size / 1024).toFixed(2)} KB (${(size / 1024 / 1024).toFixed(2)} MB)`);
     console.log(`   🎯 Strategies: Cache-First (static), SWR (API), Network-First (HTML)`);
     console.log(`   🔄 Update notifications: BroadcastChannel + postMessage`);
     console.log(`   📴 Offline support: App shell + last workout`);
+    console.log(`   🛡️  MIME type error prevention: Enabled`);
 
     if (warnings.length > 0) {
       console.warn('⚠️  Warnings:');
