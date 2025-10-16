@@ -43,8 +43,6 @@ async function buildServiceWorker() {
 
       // Patterns to match files for precaching (app shell)
       globPatterns: [
-        // HTML files (app shell)
-        '**/*.html',
         // JavaScript bundles (versioned, cache-busted)
         '**/*.js',
         // CSS stylesheets
@@ -75,6 +73,19 @@ async function buildServiceWorker() {
 
       // Runtime caching strategies
       runtimeCaching: [
+        // Network-first for HTML navigation (app shell)
+        {
+          urlPattern: /\.html$/,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'html-pages',
+            networkTimeoutSeconds: 5,
+            expiration: {
+              maxEntries: 10,
+              maxAgeSeconds: 60 * 60 * 24, // 24 hours
+            },
+          },
+        },
         // Cache Google Fonts CSS with stale-while-revalidate
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
