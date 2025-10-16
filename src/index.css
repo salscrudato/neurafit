@@ -424,14 +424,89 @@ a {
   padding-bottom: env(safe-area-inset-bottom, 0.75rem);
 }
 
-/* Extra small screen responsive utilities */
-@media (min-width: 475px) {
-  .xs\:inline {
-    display: inline;
-  }
-  .xs\:hidden {
-    display: none;
-  }
+/* Extra small screen responsive utilities - 375px to 428px phones */
+@media (min-width: 375px) {
+  /* Spacing utilities for xs breakpoint */
+  .xs\:px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .xs\:px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .xs\:px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .xs\:px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .xs\:px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .xs\:py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .xs\:py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+  .xs\:py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+  .xs\:py-4\.5 { padding-top: 1.125rem; padding-bottom: 1.125rem; }
+  .xs\:py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+  .xs\:pt-1 { padding-top: 0.25rem; }
+  .xs\:pt-2 { padding-top: 0.5rem; }
+  .xs\:pt-9 { padding-top: 2.25rem; }
+  .xs\:pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.75rem); }
+
+  /* Margin utilities */
+  .xs\:mb-1\.5 { margin-bottom: 0.375rem; }
+  .xs\:mb-2 { margin-bottom: 0.5rem; }
+  .xs\:mb-3 { margin-bottom: 0.75rem; }
+  .xs\:mb-4 { margin-bottom: 1rem; }
+  .xs\:mb-7 { margin-bottom: 1.75rem; }
+  .xs\:mb-9 { margin-bottom: 2.25rem; }
+  .xs\:mb-12 { margin-bottom: 3rem; }
+  .xs\:mb-14 { margin-bottom: 3.5rem; }
+  .xs\:mt-0\.5 { margin-top: 0.125rem; }
+  .xs\:mt-2 { margin-top: 0.5rem; }
+  .xs\:gap-1\.5 { gap: 0.375rem; }
+  .xs\:gap-2 { gap: 0.5rem; }
+  .xs\:gap-2\.5 { gap: 0.625rem; }
+  .xs\:gap-3 { gap: 0.75rem; }
+  .xs\:gap-4 { gap: 1rem; }
+  .xs\:gap-4\.5 { gap: 1.125rem; }
+
+  /* Size utilities */
+  .xs\:h-3\.5 { height: 0.875rem; }
+  .xs\:h-4 { height: 1rem; }
+  .xs\:h-4\.5 { height: 1.125rem; }
+  .xs\:h-5 { height: 1.25rem; }
+  .xs\:h-5\.5 { height: 1.375rem; }
+  .xs\:h-7 { height: 1.75rem; }
+  .xs\:h-7\.5 { height: 1.875rem; }
+  .xs\:h-14 { height: 3.5rem; }
+  .xs\:h-15 { height: 3.75rem; }
+  .xs\:w-3\.5 { width: 0.875rem; }
+  .xs\:w-4 { width: 1rem; }
+  .xs\:w-4\.5 { width: 1.125rem; }
+  .xs\:w-5 { width: 1.25rem; }
+  .xs\:w-5\.5 { width: 1.375rem; }
+  .xs\:w-7 { width: 1.75rem; }
+  .xs\:w-7\.5 { width: 1.875rem; }
+  .xs\:w-14 { width: 3.5rem; }
+  .xs\:w-15 { width: 3.75rem; }
+  .xs\:min-h-\[48px\] { min-height: 48px; }
+  .xs\:min-h-\[56px\] { min-height: 56px; }
+
+  /* Text utilities */
+  .xs\:text-\[10px\] { font-size: 10px; }
+  .xs\:text-\[11px\] { font-size: 11px; }
+  .xs\:text-xs { font-size: 0.75rem; }
+  .xs\:text-sm { font-size: 0.875rem; }
+  .xs\:text-base { font-size: 1rem; }
+  .xs\:text-lg { font-size: 1.125rem; }
+  .xs\:text-2\.5xl { font-size: 1.75rem; }
+  .xs\:text-3\.5xl { font-size: 2rem; }
+  .xs\:leading-\[1\.12\] { line-height: 1.12; }
+
+  /* Border radius */
+  .xs\:rounded-lg { border-radius: 0.5rem; }
+  .xs\:rounded-xl { border-radius: 0.75rem; }
+  .xs\:rounded-2xl { border-radius: 1rem; }
+  .xs\:rounded-2\.5xl { border-radius: 1.125rem; }
+  .xs\:rounded-\[16px\] { border-radius: 16px; }
+  .xs\:rounded-\[18px\] { border-radius: 18px; }
+  .xs\:rounded-\[20px\] { border-radius: 20px; }
+
+  /* Display utilities */
+  .xs\:inline { display: inline; }
+  .xs\:hidden { display: none; }
+  .xs\:flex { display: flex; }
+  .xs\:block { display: block; }
 }
 
 /* Improved gesture support */
@@ -824,4 +899,167 @@ a {
 .animate-gradient-x {
   background-size: 200% 200%;
   animation: gradient-x 8s ease infinite;
+}
+
+/* Enhanced floating animation with will-change for performance */
+@keyframes float-enhanced {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float-enhanced {
+  animation: float-enhanced 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Smooth fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Button press feedback animation */
+@keyframes button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-button-press {
+  animation: button-press 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth scale animation for modals */
+@keyframes scale-in-smooth {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in-smooth {
+  animation: scale-in-smooth 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus ring animation */
+@keyframes focus-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.focus-ring-animation:focus {
+  animation: focus-ring 0.6s ease-out;
+}
+
+/* Smooth color transition for interactive elements */
+.transition-colors-smooth {
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced shadow transition */
+.transition-shadow-smooth {
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout shift on button hover */
+.button-stable-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-stable-hover:hover {
+  transform: translateY(-1px);
+}
+
+/* Improved contrast for accessibility */
+.high-contrast-text {
+  color: #1f2937; /* gray-900 */
+  font-weight: 500;
+}
+
+/* Better focus states for keyboard navigation */
+.focus-visible-enhanced:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Slide in animation for onboarding steps */
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Pulse animation for progress indicator */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth height transition for step content */
+.transition-height-smooth {
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-enhanced,
+  .animate-fade-in,
+  .animate-button-press,
+  .animate-scale-in-smooth,
+  .animate-slide-in-up,
+  .animate-pulse-subtle,
+  .focus-ring-animation:focus,
+  .button-stable-hover:hover {
+    animation: none;
+    transition: none;
+  }
 }

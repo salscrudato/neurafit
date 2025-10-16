@@ -288,47 +288,47 @@ export default function Generate() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50/80 via-white to-blue-50/20 relative safe-area-inset-bottom">
       {/* Enhanced background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-100/30 via-indigo-100/20 to-purple-100/10 rounded-full blur-3xl animate-pulse-subtle" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-slate-100/25 via-gray-100/15 to-blue-100/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-blue-50/20 via-transparent to-transparent rounded-full blur-2xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-100/30 via-indigo-100/20 to-purple-100/10 rounded-full blur-3xl animate-pulse-subtle" aria-hidden="true" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-slate-100/25 via-gray-100/15 to-blue-100/10 rounded-full blur-3xl" aria-hidden="true" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-blue-50/20 via-transparent to-transparent rounded-full blur-2xl" aria-hidden="true" />
       </div>
 
       <AppHeader />
 
-      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pb-16 pt-6 sm:pt-8">
+      <main className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 pb-16 pt-6 xs:pt-7 sm:pt-8">
         {/* Enhanced Hero Section */}
-        <section className="group relative rounded-3xl border border-white/70 bg-gradient-to-br from-white/98 via-white/95 to-white/90 backdrop-blur-xl p-6 sm:p-8 md:p-12 overflow-hidden shadow-2xl shadow-slate-200/50 hover:shadow-3xl hover:shadow-slate-300/30 transition-all duration-700 hover:scale-[1.005] hover:-translate-y-1">
+        <section className="group relative rounded-2xl xs:rounded-3xl border border-white/70 bg-gradient-to-br from-white/98 via-white/95 to-white/90 backdrop-blur-xl p-5 xs:p-8 sm:p-10 md:p-12 overflow-hidden shadow-2xl shadow-slate-200/50 hover:shadow-3xl hover:shadow-slate-300/30 transition-all duration-700 hover:scale-[1.005] hover:-translate-y-1 animate-slide-in-up">
           {/* Enhanced background elements */}
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-3xl group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" />
-          <div className="absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-slate-400/10 via-gray-400/5 to-blue-400/5 opacity-40 blur-2xl group-hover:opacity-60 transition-all duration-700" />
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-tr from-blue-400/15 via-indigo-400/10 to-purple-400/5 opacity-60 blur-3xl group-hover:opacity-80 group-hover:scale-110 transition-all duration-700" aria-hidden="true" />
+          <div className="absolute -left-20 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-tr from-slate-400/10 via-gray-400/5 to-blue-400/5 opacity-40 blur-2xl group-hover:opacity-60 transition-all duration-700" aria-hidden="true" />
 
           {/* Subtle inner glow */}
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" />
+          <div className="absolute inset-0 rounded-2xl xs:rounded-3xl bg-gradient-to-br from-white/40 via-transparent to-white/20 pointer-events-none" aria-hidden="true" />
 
-          <div className="relative space-y-6 sm:space-y-8">
-            <div className="space-y-4 sm:space-y-6">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-[1.1] sm:leading-tight">
+          <div className="relative space-y-5 xs:space-y-6 sm:space-y-8">
+            <div className="space-y-3 xs:space-y-4 sm:space-y-6">
+              <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight sm:leading-tight">
                 AI Workout Generator
               </h1>
             </div>
 
-            <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-2xl border border-blue-200/30 backdrop-blur-sm">
-              <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
-              <span className="text-blue-700 font-semibold text-sm sm:text-base">Get your custom training plan in 30 seconds!</span>
+            <div className="inline-flex items-center gap-2 xs:gap-3 px-4 xs:px-6 py-2 xs:py-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/5 rounded-xl xs:rounded-2xl border border-blue-200/30 backdrop-blur-sm">
+              <div className="w-2 xs:w-3 h-2 xs:h-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-pulse"></div>
+              <span className="text-blue-700 font-semibold text-xs xs:text-sm sm:text-base">Get your custom training plan in 30 seconds!</span>
             </div>
 
             {/* Enhanced benefit highlights */}
-            <div className="flex flex-wrap gap-4 sm:gap-6">
-              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
-                <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/30"></div>
+            <div className="flex flex-col xs:flex-row xs:flex-wrap gap-3 xs:gap-4 sm:gap-6">
+              <div className="flex items-center gap-2 xs:gap-3 text-xs xs:text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-2 xs:w-3 h-2 xs:h-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/30 flex-shrink-0"></div>
                 <span>Personalized for your goals</span>
               </div>
-              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
-                <div className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30"></div>
+              <div className="flex items-center gap-2 xs:gap-3 text-xs xs:text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-2 xs:w-3 h-2 xs:h-3 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30 flex-shrink-0"></div>
                 <span>Equipment-based customization</span>
               </div>
-              <div className="flex items-center gap-3 text-sm sm:text-base text-slate-700/90 font-medium">
-                <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/30"></div>
+              <div className="flex items-center gap-2 xs:gap-3 text-xs xs:text-sm sm:text-base text-slate-700/90 font-medium">
+                <div className="w-2 xs:w-3 h-2 xs:h-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full shadow-lg shadow-purple-500/30 flex-shrink-0"></div>
                 <span>Injury-safe modifications</span>
               </div>
             </div>
@@ -358,24 +358,24 @@ export default function Generate() {
 
         {/* Enhanced Intensity Calibration Indicator */}
         {preloadedData.targetIntensity !== 1.0 && isIntensityCalibrationEnabled() && (
-          <section className="mt-8 sm:mt-10">
-            <div className="group relative rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-white/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-indigo-200/30 hover:shadow-2xl hover:shadow-indigo-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
-              <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-indigo-400/20 to-purple-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" />
+          <section className="mt-6 xs:mt-8 sm:mt-10 animate-slide-in-up" style={{ animationDelay: '0.1s' }}>
+            <div className="group relative rounded-2xl xs:rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-white/90 backdrop-blur-xl p-5 xs:p-6 sm:p-8 shadow-xl shadow-indigo-200/30 hover:shadow-2xl hover:shadow-indigo-200/40 transition-all duration-500 hover:scale-[1.01] hover:-translate-y-0.5">
+              <div className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-gradient-to-tr from-indigo-400/20 to-purple-400/10 opacity-50 blur-2xl group-hover:opacity-70 group-hover:scale-110 transition-all duration-500" aria-hidden="true" />
 
-              <div className="relative flex items-center gap-5">
-                <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-110 transition-all duration-500">
-                  <Brain className="h-7 w-7 text-white" />
+              <div className="relative flex items-center gap-3 xs:gap-4 sm:gap-5">
+                <div className="w-12 xs:w-14 sm:w-16 h-12 xs:h-14 sm:h-16 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 rounded-lg xs:rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl shadow-indigo-500/30 group-hover:shadow-indigo-500/50 group-hover:scale-110 transition-all duration-500 flex-shrink-0">
+                  <Brain className="h-6 xs:h-7 sm:h-8 w-6 xs:w-7 sm:w-8 text-white" />
                 </div>
-                <div className="flex-1 space-y-2">
-                  <div className="font-bold text-lg sm:text-xl text-gray-900 leading-tight">
+                <div className="flex-1 space-y-1 xs:space-y-2">
+                  <div className="font-bold text-base xs:text-lg sm:text-xl text-gray-900 leading-tight">
                     Intensity: {preloadedData.targetIntensity > 1.0 ? '+' : ''}{Math.round((preloadedData.targetIntensity - 1.0) * 100)}%
                   </div>
                   {preloadedData.progressionNote && (
-                    <div className="text-sm sm:text-base text-gray-600/90 font-medium capitalize leading-relaxed">
+                    <div className="text-xs xs:text-sm sm:text-base text-gray-600/90 font-medium capitalize leading-relaxed">
                       {preloadedData.progressionNote}
                     </div>
                   )}
-                  <div className="text-xs sm:text-sm text-indigo-600/80 font-medium">
+                  <div className="text-xs text-indigo-600/80 font-medium">
                     AI-adjusted based on your recent workout feedback
                   </div>
                 </div>
@@ -385,9 +385,9 @@ export default function Generate() {
         )}
 
         {/* Options */}
-        <section className="mt-8 space-y-6">
+        <section className="mt-6 xs:mt-8 sm:mt-10 space-y-4 xs:space-y-5 sm:space-y-6 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
           {/* Type */}
-          <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+          <div className="rounded-lg xs:rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 xs:p-5 sm:p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Workout Type</h3>
               {type && <span className="text-xs text-gray-500">Selected: {type}</span>}

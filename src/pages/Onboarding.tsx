@@ -1,5 +1,5 @@
 // src/pages/Onboarding.tsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, memo } from 'react'
 import { auth, db } from '../lib/firebase'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -86,22 +86,23 @@ function validStep(step: number, d: Draft): boolean {
 function Progress({ step, total }: { step: number; total: number }) {
   const pct = Math.round((step / total) * 100)
   return (
-    <div className="w-full mb-8">
-      <div className="mb-3 flex items-center justify-between text-sm text-gray-600">
+    <div className="w-full mb-6 xs:mb-7 sm:mb-8" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={total} aria-label={`Progress: Step ${step} of ${total}`}>
+      <div className="mb-2 xs:mb-3 flex items-center justify-between text-xs xs:text-sm text-gray-600">
         <span className="font-medium">Step {step} of {total}</span>
         <span className="text-blue-600 font-semibold">{pct}%</span>
       </div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-gray-100 shadow-inner">
+      <div className="h-2.5 xs:h-3 w-full overflow-hidden rounded-full bg-gray-100 shadow-inner">
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full shadow-sm"
+          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full shadow-sm will-change-transform"
           style={{ width: `${pct}%` }}
+          aria-hidden="true"
         />
       </div>
-      <div className="mt-2 flex justify-between">
+      <div className="mt-2 xs:mt-2.5 flex justify-between gap-1.5">
         {Array.from({ length: total }, (_, i) => (
           <div
             key={i}
-            className={`h-2 w-2 rounded-full transition-all duration-300 ${
+            className={`h-1.5 xs:h-2 w-1.5 xs:w-2 rounded-full transition-all duration-300 ${
               i < step ? 'bg-blue-500 scale-110' : 'bg-gray-200'
             }`}
           />
@@ -113,8 +114,8 @@ function Progress({ step, total }: { step: number; total: number }) {
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <div className="mb-6 text-center">
-      <h2 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h2>
+    <div className="mb-5 xs:mb-6 sm:mb-7 text-center">
+      <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">{title}</h2>
     </div>
   )
 }
@@ -127,9 +128,10 @@ function SelectCard({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       className={[
-        'group relative w-full rounded-2xl border p-5 text-sm transition-all duration-300',
-        'text-left shadow-sm hover:shadow-md',
+        'group relative w-full rounded-xl xs:rounded-2xl border p-4 xs:p-5 text-xs xs:text-sm transition-all duration-300',
+        'text-left shadow-sm hover:shadow-md touch-manipulation min-h-[48px] xs:min-h-[56px] focus-visible-enhanced',
         active
           ? 'border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg scale-[1.02]'
           : 'border-gray-200 bg-white/70 backdrop-blur-sm hover:border-blue-300 hover:bg-white hover:scale-[1.01]',
@@ -169,11 +171,12 @@ function PrimaryButton({
     <button
       type={type}
       onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       aria-disabled={disabled}
       className={[
-        'px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-sm',
+        'px-4 xs:px-6 py-2.5 xs:py-3 rounded-lg xs:rounded-xl font-semibold transition-all duration-300 shadow-sm touch-manipulation min-h-[44px] xs:min-h-[48px] focus-visible-enhanced',
         disabled
-          ? 'bg-gray-300 text-gray-500 pointer-events-none'
+          ? 'bg-gray-300 text-gray-500 pointer-events-none cursor-not-allowed'
           : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95',
       ].join(' ')}
     >
@@ -187,11 +190,12 @@ function SecondaryButton({ children, onClick, disabled }: { children: React.Reac
     <button
       type="button"
       onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       aria-disabled={disabled}
       className={[
-        'px-5 py-3 rounded-xl border font-medium transition-all duration-300',
+        'px-4 xs:px-5 py-2.5 xs:py-3 rounded-lg xs:rounded-xl border font-medium transition-all duration-300 touch-manipulation min-h-[44px] xs:min-h-[48px] focus-visible-enhanced',
         disabled
-          ? 'border-gray-200 text-gray-400 pointer-events-none'
+          ? 'border-gray-200 text-gray-400 pointer-events-none cursor-not-allowed'
           : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md hover:scale-105 active:scale-95',
       ].join(' ')}
     >
@@ -263,7 +267,7 @@ export default function Onboarding() {
   const atStart = step === 1
   const atEnd = step === total
 
-  function toggle(list: string[], value: string, allowNone = false) {
+  const toggle = useCallback((list: string[], value: string, allowNone = false) => {
     const isNone = value.startsWith('None')
     // If "None" is selected, clear everything else
     if (allowNone && isNone) return ['None (Bodyweight)', 'None'].includes(value) ? [value] : [value]
@@ -272,9 +276,9 @@ export default function Onboarding() {
       list = list.filter((v) => !v.startsWith('None'))
     }
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
-  }
+  }, [])
 
-  async function finish() {
+  const finish = useCallback(async () => {
     const uid = auth.currentUser?.uid
     if (!uid) {
       logger.warn('Attempted to save profile without user ID')
@@ -342,16 +346,16 @@ export default function Onboarding() {
     } finally {
       setSaving(false)
     }
-  }
+  }, [draft, location, nav])
 
   // Allow Enter to go Next only when valid
-  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' && !disableNext) {
       e.preventDefault()
       if (!atEnd) setStep((s) => s + 1)
       else finish()
     }
-  }
+  }, [disableNext, atEnd, finish])
 
   if (loading) {
     return (
@@ -365,37 +369,39 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30" onKeyDown={onKeyDown} tabIndex={0}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30" onKeyDown={onKeyDown} tabIndex={0} role="main" aria-label="Onboarding flow">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.05),transparent_50%)]" aria-hidden="true" />
 
       {/* Content */}
-      <div className="relative mx-auto max-w-3xl px-6 pt-12 pb-28">
+      <div className="relative mx-auto max-w-3xl px-4 xs:px-5 sm:px-6 pt-8 xs:pt-10 sm:pt-12 pb-24 xs:pb-28 sm:pb-32">
         <Progress step={step} total={total} />
         <SectionTitle {...header} />
 
+        {/* Step Content with Animation */}
+        <div key={step} className="animate-slide-in-up">
         {/* STEP 1 — EXPERIENCE */}
         {step === 1 && (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 xs:gap-4 grid-cols-1 sm:grid-cols-3">
             {EXPERIENCE_LEVELS.map((level) => (
               <SelectCard
                 key={level}
                 active={draft.experience === level}
                 onClick={() => setDraft((d) => ({ ...d, experience: level }))}
               >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className={`p-3 rounded-xl transition-all duration-300 ${
+                <div className="flex items-center gap-3 xs:gap-4 mb-2 xs:mb-3">
+                  <div className={`p-2 xs:p-3 rounded-lg xs:rounded-xl transition-all duration-300 flex-shrink-0 ${
                     draft.experience === level
                       ? 'bg-white/20 border border-white/30'
                       : 'bg-blue-50 border border-blue-100'
                   }`}>
-                    {level === 'Beginner' && <BookOpen className={`h-6 w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
-                    {level === 'Intermediate' && <Zap className={`h-6 w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
-                    {level === 'Expert' && <Trophy className={`h-6 w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Beginner' && <BookOpen className={`h-5 xs:h-6 w-5 xs:w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Intermediate' && <Zap className={`h-5 xs:h-6 w-5 xs:w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
+                    {level === 'Expert' && <Trophy className={`h-5 xs:h-6 w-5 xs:w-6 ${draft.experience === level ? 'text-white' : 'text-blue-600'}`} />}
                   </div>
-                  <div className="text-lg font-bold">{level}</div>
+                  <div className="text-base xs:text-lg font-bold">{level}</div>
                 </div>
-                <div className={`text-sm leading-relaxed ${
+                <div className={`text-xs xs:text-sm leading-relaxed ${
                   draft.experience === level
                     ? 'text-white/90'
                     : 'text-gray-600 group-hover:text-gray-700'
@@ -411,7 +417,7 @@ export default function Onboarding() {
 
         {/* STEP 2 — GOALS */}
         {step === 2 && (
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-2 xs:gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
             {GOALS.map((goal) => (
               <GoalCard
                 key={goal}
@@ -425,7 +431,7 @@ export default function Onboarding() {
 
         {/* STEP 3 — EQUIPMENT */}
         {step === 3 && (
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-2 xs:gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
             {EQUIPMENT.map((equipment) => (
               <EquipmentCard
                 key={equipment}
@@ -439,18 +445,18 @@ export default function Onboarding() {
 
         {/* STEP 4 — PERSONAL */}
         {step === 4 && (
-          <div className="grid gap-8">
+          <div className="grid gap-6 xs:gap-7 sm:gap-8">
             {/* Sex Options - Single Row */}
             <div>
-              <div className="mb-4 text-sm font-semibold text-gray-700 text-center">Gender</div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="mb-3 xs:mb-4 text-xs xs:text-sm font-semibold text-gray-700 text-center">Gender</div>
+              <div className="grid grid-cols-3 gap-2 xs:gap-3 sm:gap-4">
                 {SEX_OPTIONS.map((s) => (
                   <SelectCard
                     key={s}
                     active={draft.personal.sex === s}
                     onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, sex: s } }))}
                   >
-                    <div className="text-center font-medium">{s}</div>
+                    <div className="text-center font-medium text-xs xs:text-sm">{s}</div>
                   </SelectCard>
                 ))}
               </div>
@@ -458,15 +464,15 @@ export default function Onboarding() {
 
             {/* Height - 2x3 Grid */}
             <div>
-              <div className="mb-4 text-sm font-semibold text-gray-700 text-center">Height Range</div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="mb-3 xs:mb-4 text-xs xs:text-sm font-semibold text-gray-700 text-center">Height Range</div>
+              <div className="grid grid-cols-3 gap-2 xs:gap-3">
                 {HEIGHT_RANGES.map((h) => (
                   <SelectCard
                     key={h}
                     active={draft.personal.height === h}
                     onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, height: h } }))}
                   >
-                    <div className="text-center font-medium">{h}</div>
+                    <div className="text-center font-medium text-xs xs:text-sm">{h}</div>
                   </SelectCard>
                 ))}
               </div>
@@ -474,15 +480,15 @@ export default function Onboarding() {
 
             {/* Weight - 2x3 Grid */}
             <div>
-              <div className="mb-4 text-sm font-semibold text-gray-700 text-center">Weight Range</div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="mb-3 xs:mb-4 text-xs xs:text-sm font-semibold text-gray-700 text-center">Weight Range</div>
+              <div className="grid grid-cols-3 gap-2 xs:gap-3">
                 {WEIGHT_RANGES.map((w) => (
                   <SelectCard
                     key={w}
                     active={draft.personal.weight === w}
                     onClick={() => setDraft((d) => ({ ...d, personal: { ...d.personal, weight: w } }))}
                   >
-                    <div className="text-center font-medium">{w}</div>
+                    <div className="text-center font-medium text-xs xs:text-sm">{w}</div>
                   </SelectCard>
                 ))}
               </div>
@@ -492,8 +498,8 @@ export default function Onboarding() {
 
         {/* STEP 5 — INJURIES */}
         {step === 5 && (
-          <div className="grid gap-6">
-            <div className="mb-2 text-sm font-semibold text-gray-700 text-center">Current Injuries or Limitations</div>
+          <div className="grid gap-5 xs:gap-6">
+            <div className="mb-1 xs:mb-2 text-xs xs:text-sm font-semibold text-gray-700 text-center">Current Injuries or Limitations</div>
             <MultiGrid
               items={INJURY_OPTIONS}
               selected={draft.injuries.list}
@@ -509,12 +515,12 @@ export default function Onboarding() {
               cols={2}
             />
             <div>
-              <label className="mb-3 block text-sm font-semibold text-gray-700">Additional Notes (optional)</label>
+              <label className="mb-2 xs:mb-3 block text-xs xs:text-sm font-semibold text-gray-700">Additional Notes (optional)</label>
               <textarea
                 value={draft.injuries.notes}
                 onChange={(e) => setDraft((d) => ({ ...d, injuries: { ...d.injuries, notes: e.target.value } }))}
                 placeholder="e.g., mild runner’s knee on right leg; avoid deep flexion"
-                className="w-full rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 resize-none"
+                className="w-full rounded-lg xs:rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm px-3 xs:px-4 py-2.5 xs:py-3 text-xs xs:text-sm outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 resize-none"
                 rows={4}
                 autoComplete="off"
                 autoCorrect="off"
@@ -525,11 +531,12 @@ export default function Onboarding() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Fixed Footer Nav */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200/50 bg-white/90 backdrop-blur-md shadow-lg fixed-bottom-safe">
-        <div className="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
+        <div className="mx-auto max-w-3xl px-4 xs:px-5 sm:px-6 py-3 xs:py-4 flex items-center justify-between gap-3 xs:gap-4">
           <SecondaryButton onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={atStart}>
             Back
           </SecondaryButton>
@@ -558,7 +565,7 @@ export default function Onboarding() {
 }
 
 /* ---------- Goal Card Component ---------- */
-function GoalCard({
+const GoalCard = memo(function GoalCard({
   goal,
   active,
   onClick
@@ -570,28 +577,29 @@ function GoalCard({
   return (
     <button
       onClick={onClick}
+      type="button"
       className={`
-        group relative p-3 rounded-2xl border-2 transition-all duration-300 text-center shadow-sm hover:shadow-lg
+        group relative p-2.5 xs:p-3 rounded-lg xs:rounded-2xl border-2 transition-all duration-300 text-center shadow-sm hover:shadow-lg touch-manipulation min-h-[48px] xs:min-h-[56px]
         ${active
           ? 'bg-gradient-to-br from-blue-500 to-indigo-600 border-blue-500 text-white shadow-lg scale-[1.02]'
           : 'bg-white/70 backdrop-blur-sm border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-white hover:scale-[1.01]'
         }
       `}
     >
-      <div className="flex flex-col items-center space-y-2">
-        <div className={`transition-transform duration-300 group-hover:scale-110 ${active ? 'text-white' : 'text-blue-600'}`}>
-          {getGoalIcon(goal, "h-6 w-6")}
+      <div className="flex flex-col items-center space-y-1.5 xs:space-y-2">
+        <div className={`transition-transform duration-300 group-hover:scale-110 flex-shrink-0 ${active ? 'text-white' : 'text-blue-600'}`}>
+          {getGoalIcon(goal, "h-5 xs:h-6 w-5 xs:w-6")}
         </div>
-        <div className="text-xs font-semibold leading-tight">
+        <div className="text-xs xs:text-xs font-semibold leading-tight">
           {goal}
         </div>
       </div>
     </button>
   )
-}
+})
 
 /* ---------- Equipment Card Component ---------- */
-function EquipmentCard({
+const EquipmentCard = memo(function EquipmentCard({
   equipment,
   active,
   onClick
@@ -603,25 +611,26 @@ function EquipmentCard({
   return (
     <button
       onClick={onClick}
+      type="button"
       className={`
-        group relative p-3 rounded-2xl border-2 transition-all duration-300 text-center shadow-sm hover:shadow-lg
+        group relative p-2.5 xs:p-3 rounded-lg xs:rounded-2xl border-2 transition-all duration-300 text-center shadow-sm hover:shadow-lg touch-manipulation min-h-[48px] xs:min-h-[56px]
         ${active
           ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-500 text-white shadow-lg scale-[1.02]'
           : 'bg-white/70 backdrop-blur-sm border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-white hover:scale-[1.01]'
         }
       `}
     >
-      <div className="flex flex-col items-center space-y-2">
-        <div className={`transition-transform duration-300 group-hover:scale-110 ${active ? 'text-white' : 'text-emerald-600'}`}>
-          {getEquipmentIcon(equipment, "h-6 w-6")}
+      <div className="flex flex-col items-center space-y-1.5 xs:space-y-2">
+        <div className={`transition-transform duration-300 group-hover:scale-110 flex-shrink-0 ${active ? 'text-white' : 'text-emerald-600'}`}>
+          {getEquipmentIcon(equipment, "h-5 xs:h-6 w-5 xs:w-6")}
         </div>
-        <div className="text-xs font-semibold leading-tight">
+        <div className="text-xs xs:text-xs font-semibold leading-tight">
           {equipment}
         </div>
       </div>
     </button>
   )
-}
+})
 
 /* ---------- Equipment Icons ---------- */
 function getEquipmentIcon(equipment: string, className: string = "h-6 w-6") {

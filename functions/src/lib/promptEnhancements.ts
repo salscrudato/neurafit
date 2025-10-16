@@ -166,7 +166,7 @@ RPE/RIR GUIDANCE FOR ADVANCED:
 /**
  * Generate tempo prescription guidance (reserved for future use)
  */
-// @ts-ignore - Reserved for future use
+// @ts-expect-error - Reserved for future use
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateTempoGuidance(goal?: string): string {
   const primaryGoal = goal?.toLowerCase() || 'general';

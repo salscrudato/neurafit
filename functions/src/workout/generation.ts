@@ -160,9 +160,9 @@ export async function generateWorkoutOrchestrated(
       const messages = isRepair && validationErrors
         ? buildRepairMessages(systemMessage, prompt, validationErrors, candidate)
         : [
-            { role: 'system' as const, content: systemMessage },
-            { role: 'user' as const, content: prompt },
-          ];
+          { role: 'system' as const, content: systemMessage },
+          { role: 'user' as const, content: prompt },
+        ];
 
       // Call OpenAI with streaming for better perceived performance
       console.log('🤖 Calling OpenAI API with streaming...');
@@ -171,6 +171,7 @@ export async function generateWorkoutOrchestrated(
         temperature: OPENAI_CONFIG.temperature,
         top_p: OPENAI_CONFIG.topP,
         max_tokens: OPENAI_CONFIG.maxTokens,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         response_format: responseFormat as any, // Type assertion needed for OpenAI SDK compatibility
         messages,
         stream: true, // Enable streaming for faster perceived response

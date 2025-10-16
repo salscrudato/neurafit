@@ -34,10 +34,10 @@ type ProfileData = {
 /* -------------------- Small UI primitives -------------------- */
 function Section({ title, desc, children }: {title:string; desc?:string; children:React.ReactNode}) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 sm:p-5 shadow-sm">
-      <div className="mb-3">
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        {desc && <p className="text-sm text-gray-600">{desc}</p>}
+    <div className="rounded-lg xs:rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 xs:p-5 sm:p-6 shadow-sm">
+      <div className="mb-3 xs:mb-4">
+        <h3 className="font-semibold text-gray-900 text-base xs:text-lg">{title}</h3>
+        {desc && <p className="text-xs xs:text-sm text-gray-600 mt-1">{desc}</p>}
       </div>
       {children}
     </div>
@@ -48,7 +48,7 @@ function Pill({ active, children, onClick }: {active?:boolean; children:React.Re
     <button
       onClick={onClick}
       className={[
-        'px-3 py-2 rounded-xl border text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+        'px-3 xs:px-4 py-2 xs:py-2.5 rounded-lg xs:rounded-xl border text-xs xs:text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 min-h-[40px] xs:min-h-[44px] touch-manipulation',
         active ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]' : 'bg-white/70 hover:bg-white border-gray-200 hover:border-blue-300 text-gray-700 hover:scale-[1.01]'
       ].join(' ')}
     >
@@ -60,7 +60,7 @@ function GridSelect({
   items, selected, onToggle, twoCol=false
 }: {items:string[]; selected:string[]; onToggle:(_v:string)=>void; twoCol?:boolean}) {
   return (
-    <div className={twoCol ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'}>
+    <div className={twoCol ? 'grid grid-cols-2 gap-2 xs:gap-3' : 'flex flex-wrap gap-2 xs:gap-3'}>
       {items.map(v => (
         <Pill key={v} active={selected.includes(v)} onClick={() => onToggle(v)}>{v}</Pill>
       ))}
@@ -191,19 +191,19 @@ export default function Profile() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 relative">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-indigo-200/30 to-blue-200/30 rounded-full blur-3xl" aria-hidden="true" />
       </div>
 
       <AppHeader />
 
       {/* Body */}
-      <main className="relative mx-auto max-w-4xl px-6 pb-14 pt-6">
+      <main className="relative mx-auto max-w-4xl px-3 xs:px-4 sm:px-6 pb-14 xs:pb-16 sm:pb-20 pt-6 xs:pt-7 sm:pt-8">
         {/* Identity */}
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
+        <div className="mb-6 xs:mb-7 sm:mb-8 rounded-lg xs:rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 xs:p-5 sm:p-6 shadow-sm animate-slide-in-up">
           <div>
-            <div className="text-sm text-gray-500">Signed in as</div>
-            <div className="text-lg font-semibold text-gray-900">{displayId}</div>
+            <div className="text-xs xs:text-sm text-gray-500">Signed in as</div>
+            <div className="text-base xs:text-lg sm:text-xl font-semibold text-gray-900 mt-1">{displayId}</div>
           </div>
         </div>
 
@@ -213,7 +213,7 @@ export default function Profile() {
           <>
 
         {/* Editable sections */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 xs:gap-5 sm:gap-6 md:grid-cols-2 animate-slide-in-up" style={{ animationDelay: '0.1s' }}>
           <Section title="Experience" desc="We calibrate volume, intensity, and progressions.">
             <div className="flex flex-wrap gap-2">
               {EXPERIENCE_LEVELS.map(l => (
@@ -327,9 +327,9 @@ export default function Profile() {
         </div>
 
         {/* Save bar */}
-        <div className="sticky bottom-0 mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm">
+        <div className="sticky bottom-0 mt-6 xs:mt-8 sm:mt-10 rounded-lg xs:rounded-2xl border border-white/15 bg-white/10 p-3 xs:p-4 sm:p-5 backdrop-blur animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex flex-col gap-3 xs:gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs xs:text-sm">
               {invalid ? (
                 <span className="text-amber-300">Complete all required fields to save.</span>
               ) : hasChanges ? (
@@ -338,11 +338,11 @@ export default function Profile() {
                 <span className="text-white/70">All changes saved</span>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 xs:gap-3">
               <button
                 onClick={reset}
                 disabled={!hasChanges}
-                className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-white/90 hover:bg-white/10 disabled:opacity-50"
+                className="rounded-lg xs:rounded-xl border border-white/20 bg-white/5 px-3 xs:px-4 py-2 xs:py-2.5 text-xs xs:text-sm text-white/90 hover:bg-white/10 disabled:opacity-50 min-h-[40px] xs:min-h-[44px] touch-manipulation"
               >
                 Reset
               </button>
@@ -351,7 +351,7 @@ export default function Profile() {
                 onClick={save}
                 disabled={invalid || !hasChanges}
                 className={[
-                  'rounded-xl px-5 py-2 font-semibold',
+                  'rounded-lg xs:rounded-xl px-4 xs:px-5 py-2 xs:py-2.5 font-semibold text-xs xs:text-sm min-h-[40px] xs:min-h-[44px] touch-manipulation',
                   invalid || !hasChanges || saving
                     ? 'bg-emerald-500/40 text-white/80 cursor-not-allowed'
                     : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'

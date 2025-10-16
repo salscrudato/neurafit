@@ -45,6 +45,20 @@ export default function PhoneAuthModal({
     return () => clearTimeout(timer)
   }, [isOpen, step])
 
+  // Handle Escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
+
   // Resend cooldown timer
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -126,43 +140,43 @@ export default function PhoneAuthModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 xs:p-4 sm:p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="phone-auth-title"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-scale-in">
+      <div className="relative bg-white rounded-2xl xs:rounded-2.5xl sm:rounded-3xl shadow-2xl max-w-md w-full p-6 xs:p-7 sm:p-8 animate-scale-in-smooth max-h-[90vh] overflow-y-auto" role="document">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+          className="absolute top-3 xs:top-4 right-3 xs:right-4 text-gray-400 hover:text-gray-600 transition-colors p-1.5 xs:p-2 hover:bg-gray-100 rounded-full"
           aria-label="Close modal"
           type="button"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 xs:h-5 w-5 xs:w-5" />
         </button>
 
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg transition-transform duration-300 hover:scale-105">
+        <div className="text-center mb-6 xs:mb-7 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-14 xs:w-15 sm:w-16 h-14 xs:h-15 sm:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl xs:rounded-2xl sm:rounded-2xl mb-3 xs:mb-4 shadow-lg transition-transform duration-300 hover:scale-105">
             {step === 'phone' ? (
-              <Phone className="h-8 w-8 text-white" aria-hidden="true" />
+              <Phone className="h-7 xs:h-7.5 sm:h-8 w-7 xs:w-7.5 sm:w-8 text-white" aria-hidden="true" />
             ) : (
-              <Shield className="h-8 w-8 text-white" aria-hidden="true" />
+              <Shield className="h-7 xs:h-7.5 sm:h-8 w-7 xs:w-7.5 sm:w-8 text-white" aria-hidden="true" />
             )}
           </div>
-          <h2 id="phone-auth-title" className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 id="phone-auth-title" className="text-xl xs:text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 xs:mb-2">
             {step === 'phone' ? 'Sign in with Phone' : 'Enter Verification Code'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm xs:text-sm sm:text-base">
             {step === 'phone'
               ? 'Enter your phone number to receive a verification code'
               : `We sent a code to ${phoneNumber}`
@@ -172,20 +186,27 @@ export default function PhoneAuthModal({
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-sm text-red-600 font-medium">{error}</p>
+          <div className="mb-5 xs:mb-6 sm:mb-6 p-3 xs:p-4 bg-red-50 border border-red-200 rounded-lg xs:rounded-xl animate-shake" role="alert" aria-live="polite">
+            <div className="flex items-start gap-2.5">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="h-4 xs:h-5 w-4 xs:w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <p className="text-xs xs:text-sm text-red-600 font-medium flex-1">{error}</p>
+            </div>
           </div>
         )}
 
         {/* Phone number step */}
         {step === 'phone' && (
-          <form onSubmit={handlePhoneSubmit} className="space-y-6">
+          <form onSubmit={handlePhoneSubmit} className="space-y-5 xs:space-y-6 sm:space-y-6">
             <div className="group">
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone" className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                 Phone Number
               </label>
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" aria-hidden="true" />
+                <Phone className="absolute left-3 xs:left-4 top-1/2 transform -translate-y-1/2 h-4.5 xs:h-5 w-4.5 xs:w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300 flex-shrink-0" aria-hidden="true" />
                 <input
                   ref={phoneInputRef}
                   id="phone"
@@ -193,7 +214,7 @@ export default function PhoneAuthModal({
                   value={localPhoneNumber}
                   onChange={handlePhoneChange}
                   placeholder="(555) 123-4567"
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 touch-manipulation min-h-[48px] text-base"
+                  className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 touch-manipulation min-h-[48px] text-base"
                   disabled={loading}
                   required
                   autoComplete="tel"
@@ -201,9 +222,9 @@ export default function PhoneAuthModal({
                   aria-label="Phone number"
                   aria-describedby="phone-hint"
                 />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
               </div>
-              <p id="phone-hint" className="mt-2 text-xs text-gray-500">
+              <p id="phone-hint" className="mt-1.5 xs:mt-2 text-[10px] xs:text-xs text-gray-500">
                 US numbers only. Standard messaging rates may apply.
               </p>
             </div>
@@ -211,13 +232,13 @@ export default function PhoneAuthModal({
             <button
               type="submit"
               disabled={loading || !localPhoneNumber}
-              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
+              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 xs:px-6 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
               aria-label="Send verification code"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
-              <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="relative z-10 flex items-center justify-center gap-2 text-sm xs:text-base">
                 {loading && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" role="status" aria-label="Loading" />
+                  <div className="animate-spin rounded-full h-4 xs:h-4 w-4 xs:w-4 border-2 border-white border-t-transparent flex-shrink-0" role="status" aria-label="Loading" />
                 )}
                 {loading ? 'Sending code...' : 'Send Verification Code'}
               </span>
@@ -227,13 +248,13 @@ export default function PhoneAuthModal({
 
         {/* Verification code step */}
         {step === 'code' && (
-          <form onSubmit={handleCodeSubmit} className="space-y-6">
+          <form onSubmit={handleCodeSubmit} className="space-y-5 xs:space-y-6 sm:space-y-6">
             <div className="group">
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="code" className="block text-xs xs:text-sm font-medium text-gray-700 mb-1.5 xs:mb-2">
                 Verification Code
               </label>
               <div className="relative">
-                <Shield className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" aria-hidden="true" />
+                <Shield className="absolute left-3 xs:left-4 top-1/2 transform -translate-y-1/2 h-4.5 xs:h-5 w-4.5 xs:w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300 flex-shrink-0" aria-hidden="true" />
                 <input
                   ref={codeInputRef}
                   id="code"
@@ -241,7 +262,7 @@ export default function PhoneAuthModal({
                   value={verificationCode}
                   onChange={handleCodeChange}
                   placeholder="123456"
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 touch-manipulation min-h-[48px] text-base text-center tracking-widest text-2xl"
+                  className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 touch-manipulation min-h-[48px] text-base xs:text-lg sm:text-xl text-center tracking-widest"
                   disabled={loading}
                   required
                   autoComplete="one-time-code"
@@ -251,9 +272,9 @@ export default function PhoneAuthModal({
                   aria-label="Verification code"
                   aria-describedby="code-hint"
                 />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
               </div>
-              <p id="code-hint" className="mt-2 text-xs text-gray-500 text-center">
+              <p id="code-hint" className="mt-1.5 xs:mt-2 text-[10px] xs:text-xs text-gray-500 text-center">
                 Enter the 6-digit code sent to your phone
               </p>
             </div>
@@ -261,13 +282,13 @@ export default function PhoneAuthModal({
             <button
               type="submit"
               disabled={loading || verificationCode.length !== 6}
-              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-6 py-4 rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
+              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 xs:px-6 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
               aria-label="Verify code and sign in"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
-              <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="relative z-10 flex items-center justify-center gap-2 text-sm xs:text-base">
                 {loading && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" role="status" aria-label="Loading" />
+                  <div className="animate-spin rounded-full h-4 xs:h-4 w-4 xs:w-4 border-2 border-white border-t-transparent flex-shrink-0" role="status" aria-label="Loading" />
                 )}
                 {loading ? 'Verifying...' : 'Verify & Sign In'}
               </span>
@@ -279,18 +300,18 @@ export default function PhoneAuthModal({
                 type="button"
                 onClick={handleResendCode}
                 disabled={resendCooldown > 0 || loading}
-                className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-all duration-200 hover:bg-blue-50 px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="text-xs xs:text-sm text-gray-600 hover:text-blue-600 font-medium transition-all duration-200 hover:bg-blue-50 px-3 xs:px-4 py-1.5 xs:py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 xs:gap-2"
                 aria-label={resendCooldown > 0 ? `Resend code in ${resendCooldown} seconds` : 'Resend verification code'}
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend code'}
+                <RefreshCw className={`h-3.5 xs:h-4 w-3.5 xs:w-4 flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
+                {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend code'}
               </button>
             </div>
 
             <button
               type="button"
               onClick={handleBackToPhone}
-              className="w-full text-sm text-gray-600 hover:text-blue-600 font-medium transition-all duration-200 hover:bg-blue-50 px-3 py-2 rounded-lg"
+              className="w-full text-xs xs:text-sm text-gray-600 hover:text-blue-600 font-medium transition-all duration-200 hover:bg-blue-50 px-3 py-2 rounded-lg"
               aria-label="Use a different phone number"
             >
               Use a different phone number

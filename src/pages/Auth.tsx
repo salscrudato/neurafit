@@ -1,5 +1,5 @@
 // src/pages/Auth.tsx
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import {
@@ -11,9 +11,9 @@ import {
   type ConfirmationResult
 } from 'firebase/auth'
 import { Zap, Brain, Target, Shield, Smartphone } from 'lucide-react'
-import type { ReactElement } from 'react'
 import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
 import PhoneAuthModal from '../components/PhoneAuthModal'
+import FeatureCard from '../components/FeatureCard'
 import { logger } from '../lib/logger'
 
 export default function Auth() {
@@ -94,7 +94,7 @@ export default function Auth() {
     return undefined
   }, [showPhoneModal, recaptchaVerifier])
 
-  const googleLogin = async () => {
+  const googleLogin = useCallback(async () => {
     setLoading(true)
 
     try {
@@ -145,16 +145,16 @@ export default function Auth() {
       alert('Authentication service not available. Please try again.')
       setLoading(false)
     }
-  }
+  }, [])
 
-  const handlePhoneSignIn = () => {
+  const handlePhoneSignIn = useCallback(() => {
     setShowPhoneModal(true)
     setPhoneStep('phone')
     setPhoneError('')
     setPhoneNumber('')
-  }
+  }, [])
 
-  const handlePhoneSubmit = async (phone: string) => {
+  const handlePhoneSubmit = useCallback(async (phone: string) => {
     setLoading(true)
     setPhoneError('')
 
@@ -224,9 +224,9 @@ export default function Auth() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [recaptchaVerifier])
 
-  const handleCodeSubmit = async (code: string) => {
+  const handleCodeSubmit = useCallback(async (code: string) => {
     setLoading(true)
     setPhoneError('')
 
@@ -286,9 +286,9 @@ export default function Auth() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [confirmationResult])
 
-  const handleClosePhoneModal = () => {
+  const handleClosePhoneModal = useCallback(() => {
     setShowPhoneModal(false)
     setPhoneStep('phone')
     setPhoneNumber('')
@@ -298,7 +298,35 @@ export default function Auth() {
       recaptchaVerifier.clear()
       setRecaptchaVerifier(null)
     }
-  }
+  }, [recaptchaVerifier])
+
+  // Memoize feature cards data to prevent unnecessary re-renders
+  const featureCards = useMemo(() => [
+    {
+      icon: <Brain className="h-7 w-7" />,
+      title: "AI-Powered Workouts",
+      desc: "Personalized training plans that adapt to your progress and goals using advanced machine learning algorithms.",
+      bgGradient: "from-blue-500/10 via-indigo-500/10 to-purple-500/10",
+      iconBg: "from-blue-500 to-indigo-600",
+      accentColor: "blue" as const,
+    },
+    {
+      icon: <Target className="h-7 w-7" />,
+      title: "Goal-Focused Training",
+      desc: "Every workout is optimized to help you reach your specific fitness objectives faster and more efficiently.",
+      bgGradient: "from-emerald-500/10 via-teal-500/10 to-cyan-500/10",
+      iconBg: "from-emerald-500 to-teal-600",
+      accentColor: "emerald" as const,
+    },
+    {
+      icon: <Shield className="h-7 w-7" />,
+      title: "Safety First",
+      desc: "Built-in injury prevention with intelligent form guidance and personalized recovery recommendations.",
+      bgGradient: "from-orange-500/10 via-amber-500/10 to-yellow-500/10",
+      iconBg: "from-orange-500 to-amber-600",
+      accentColor: "orange" as const,
+    },
+  ], [])
 
   return (
     <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden" role="main" aria-label="NeuraFit Authentication Page">
@@ -316,30 +344,30 @@ export default function Auth() {
       </div>
 
       {/* Floating Orbs - More Subtle and Elegant */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-20px'} as React.CSSProperties} />
-      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-30px', animationDelay: '2s'} as React.CSSProperties} />
-      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float will-change-transform" style={{'--float-intensity': '-15px', animationDelay: '4s'} as React.CSSProperties} />
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float-enhanced will-change-transform" />
+      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float-enhanced will-change-transform" style={{ animationDelay: '2s' }} />
+      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float-enhanced will-change-transform" style={{ animationDelay: '4s' }} />
 
       {/* Main Content Container */}
-      <div className="relative max-w-lg mx-auto px-6 py-12 sm:py-16 animate-fade-in-up safe-area-inset-top safe-area-inset-bottom" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+      <div className="relative max-w-lg mx-auto px-4 xs:px-5 sm:px-6 py-8 xs:py-10 sm:py-12 md:py-16 animate-fade-in-up safe-area-inset-top safe-area-inset-bottom" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
         {/* Premium Header Badge */}
-        <div className="flex items-center justify-center mb-10 sm:mb-14">
-          <div className="group inline-flex items-center gap-2.5 sm:gap-3 px-5 sm:px-7 py-2.5 sm:py-3.5 bg-white/60 backdrop-blur-xl border border-gray-200/60 rounded-full shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-700 hover:scale-[1.03] cursor-default touch-manipulation">
+        <div className="flex items-center justify-center mb-8 xs:mb-9 sm:mb-10 md:mb-14">
+          <div className="group inline-flex items-center gap-2 xs:gap-2.5 sm:gap-3 px-4 xs:px-5 sm:px-7 py-2 xs:py-2.5 sm:py-3.5 bg-white/60 backdrop-blur-xl border border-gray-200/60 rounded-full shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-700 hover:scale-[1.03] cursor-default touch-manipulation">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity duration-700" />
-              <Zap className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-blue-600 group-hover:text-indigo-600 transition-all duration-700 relative z-10" strokeWidth={2.5} />
+              <Zap className="h-3.5 xs:h-4 sm:h-4.5 w-3.5 xs:w-4 sm:w-4.5 text-blue-600 group-hover:text-indigo-600 transition-all duration-700 relative z-10" strokeWidth={2.5} />
             </div>
-            <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent tracking-wide group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-700">
+            <span className="text-[11px] xs:text-xs sm:text-sm font-semibold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent tracking-wide group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-700">
               AI-Powered Fitness Technology
             </span>
           </div>
         </div>
 
         {/* Hero Title - Apple-inspired Typography */}
-        <div className="text-center mb-12 sm:mb-16">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] mb-8 sm:mb-10 tracking-tight px-2" role="heading" aria-level={1}>
-            <span className="block mb-2 sm:mb-3 text-gray-900">Transform Your Body</span>
-            <span className="block mb-2 sm:mb-3">
+        <div className="text-center mb-10 xs:mb-12 sm:mb-14 md:mb-16">
+          <h1 className="text-3xl xs:text-3.5xl sm:text-5xl md:text-6xl font-bold leading-[1.15] xs:leading-[1.12] sm:leading-[1.1] mb-6 xs:mb-7 sm:mb-8 md:mb-10 tracking-tight px-1 xs:px-2" role="heading" aria-level={1}>
+            <span className="block mb-1.5 xs:mb-2 sm:mb-2.5 md:mb-3 text-gray-900">Transform Your Body</span>
+            <span className="block mb-1.5 xs:mb-2 sm:mb-2.5 md:mb-3">
               <span className="text-gray-900">with </span>
               <span className="relative inline-block">
                 <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-gradient-x">
@@ -355,7 +383,7 @@ export default function Auth() {
               <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-cyan-600/20 blur-2xl -z-10 opacity-50" />
             </span>
           </h1>
-          <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-md mx-auto px-4 font-normal">
+          <p className="text-gray-600 text-sm xs:text-base sm:text-lg leading-relaxed max-w-md mx-auto px-2 xs:px-3 sm:px-4 font-normal">
             Experience personalized workout plans that evolve with you. Our advanced AI
             analyzes your progress, adapts to your goals, and delivers{' '}
             <span className="text-blue-600 font-semibold">results that matter.</span>
@@ -363,27 +391,27 @@ export default function Auth() {
         </div>
 
         {/* Premium CTA Buttons */}
-        <div className="space-y-4 mb-16 sm:mb-20">
+        <div className="space-y-3 xs:space-y-3.5 sm:space-y-4 mb-12 xs:mb-14 sm:mb-16 md:mb-20">
           <button
             onClick={googleLogin}
             disabled={loading}
-            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-6 py-5 rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[60px]"
+            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
             aria-label="Sign in with Google"
             type="button"
           >
             {/* Animated gradient border effect */}
-            <div className="absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10" />
+            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10" />
 
             {/* Google glyph */}
-            <svg className="h-5.5 w-5.5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10" viewBox="0 0 48 48" aria-hidden="true">
+            <svg className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10 flex-shrink-0" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#EA4335" d="M24 9.5c3.94 0 7.48 1.53 10.2 4.02l6.8-6.8C36.84 2.61 30.77 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.96 6.18C12.3 13 17.74 9.5 24 9.5z"/>
               <path fill="#4285F4" d="M46.5 24c0-1.64-.15-3.22-.44-4.75H24v9.01h12.65c-.55 2.94-2.23 5.43-4.74 7.11l7.24 5.62C43.99 36.76 46.5 30.79 46.5 24z"/>
               <path fill="#FBBC05" d="M10.52 27.6A14.47 14.47 0 0 1 9.5 24c0-1.25.17-2.46.48-3.6l-7.96-6.18A24 24 0 0 0 0 24c0 3.84.9 7.47 2.5 10.68l8.02-7.08z"/>
               <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.9-5.83l-7.24-5.62c-2.01 1.36-4.59 2.16-8.66 2.16-6.26 0-11.7-3.5-13.48-8.52l-8.02 7.08C6.51 42.62 14.62 48 24 48z"/>
             </svg>
-            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 flex items-center gap-2.5 text-[15px]">
+            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 flex items-center gap-2 xs:gap-2.5 text-sm xs:text-[15px] sm:text-[15px] font-medium">
               {loading && (
-                <div className="animate-spin rounded-full h-4.5 w-4.5 border-2 border-gray-400 border-t-transparent" />
+                <div className="animate-spin rounded-full h-4 xs:h-4.5 w-4 xs:w-4.5 border-2 border-gray-400 border-t-transparent flex-shrink-0" role="status" aria-label="Loading" />
               )}
               {loading ? 'Signing in...' : 'Continue with Google'}
             </span>
@@ -398,24 +426,24 @@ export default function Auth() {
           <button
             onClick={handlePhoneSignIn}
             disabled={loading}
-            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-6 py-5 rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[60px]"
+            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
             aria-label="Sign in with Phone"
             type="button"
           >
             {/* Animated gradient border effect */}
-            <div className="absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10" />
+            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10" />
 
-            <Smartphone className="h-5.5 w-5.5 text-gray-700 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 relative z-10" strokeWidth={2} />
-            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-[15px]">
+            <Smartphone className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 text-gray-700 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 relative z-10 flex-shrink-0" strokeWidth={2} />
+            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-sm xs:text-[15px] sm:text-[15px] font-medium">
               Continue with Phone
             </span>
           </button>
         </div>
 
         {/* Why Choose NeuraFit Section - Premium Design */}
-        <div className="mb-16">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-5 text-gray-900 tracking-tight">
+        <div className="mb-12 xs:mb-14 sm:mb-16">
+          <div className="text-center mb-10 xs:mb-12 sm:mb-14">
+            <h2 className="text-2xl xs:text-2.5xl sm:text-3xl md:text-4xl font-bold mb-3 xs:mb-4 sm:mb-5 text-gray-900 tracking-tight px-1">
               Why Choose{' '}
               <span className="relative inline-block">
                 <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -425,55 +453,37 @@ export default function Auth() {
               </span>
               ?
             </h2>
-            <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-md mx-auto font-normal">
+            <p className="text-gray-600 text-sm xs:text-base sm:text-lg leading-relaxed max-w-md mx-auto px-2 xs:px-3 sm:px-4 font-normal">
               Experience the perfect blend of cutting-edge AI technology and personalized fitness coaching
             </p>
           </div>
 
           {/* Premium Feature Cards */}
-          <div className="space-y-5">
-            <div className="animate-fade-in-up" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
-              <EnhancedFeatureCard
-                icon={<Brain className="h-7 w-7" />}
-                title="AI-Powered Workouts"
-                desc="Personalized training plans that adapt to your progress and goals using advanced machine learning algorithms."
-                bgGradient="from-blue-500/10 via-indigo-500/10 to-purple-500/10"
-                iconBg="from-blue-500 to-indigo-600"
-                accentColor="blue"
-              />
-            </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
-              <EnhancedFeatureCard
-                icon={<Target className="h-7 w-7" />}
-                title="Goal-Focused Training"
-                desc="Every workout is optimized to help you reach your specific fitness objectives faster and more efficiently."
-                bgGradient="from-emerald-500/10 via-teal-500/10 to-cyan-500/10"
-                iconBg="from-emerald-500 to-teal-600"
-                accentColor="emerald"
-              />
-            </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
-              <EnhancedFeatureCard
-                icon={<Shield className="h-7 w-7" />}
-                title="Safety First"
-                desc="Built-in injury prevention with intelligent form guidance and personalized recovery recommendations."
-                bgGradient="from-orange-500/10 via-amber-500/10 to-yellow-500/10"
-                iconBg="from-orange-500 to-amber-600"
-                accentColor="orange"
-              />
-            </div>
+          <div className="space-y-4 xs:space-y-4.5 sm:space-y-5">
+            {featureCards.map((card, index) => (
+              <div key={card.title} className="animate-fade-in-up" style={{ animationDelay: `${0.3 + index * 0.1}s`, animationFillMode: 'both' }}>
+                <FeatureCard
+                  icon={card.icon}
+                  title={card.title}
+                  desc={card.desc}
+                  bgGradient={card.bgGradient}
+                  iconBg={card.iconBg}
+                  accentColor={card.accentColor}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Premium Footer */}
-        <div className="text-center pt-10 border-t border-gray-200/60">
-          <p className="text-xs text-gray-500 leading-relaxed">
+        <div className="text-center pt-8 xs:pt-9 sm:pt-10 border-t border-gray-200/60">
+          <p className="text-[11px] xs:text-xs sm:text-xs text-gray-500 leading-relaxed px-2">
             By continuing, you agree to our{' '}
-            <Link to="/terms" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300">terms of service</Link>
+            <Link to="/terms" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 underline-offset-2 hover:underline">terms of service</Link>
             {' '}and{' '}
-            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300">privacy policy</Link>.
+            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 underline-offset-2 hover:underline">privacy policy</Link>.
             <br />
-            <span className="text-gray-400 font-medium mt-2 inline-block">Secure authentication powered by Firebase • v1.0.0</span>
+            <span className="text-gray-400 font-medium mt-2 inline-block text-[10px] xs:text-[11px]">Secure authentication powered by Firebase • v1.0.0</span>
           </p>
         </div>
       </div>
@@ -492,86 +502,6 @@ export default function Auth() {
 
       {/* Invisible reCAPTCHA container */}
       <div id="recaptcha-container"></div>
-    </div>
-  )
-}
-
-/* ---------- Premium Feature Card - Apple/Tesla Inspired ---------- */
-function EnhancedFeatureCard({
-  icon,
-  title,
-  desc,
-  bgGradient,
-  iconBg,
-  accentColor,
-}: {
-  icon: ReactElement
-  title: string
-  desc: string
-  bgGradient: string
-  iconBg: string
-  accentColor: string
-}) {
-  const accentColors = {
-    blue: {
-      border: 'border-blue-100/60',
-      glow: 'group-hover:shadow-blue-500/15',
-      text: 'text-blue-600',
-      shimmer: 'from-blue-500/5 via-indigo-500/5 to-purple-500/5'
-    },
-    emerald: {
-      border: 'border-emerald-100/60',
-      glow: 'group-hover:shadow-emerald-500/15',
-      text: 'text-emerald-600',
-      shimmer: 'from-emerald-500/5 via-teal-500/5 to-cyan-500/5'
-    },
-    orange: {
-      border: 'border-orange-100/60',
-      glow: 'group-hover:shadow-orange-500/15',
-      text: 'text-orange-600',
-      shimmer: 'from-orange-500/5 via-amber-500/5 to-yellow-500/5'
-    }
-  }
-
-  const colors = accentColors[accentColor as keyof typeof accentColors]
-
-  return (
-    <div className={`group relative p-7 rounded-[24px] border ${colors.border} bg-white/70 backdrop-blur-xl hover:bg-white hover:shadow-2xl ${colors.glow} transition-all duration-700 hover:scale-[1.01] overflow-hidden shadow-lg shadow-gray-200/50`}>
-      {/* Animated shimmer background */}
-      <div className={`absolute inset-0 bg-gradient-to-r ${colors.shimmer} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
-
-      {/* Subtle gradient overlay on hover */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} opacity-30 group-hover:opacity-0 transition-opacity duration-700`} />
-
-      <div className="relative z-10 flex items-start gap-5">
-        {/* Premium Icon Container */}
-        <div className="relative flex-shrink-0">
-          <div className={`w-16 h-16 bg-gradient-to-br ${iconBg} rounded-[20px] flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-700`}>
-            <div className="text-white">
-              {icon}
-            </div>
-          </div>
-          {/* Icon glow effect */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${iconBg} rounded-[20px] blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700`} />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 text-left pt-1">
-          <h3 className="text-xl font-bold text-gray-900 mb-2.5 group-hover:text-gray-800 transition-colors duration-500 tracking-tight">
-            {title}
-          </h3>
-          <p className="text-gray-600 text-[15px] leading-relaxed group-hover:text-gray-700 transition-colors duration-500 font-normal">
-            {desc}
-          </p>
-        </div>
-
-        {/* Subtle arrow indicator */}
-        <div className={`flex-shrink-0 w-6 h-6 ${colors.text} opacity-0 group-hover:opacity-60 transition-all duration-500 group-hover:translate-x-1 mt-1`}>
-          <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
-      </div>
     </div>
   )
 }
