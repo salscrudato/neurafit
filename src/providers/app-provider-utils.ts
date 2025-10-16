@@ -14,6 +14,7 @@ export const useApp = () => {
     user: store.user,
     profile: store.profile,
     authStatus: store.authStatus,
+    isGuest: store.isGuest,
 
     // Workout state
     currentWorkout: store.currentWorkout,
@@ -30,6 +31,8 @@ export const useApp = () => {
       setUser: store.setUser,
       setProfile: store.setProfile,
       setAuthStatus: store.setAuthStatus,
+      setIsGuest: store.setIsGuest,
+      initializeGuestSession: store.initializeGuestSession,
 
       // Workout actions
       startWorkout: store.startWorkout,
@@ -46,7 +49,7 @@ export const useApp = () => {
       // Utility actions
       reset: store.reset,
     },
-  }
+  } as const
 }
 
 // App state utilities

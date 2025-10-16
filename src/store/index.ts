@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow'
 import type { User } from 'firebase/auth'
 import type { UserProfile } from '../session/types'
 import { logger } from '../lib/logger'
+import { createGuestProfile } from '../lib/guest-session'
 
 // Debounced localStorage writer to reduce write frequency
 let persistTimer: NodeJS.Timeout | null = null
@@ -57,18 +58,19 @@ export interface AppState {
   // Authentication state
   user: User | null
   profile: UserProfile | null
-  authStatus: 'loading' | 'signedOut' | 'needsOnboarding' | 'ready'
+  authStatus: 'loading' | 'signedOut' | 'needsOnboarding' | 'ready' | 'guest'
+  isGuest: boolean // Flag to indicate guest session
 
   // Workout state
   currentWorkout: WorkoutState | null
   workoutWeights: Record<number, Record<number, number | null>>
   workoutHistory: WorkoutHistoryItem[]
-  
+
   // UI state
   isOnline: boolean
   lastSyncTime: number | null
   pendingOperations: PendingOperation[]
-  
+
   // Error state
   errors: AppError[]
 }
@@ -117,6 +119,8 @@ export interface AppActions {
   setUser: (_user: User | null) => void
   setProfile: (_profile: UserProfile | null) => void
   setAuthStatus: (_status: AppState['authStatus']) => void
+  setIsGuest: (_isGuest: boolean) => void
+  initializeGuestSession: () => void
 
   // Workout actions
   startWorkout: (_plan: WorkoutPlan, _type: string, _duration: number) => void
@@ -124,7 +128,7 @@ export interface AppActions {
   updateWeight: (_exerciseIndex: number, _setIndex: number, _weight: number | null) => void
   completeWorkout: () => void
   clearWorkout: () => void
-  
+
   // Data persistence actions
   addToHistory: (_workout: WorkoutHistoryItem) => void
   syncPendingOperations: () => Promise<void>
@@ -148,6 +152,7 @@ const initialState: AppState = {
   user: null,
   profile: null,
   authStatus: 'loading',
+  isGuest: false,
   currentWorkout: null,
   workoutWeights: {},
   workoutHistory: [],
@@ -176,6 +181,17 @@ export const useAppStore = create<AppState & AppActions>()(
           
           setAuthStatus: (status) => set((state) => {
             state.authStatus = status
+          }),
+
+          setIsGuest: (isGuest) => set((state) => {
+            state.isGuest = isGuest
+          }),
+
+          initializeGuestSession: () => set((state) => {
+            state.isGuest = true
+            state.authStatus = 'guest'
+            state.profile = createGuestProfile()
+            state.user = null
           }),
 
           // Workout actions
@@ -439,6 +455,11 @@ const errorsSelector = (state: AppState & AppActions) => ({
   resolveError: state.resolveError,
   clearErrors: state.clearErrors
 })
+
+// Guest session selectors
+export const useIsGuest = () => useAppStore((state) => state.isGuest)
+export const useInitializeGuestSession = () => useAppStore((state) => state.initializeGuestSession)
+export const useSetIsGuest = () => useAppStore((state) => state.setIsGuest)
 
 // Composite error selector with shallow comparison
 export const useErrors = () => {

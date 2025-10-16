@@ -1,6 +1,6 @@
 // src/pages/Auth.tsx
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import {
   GoogleAuthProvider,
@@ -10,13 +10,17 @@ import {
   signInWithPhoneNumber,
   type ConfirmationResult
 } from 'firebase/auth'
-import { Zap, Brain, Target, Shield, Smartphone } from 'lucide-react'
+import { Zap, Brain, Target, Shield, Smartphone, Zap as ZapIcon } from 'lucide-react'
 import { trackUserSignUp, trackUserLogin } from '../lib/firebase-analytics'
 import PhoneAuthModal from '../components/PhoneAuthModal'
 import FeatureCard from '../components/FeatureCard'
 import { logger } from '../lib/logger'
+import { useInitializeGuestSession } from '../store'
+import { initializeGuestSession } from '../lib/guest-session'
 
 export default function Auth() {
+  const nav = useNavigate()
+  const initGuestSession = useInitializeGuestSession()
   const [loading, setLoading] = useState(false)
 
   // Phone authentication state
@@ -153,6 +157,24 @@ export default function Auth() {
     setPhoneError('')
     setPhoneNumber('')
   }, [])
+
+  const handleContinueAsGuest = useCallback(() => {
+    try {
+      // Initialize guest session in store
+      initGuestSession()
+
+      // Initialize guest session in storage
+      initializeGuestSession()
+
+      logger.info('Guest session initialized')
+
+      // Navigate directly to generate page
+      nav('/generate')
+    } catch (error) {
+      logger.error('Failed to initialize guest session', error as Error)
+      alert('Failed to start guest session. Please try again.')
+    }
+  }, [initGuestSession, nav])
 
   const handlePhoneSubmit = useCallback(async (phone: string) => {
     setLoading(true)
@@ -436,6 +458,23 @@ export default function Auth() {
             <Smartphone className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 text-gray-700 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 relative z-10 flex-shrink-0" strokeWidth={2} />
             <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-sm xs:text-[15px] sm:text-[15px] font-medium">
               Continue with Phone
+            </span>
+          </button>
+
+          {/* Continue as Guest Button */}
+          <button
+            onClick={handleContinueAsGuest}
+            disabled={loading}
+            className="group relative w-full bg-gradient-to-r from-amber-50 to-orange-50 backdrop-blur-xl border border-amber-200 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gradient-to-r hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 hover:shadow-2xl hover:shadow-amber-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-amber-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
+            aria-label="Continue as Guest"
+            type="button"
+          >
+            {/* Animated gradient border effect */}
+            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10" />
+
+            <ZapIcon className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 text-amber-600 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10 flex-shrink-0" strokeWidth={2} />
+            <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-sm xs:text-[15px] sm:text-[15px] font-medium">
+              Continue as Guest
             </span>
           </button>
         </div>

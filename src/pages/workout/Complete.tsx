@@ -5,15 +5,18 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import WorkoutFlowHeader from '../../components/WorkoutFlowHeader'
 import { trackAdaptiveFeedback, trackCustomEvent } from '../../lib/firebase-analytics'
-import { Bed, ThumbsUp, Flame, CheckCircle } from 'lucide-react'
+import { Bed, ThumbsUp, Flame, CheckCircle, LogIn } from 'lucide-react'
 import { trackWorkoutCompleted } from '../../lib/firebase-analytics'
 import { logger } from '../../lib/logger'
 import { useWorkoutScrollToTop } from '../../hooks/useScrollToTop'
+import { useIsGuest } from '../../store'
+import { clearGuestSession } from '../../lib/guest-session'
 
 type FeedbackSignal = 'easy' | 'right' | 'hard'
 
 export default function Complete() {
   const nav = useNavigate()
+  const isGuest = useIsGuest()
 
   // Scroll to top on mount and route changes
   useWorkoutScrollToTop()
@@ -34,7 +37,16 @@ export default function Complete() {
         if (!saved) return
         const { plan, type, duration } = JSON.parse(saved) as { plan: { exercises: unknown[] }; type: string; duration: number }
         const uid = auth.currentUser?.uid
-        if (!uid) return
+
+        // Skip saving for guest users - just mark as saved and show completion
+        if (isGuest || !uid) {
+          setWorkoutSaved(true)
+          // Clear session storage for guest users
+          sessionStorage.removeItem('nf_workout_plan')
+          sessionStorage.removeItem('nf_workout_weights')
+          sessionStorage.removeItem('nf_workout_start_time')
+          return
+        }
 
         // Get weight data if it exists
         const savedWeights = sessionStorage.getItem('nf_workout_weights')
@@ -102,7 +114,7 @@ export default function Complete() {
         // Don't block the user, but log the error
       }
     })()
-  }, [])
+  }, [isGuest])
 
   // Calculate workout completion rate
   const calculateCompletionRate = (exercises: Record<string, unknown>[]): number => {
@@ -195,10 +207,38 @@ export default function Complete() {
             <CheckCircle className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold mb-4 text-gray-900">Workout Complete!</h1>
-          <p className="mb-6 text-gray-600">Great job! Your workout has been saved to your history.</p>
+          <p className="mb-6 text-gray-600">
+            {isGuest
+              ? 'Great job! Create an account to save your workouts and track your progress.'
+              : 'Great job! Your workout has been saved to your history.'}
+          </p>
 
-          {/* Feedback Section */}
-          {workoutSaved && !feedbackSubmitted && (
+          {/* Guest Account CTA */}
+          {isGuest && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="flex items-start gap-3 mb-4">
+                <LogIn className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900 mb-1">Save Your Progress</h3>
+                  <p className="text-sm text-gray-700">
+                    Create an account to unlock personalized workouts, track your history, and watch your performance improve.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  clearGuestSession()
+                  nav('/')
+                }}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Create Account
+              </button>
+            </div>
+          )}
+
+          {/* Feedback Section - Only for authenticated users */}
+          {workoutSaved && !feedbackSubmitted && !isGuest && (
             <div className="mb-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
               <h3 className="text-lg font-semibold mb-3 text-gray-900">How was this workout?</h3>
               <p className="text-sm text-gray-600 mb-4">Your feedback helps us personalize future workouts</p>
@@ -283,10 +323,17 @@ export default function Complete() {
 
           {/* Navigation Button */}
           <button
-            onClick={() => nav('/dashboard')}
+            onClick={() => {
+              if (isGuest) {
+                clearGuestSession()
+                nav('/')
+              } else {
+                nav('/dashboard')
+              }
+            }}
             className="w-full px-6 py-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:scale-[1.02] transition-all duration-200 shadow-md"
           >
-            Back to Dashboard
+            {isGuest ? 'Back to Home' : 'Back to Dashboard'}
           </button>
         </div>
       </div>

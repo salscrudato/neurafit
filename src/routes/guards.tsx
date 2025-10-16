@@ -45,7 +45,7 @@ function useRedirectLoopDetection(guardName: string) {
 
 // Landing gate at "/"
 export function HomeGate({ authPage }: { authPage: ReactNode }) {
-  const { authStatus, user } = useApp()
+  const { authStatus, user, isGuest } = useApp()
   const location = useLocation()
   const { checkRedirect } = useRedirectLoopDetection('HomeGate')
 
@@ -56,11 +56,19 @@ export function HomeGate({ authPage }: { authPage: ReactNode }) {
   logger.debug('HomeGate check', {
     authStatus,
     userEmail: user?.email || 'no user',
+    isGuest,
     from: from || 'none'
   })
 
   if (authStatus === 'loading') return <ScreenLoader />
   if (authStatus === 'signedOut') return <>{authPage}</>
+
+  // Guest users go directly to generate page
+  if (authStatus === 'guest' && isGuest) {
+    if (checkRedirect('/generate')) {
+      return <Navigate to="/generate" replace />
+    }
+  }
 
   if (authStatus === 'needsOnboarding') {
     if (checkRedirect('/onboarding')) {
@@ -101,9 +109,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-// Require completed profile (ready status)
+// Require completed profile (ready status) or guest session
 export function RequireProfile({ children }: { children: ReactNode }) {
-  const { authStatus } = useApp()
+  const { authStatus, isGuest } = useApp()
   const location = useLocation()
   const { checkRedirect } = useRedirectLoopDetection('RequireProfile')
 
@@ -124,8 +132,8 @@ export function RequireProfile({ children }: { children: ReactNode }) {
     }
   }
 
-  // Only allow access when status is 'ready'
-  if (authStatus === 'ready') {
+  // Allow access when status is 'ready' or guest session is active
+  if (authStatus === 'ready' || (authStatus === 'guest' && isGuest)) {
     return <>{children}</>
   }
 

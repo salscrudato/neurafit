@@ -26,14 +26,15 @@ export interface PreloadedData {
 /**
  * Custom hook to pre-load workout generation data in the background
  * This reduces the time needed when the user clicks "Generate Workout"
+ * @param isGuest - If true, skip preloading (guest users don't have profile data)
  */
-export function useWorkoutPreload() {
+export function useWorkoutPreload(isGuest: boolean = false) {
   const [preloadedData, setPreloadedData] = useState<PreloadedData>({
     profile: null,
     targetIntensity: 1.0,
     progressionNote: '',
     recentWorkouts: [],
-    isLoading: true,
+    isLoading: isGuest ? false : true,
     error: null
   })
 
@@ -230,7 +231,12 @@ export function useWorkoutPreload() {
   }, [fetchWorkoutHistory])
 
   // Trigger preload when component mounts or user changes
+  // Skip for guest users
   useEffect(() => {
+    if (isGuest) {
+      return
+    }
+
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         preloadData()
@@ -247,7 +253,7 @@ export function useWorkoutPreload() {
     })
 
     return unsubscribe
-  }, [preloadData])
+  }, [preloadData, isGuest])
 
   return {
     preloadedData,

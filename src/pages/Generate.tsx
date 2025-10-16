@@ -6,12 +6,15 @@ import { auth } from '../lib/firebase'
 import { EQUIPMENT } from '../config/onboarding'
 import { isAdaptivePersonalizationEnabled, isIntensityCalibrationEnabled } from '../config/features'
 import { trackCustomEvent } from '../lib/firebase-analytics'
-import { Brain, Clock } from 'lucide-react'
+import { Brain, Clock, LogIn } from 'lucide-react'
 import { ProgressiveLoadingBar } from '../components/Loading'
 import { trackWorkoutGenerated } from '../lib/firebase-analytics'
 import { useWorkoutPreload } from '../hooks/useWorkoutPreload'
 import { WorkoutGenerationError, TimeoutError, ErrorHandler, retryWithBackoff } from '../lib/errors'
 import { dedupedFetch } from '../lib/requestManager'
+import { useIsGuest, useAppStore } from '../store'
+import { clearGuestSession } from '../lib/guest-session'
+import { useApp } from '../providers/app-provider-utils'
 
 // Top 17 most common workout types organized by category and popularity
 const WORKOUT_CATEGORIES = [
@@ -55,6 +58,9 @@ const DUR = [15, 30, 45, 60, 75, 90] as const
 
 export default function Generate() {
   const nav = useNavigate()
+  const isGuest = useIsGuest()
+  const profile = useAppStore(state => state.profile)
+  const { actions } = useApp()
   const [type, setType] = useState<string>()
   const [duration, setDuration] = useState<number>()
   const [equipment, setEquipment] = useState<string[]>([])
@@ -67,14 +73,21 @@ export default function Generate() {
   // Abort controller for request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Use pre-loaded data hook
-  const { preloadedData } = useWorkoutPreload()
+  // Use pre-loaded data hook (only for authenticated users)
+  const { preloadedData } = useWorkoutPreload(isGuest)
 
   // Handle preloaded data and navigation
   useEffect(() => {
     const uid = auth.currentUser?.uid
-    if (!uid) {
+
+    // Allow guest users to proceed without uid
+    if (!uid && !isGuest) {
       nav('/')
+      return
+    }
+
+    // Skip preload handling for guest users
+    if (isGuest) {
       return
     }
 
@@ -100,7 +113,7 @@ export default function Generate() {
         setEquipment((preloadedData.profile['equipment'] as string[]) || [])
       }
     }
-  }, [nav, preloadedData])
+  }, [nav, preloadedData, isGuest])
 
   // Cleanup abort controller on unmount
   useEffect(() => {
@@ -111,10 +124,11 @@ export default function Generate() {
     }
   }, [])
 
-  const disabled = !type || !duration || loading || showProgressiveLoading || preloadedData.isLoading || !preloadedData.profile
+  // For guests, we don't need preloadedData.profile since we use the guest profile from store
+  const disabled = !type || !duration || loading || showProgressiveLoading || (!isGuest && (preloadedData.isLoading || !preloadedData.profile))
 
   async function generate() {
-    if (disabled || !preloadedData.profile) return
+    if (disabled) return
 
     setError(null)
     setLoading(true)
@@ -130,12 +144,21 @@ export default function Generate() {
 
     const uid = auth.currentUser?.uid
 
+    // Use profile from store (guest or authenticated)
+    const activeProfile = profile || preloadedData.profile
+    if (!activeProfile) {
+      setError('Profile not available. Please try again.')
+      setLoading(false)
+      setShowProgressiveLoading(false)
+      return
+    }
+
     const payload = {
-      experience: preloadedData.profile['experience'],
-      goals: preloadedData.profile['goals'],
+      experience: activeProfile['experience'],
+      goals: activeProfile['goals'],
       equipment: equipment,
-      personalInfo: preloadedData.profile['personal'],
-      injuries: preloadedData.profile['injuries'],
+      personalInfo: activeProfile['personal'],
+      injuries: activeProfile['injuries'],
       workoutType: type,
       duration,
       uid,
@@ -145,6 +168,8 @@ export default function Generate() {
       // Send optimized workout history (only last 5 workouts with essential data)
       recentWorkouts: preloadedData.recentWorkouts.slice(0, 5)
     }
+
+
 
     const url = import.meta.env['VITE_WORKOUT_FN_URL'] as string
 
@@ -540,6 +565,39 @@ export default function Generate() {
             >
               Retry
             </button>
+          </div>
+        )}
+
+        {/* Guest Account CTA */}
+        {isGuest && (
+          <div className="mt-8 p-5 xs:p-6 sm:p-7 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <LogIn className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">Unlock Personalized Workouts</h3>
+                <p className="text-sm text-gray-700 mb-4">
+                  Create an account to get AI-powered workouts tailored to your fitness level, goals, and equipment. Track your progress, save your favorite workouts, and watch your performance improve over time.
+                </p>
+                <button
+                  onClick={() => {
+                    // Clear guest session from storage
+                    clearGuestSession()
+                    // Clear guest state from store
+                    actions.setIsGuest(false)
+                    actions.setAuthStatus('signedOut')
+                    actions.setProfile(null)
+                    // Navigate to auth page
+                    nav('/')
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Create Account
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
