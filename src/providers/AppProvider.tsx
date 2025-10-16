@@ -90,7 +90,9 @@ export function AppProvider({ children }: AppProviderProps) {
                 setAuthStatus(isProfileComplete(profileData) ? 'ready' : 'needsOnboarding');
               },
               (error) => {
-                console.error('Profile listener error:', error);
+                if (import.meta.env.MODE === 'development') {
+                  console.error('Profile listener error:', error);
+                }
 
                 if (error.code === 'permission-denied') {
                   unsubDoc?.();
@@ -109,18 +111,24 @@ export function AppProvider({ children }: AppProviderProps) {
                   updateLastSyncTime();
                 }
               } catch (syncError) {
-                console.error('Sync operations error:', syncError);
+                if (import.meta.env.MODE === 'development') {
+                  console.error('Sync operations error:', syncError);
+                }
               }
             }
           } catch (error) {
-            console.error('User initialization error:', error);
+            if (import.meta.env.MODE === 'development') {
+              console.error('User initialization error:', error);
+            }
             if (isMounted) {
               setAuthStatus('signedOut');
             }
           }
         }, 100);
       } catch (error) {
-        console.error('Auth state change error:', error);
+        if (import.meta.env.MODE === 'development') {
+          console.error('Auth state change error:', error);
+        }
         if (isMounted) {
           setAuthStatus('signedOut');
         }
@@ -186,7 +194,9 @@ export function AppProvider({ children }: AppProviderProps) {
   // Global error recovery
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
+      if (import.meta.env.MODE === 'development') {
+        console.error('Unhandled promise rejection:', event.reason);
+      }
 
       if (event.reason?.code === 'permission-denied') {
         setAuthStatus('signedOut');
@@ -196,17 +206,8 @@ export function AppProvider({ children }: AppProviderProps) {
     };
 
     const handleError = (event: ErrorEvent) => {
-      console.error('Global error:', event.error);
-
-      if (import.meta.env.MODE === 'production') {
-        // Integrate with error tracking service
-        console.error('Production error reported:', {
-          message: event.message,
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
-          error: event.error,
-        });
+      if (import.meta.env.MODE === 'development') {
+        console.error('Global error:', event.error);
       }
     };
 

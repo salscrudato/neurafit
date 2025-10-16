@@ -14,7 +14,7 @@ import { validateAndAdjustDuration, computeMinMaxExerciseCount } from '../lib/du
 import { calculateWorkoutQuality } from '../lib/qualityScoring';
 import { deriveProgression } from '../lib/periodization';
 import { getCachedOrRun, hashRequest, type CacheableContext } from '../lib/cache';
-import { OPENAI_MODEL, OPENAI_CONFIG, QUALITY_THRESHOLDS } from '../config';
+import { OPENAI_MODEL, OPENAI_CONFIG, QUALITY_THRESHOLDS, getOpenAIConfigForDuration } from '../config';
 import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
 
 /**
@@ -164,26 +164,48 @@ export async function generateWorkoutOrchestrated(
           { role: 'user' as const, content: prompt },
         ];
 
-      // Call OpenAI with streaming for better perceived performance
-      console.log('🤖 Calling OpenAI API with streaming...');
-      const stream = await openaiClient.chat.completions.create({
-        model: OPENAI_MODEL,
-        temperature: OPENAI_CONFIG.temperature,
-        top_p: OPENAI_CONFIG.topP,
-        max_tokens: OPENAI_CONFIG.maxTokens,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        response_format: responseFormat as any, // Type assertion needed for OpenAI SDK compatibility
-        messages,
-        stream: true, // Enable streaming for faster perceived response
-      });
+      // Call OpenAI with appropriate mode based on duration
+      const dynamicConfig = getOpenAIConfigForDuration(duration);
+      const useStreaming = duration < 75; // Use non-streaming for 75+ min workouts to reduce overhead
 
-      // Collect streamed response
+      console.log(`🤖 Calling OpenAI API (${useStreaming ? 'streaming' : 'non-streaming'})...`);
+
       let content = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          content += delta;
+
+      if (useStreaming) {
+        // Streaming mode for shorter workouts
+        const stream = await openaiClient.chat.completions.create({
+          model: OPENAI_MODEL,
+          temperature: dynamicConfig.temperature,
+          top_p: dynamicConfig.topP,
+          max_tokens: dynamicConfig.maxTokens,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          response_format: responseFormat as any,
+          messages,
+          stream: true,
+        });
+
+        // Collect streamed response
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta?.content;
+          if (delta) {
+            content += delta;
+          }
         }
+      } else {
+        // Non-streaming mode for 75+ min workouts to reduce overhead
+        const response = await openaiClient.chat.completions.create({
+          model: OPENAI_MODEL,
+          temperature: dynamicConfig.temperature,
+          top_p: dynamicConfig.topP,
+          max_tokens: dynamicConfig.maxTokens,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          response_format: responseFormat as any,
+          messages,
+          stream: false,
+        });
+
+        content = response.choices[0]?.message?.content || '';
       }
 
       if (!content) {

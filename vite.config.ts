@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 import { resolve } from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { readFileSync } from 'fs'
+import { readFileSync, copyFileSync, rmSync } from 'fs'
 
 /**
  * Production-Ready Vite Configuration for NeuraFit
@@ -46,6 +46,21 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwind(),
+      // Clear Vite cache before build to prevent stale dependency issues
+      {
+        name: 'clear-vite-cache',
+        apply: 'build' as const,
+        enforce: 'pre' as const,
+        async configResolved() {
+          try {
+            const viteCachePath = resolve(__dirname, 'node_modules/.vite')
+            rmSync(viteCachePath, { recursive: true, force: true })
+            console.log('✅ Cleared Vite cache before build')
+          } catch (error) {
+            console.warn('⚠️ Failed to clear Vite cache:', error)
+          }
+        },
+      },
       // Bundle analyzer (only when ANALYZE=true)
       process.env.ANALYZE === 'true' &&
         visualizer({
@@ -65,6 +80,21 @@ export default defineConfig(({ mode }) => {
             .replaceAll('__BUILD_DATE__', buildDate)
         },
       },
+      // Service worker copy plugin
+      {
+        name: 'copy-service-worker',
+        writeBundle() {
+          try {
+            copyFileSync(
+              resolve(__dirname, 'public/sw.js'),
+              resolve(__dirname, 'dist/sw.js')
+            );
+            console.log('✅ Service worker copied to dist/sw.js');
+          } catch (error) {
+            console.warn('⚠️ Failed to copy service worker:', error);
+          }
+        },
+      },
     ].filter(Boolean),
 
     // Development server
@@ -78,6 +108,15 @@ export default defineConfig(({ mode }) => {
         'Cross-Origin-Opener-Policy': 'unsafe-none',
         'Cross-Origin-Embedder-Policy': 'unsafe-none',
       },
+      // Custom middleware to serve sw.js with correct MIME type
+      middlewares: [
+        (req: any, res: any, next: any) => {
+          if (req.url === '/sw.js') {
+            res.setHeader('Content-Type', 'application/javascript');
+          }
+          next();
+        },
+      ],
     },
 
     // Build configuration
@@ -262,6 +301,10 @@ export default defineConfig(({ mode }) => {
         // Resolve .cjs files as CommonJS
         mainFields: ['module', 'main'],
       },
+      // Disable caching in production builds to prevent stale deps
+      noDiscovery: isProduction,
+      // Force re-optimization on every build
+      force: isProduction,
     },
 
     // Global constants

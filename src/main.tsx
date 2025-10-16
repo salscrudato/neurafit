@@ -48,7 +48,9 @@ if ('serviceWorker' in navigator) {
           // Check for updates more frequently (every 2 minutes)
           updateInterval = setInterval(() => {
             registration.update().catch((error) => {
-              console.error('Error updating service worker:', error);
+              if (isDevelopment) {
+                console.error('Error updating service worker:', error);
+              }
             });
           }, 120000); // 2 minutes
 
@@ -56,7 +58,9 @@ if ('serviceWorker' in navigator) {
           const handleVisibilityChange = () => {
             if (!document.hidden) {
               registration.update().catch((error) => {
-                console.error('Error updating service worker on visibility change:', error);
+                if (isDevelopment) {
+                  console.error('Error updating service worker on visibility change:', error);
+                }
               });
             }
           };
@@ -88,7 +92,9 @@ if ('serviceWorker' in navigator) {
         });
       })
       .catch((registrationError) => {
-        console.error('❌ Service worker registration failed:', registrationError);
+        if (isDevelopment) {
+          console.error('❌ Service worker registration failed:', registrationError);
+        }
       });
   });
 

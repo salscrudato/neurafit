@@ -22,12 +22,40 @@ export const OPENAI_CONFIG = {
 } as const;
 
 /**
+ * Get dynamic OpenAI config based on workout duration
+ * Reduces token limits for longer workouts to improve performance
+ * Also reduces temperature for faster, more deterministic generation
+ */
+export function getOpenAIConfigForDuration(duration: number) {
+  // For 75+ minute workouts, use ultra-aggressive optimization
+  // Reduce maxTokens significantly and use lower temperature for faster generation
+  if (duration >= 75) {
+    return {
+      ...OPENAI_CONFIG,
+      maxTokens: 1600, // Ultra-aggressive reduction for 75+ min workouts (was 3000)
+      temperature: 0.08, // Very low temperature for fastest, most deterministic generation
+    };
+  }
+
+  if (duration >= 60) {
+    return {
+      ...OPENAI_CONFIG,
+      maxTokens: 2200,
+      temperature: 0.12,
+    };
+  }
+
+  // Default for shorter workouts
+  return OPENAI_CONFIG;
+}
+
+/**
  * Validation and quality thresholds
  */
 export const QUALITY_THRESHOLDS = {
   minOverallScore: 85, // Minimum overall quality score to pass
   minSafetyScore: 90, // Minimum safety score (higher bar for safety)
-  maxRepairAttempts: 1, // Maximum number of repair passes (reduced from 2 for cost optimization)
+  maxRepairAttempts: 2, // Maximum number of repair passes (increased from 1 to handle 60-min workouts better)
   skipRepairIfScoreAbove: 92, // Skip repair attempts if quality score is above this threshold
 } as const;
 

@@ -1,6 +1,6 @@
 /**
  * Cache Manager Tests
- * 
+ *
  * Tests for version detection, cache invalidation, and recovery
  */
 
@@ -11,6 +11,9 @@ import {
   clearAllCaches,
   getVersionInfo,
 } from '../cache-manager';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const global: any;
 
 describe('Cache Manager', () => {
   beforeEach(() => {

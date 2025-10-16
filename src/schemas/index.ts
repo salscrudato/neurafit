@@ -101,7 +101,7 @@ export function safeValidate<T>(
   try {
     return schema.parse(data)
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (error instanceof z.ZodError && import.meta.env.MODE === 'development') {
       console.error(`Validation error${context ? ` in ${context}` : ''}:`, {
         errors: error.errors,
         data,
@@ -210,7 +210,9 @@ export function validateFirestoreDoc<T>(
   context?: string
 ): T | null {
   if (!docData || typeof docData !== 'object') {
-    console.error(`Invalid document data for ${docId}`)
+    if (import.meta.env.MODE === 'development') {
+      console.error(`Invalid document data for ${docId}`)
+    }
     return null
   }
 

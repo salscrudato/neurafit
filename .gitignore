@@ -46,6 +46,10 @@ coverage
 *.temp
 .cache
 
+# Vite cache - must be regenerated on each build
+.vite
+node_modules/.vite
+
 # Consolidated codebase file (regenerate with ./consolidate-codebase.sh)
 neurafit-codebase.txt
 
