@@ -12,12 +12,13 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini-2024-07-18'
 
 /**
  * OpenAI generation parameters
+ * Optimized for speed while maintaining quality
  */
 export const OPENAI_CONFIG = {
-  temperature: 0.2, // Lower for more consistent, deterministic outputs
-  topP: 0.9, // Nucleus sampling for quality
-  maxTokens: 3000, // Optimized for 6-12 exercises (reduced from 4500 for 33% cost savings)
-  timeout: 90000, // 90 second timeout for API calls (allows for streaming + processing)
+  temperature: 0.3, // Slightly higher (0.2→0.3) for faster generation without sacrificing quality
+  topP: 0.8, // Reduced from 0.9 for faster token selection (more focused sampling)
+  maxTokens: 2500, // Reduced from 3000 for faster generation (still sufficient for 6-12 exercises)
+  timeout: 120000, // 120 second timeout for API calls (allows for streaming + processing, especially for longer workouts)
 } as const;
 
 /**
@@ -41,9 +42,10 @@ export const DURATION_VALIDATION = {
 
 /**
  * Cache configuration
+ * Aggressive caching for common workout patterns
  */
 export const CACHE_CONFIG = {
-  ttlHours: 24, // Cache TTL in hours
+  ttlHours: 48, // Increased from 24 to 48 hours for better cache hit rate
   collectionName: 'ai_workout_cache', // Firestore collection name
   enabled: true, // Enable/disable caching
 } as const;

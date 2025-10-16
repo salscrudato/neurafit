@@ -17,7 +17,7 @@ import { getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder'
 import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
-import { FUNCTION_CONFIG } from './config';
+import { FUNCTION_CONFIG, OPENAI_CONFIG } from './config';
 
 // CORS configuration for all deployment URLs
 const CORS_ORIGINS: string[] = [
@@ -60,7 +60,7 @@ export const generateWorkout = onRequest(
       // Initialize OpenAI client with the secret value and timeout
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-        timeout: 90000, // 90 second timeout for API calls (allows for streaming + processing)
+        timeout: OPENAI_CONFIG.timeout, // Use config timeout (120s for longer workouts)
       });
 
       // Extract request body
@@ -170,7 +170,7 @@ export const addExerciseToWorkout = onRequest(
 
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-        timeout: 90000, // 90 second timeout
+        timeout: OPENAI_CONFIG.timeout, // Use config timeout (120s)
       });
 
       const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');

@@ -220,24 +220,23 @@ export async function generateWorkoutOrchestrated(
 
       candidate = parsed as WorkoutPlan;
 
-      // Step 7: Rule-based validation
-      const ruleValidation = validateWorkoutPlan(candidate, {
-        experience,
-        injuries: ctx.injuries?.list || [],
-        duration,
-        goals,
-        workoutType,
-      });
+      // Step 7: Parallel rule-based validation (run independent validations concurrently)
+      const [ruleValidation, repFormatValidation, durationValidation] = await Promise.all([
+        Promise.resolve(validateWorkoutPlan(candidate, {
+          experience,
+          injuries: ctx.injuries?.list || [],
+          duration,
+          goals,
+          workoutType,
+        })),
+        Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
+        Promise.resolve(validateAndAdjustDuration(candidate, duration, minExercises)),
+      ]);
 
-      const repFormatValidation = validateRepFormat(candidate.exercises, workoutType);
-      
       const ruleErrors = [
         ...ruleValidation.errors,
         ...repFormatValidation.errors,
       ];
-
-      // Step 8: Duration validation
-      const durationValidation = validateAndAdjustDuration(candidate, duration, minExercises);
       
       if (!durationValidation.isValid || ruleErrors.length > 0) {
         validationErrors = {

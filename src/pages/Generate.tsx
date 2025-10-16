@@ -170,7 +170,7 @@ export default function Generate() {
       const result = await retryWithBackoff(
         async () => {
           const TIMEOUT_WARNING = 30_000 // Show warning at 30s
-          const TIMEOUT_ABORT = 120_000  // Abort at 120s (2 minutes) - allows for streaming + processing
+          const TIMEOUT_ABORT = 130_000  // Abort at 130s (2.17 minutes) - allows for server timeout (120s) + buffer
 
           const warningTimer = setTimeout(() => {
             setShowSlowConnectionWarning(true)
