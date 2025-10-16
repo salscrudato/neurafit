@@ -15,9 +15,9 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini-2024-07-18'
  * Optimized for speed while maintaining quality
  */
 export const OPENAI_CONFIG = {
-  temperature: 0.3, // Slightly higher (0.2→0.3) for faster generation without sacrificing quality
-  topP: 0.8, // Reduced from 0.9 for faster token selection (more focused sampling)
-  maxTokens: 2500, // Reduced from 3000 for faster generation (still sufficient for 6-12 exercises)
+  temperature: 0.25, // Slightly higher (0.2→0.25) for faster generation without sacrificing quality
+  topP: 0.85, // Reduced from 0.9 for faster token selection (more focused sampling)
+  maxTokens: 2800, // Reduced from 3000 for faster generation (still sufficient for 6-12 exercises)
   timeout: 120000, // 120 second timeout for API calls (allows for streaming + processing, especially for longer workouts)
 } as const;
 
