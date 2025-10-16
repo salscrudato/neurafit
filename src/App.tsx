@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { PublicRoute, AuthRoute, ProfileRoute } from './components/RouteWrapper';
 import { UpdateToast } from './hooks/useUpdateToast';
+import { CacheRecoveryBanner } from './components/CacheRecoveryBanner';
 import { logger } from './lib/logger';
 import { OfflineIndicator } from './components/OfflineIndicator';
 
@@ -73,6 +74,9 @@ function AppContent() {
       <div className="min-h-screen-mobile">
         {/* Offline Indicator */}
         <OfflineIndicator />
+
+        {/* Cache Recovery Banner */}
+        <CacheRecoveryBanner />
 
         <main id="main-content" role="main" tabIndex={-1}>
         <Routes>

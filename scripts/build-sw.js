@@ -145,7 +145,8 @@ async function buildServiceWorker() {
       ],
 
       // Cache name with version for cache busting
-      cacheId: `neurafit-v${version}`,
+      // Include timestamp for aggressive cache invalidation
+      cacheId: `neurafit-v${version}-${Date.now()}`,
 
       // Skip waiting and claim clients immediately
       skipWaiting: true,
