@@ -16,11 +16,11 @@ import { useIsGuest, useAppStore } from '../store'
 import { clearGuestSession } from '../lib/guest-session'
 import { useApp } from '../providers/app-provider-utils'
 
-// Top 13 most common workout types organized by category and popularity
+// Top 14 most common workout types organized by category and popularity
 const WORKOUT_CATEGORIES = [
   {
     name: 'Full Body & General',
-    types: ['Full Body']
+    types: ['Full Body', 'Core Focus']
   },
   {
     name: 'Body Part Splits',
@@ -31,8 +31,8 @@ const WORKOUT_CATEGORIES = [
     types: ['Cardio', 'HIIT']
   },
   {
-    name: 'Core & Recovery',
-    types: ['Core Focus', 'Yoga', 'Pilates']
+    name: 'Mind-Body & Recovery',
+    types: ['Yoga', 'Pilates']
   }
 ] as const
 
