@@ -180,7 +180,7 @@ export const addExerciseToWorkout = onRequest(
       const workoutTypeGuidance = getWorkoutTypeContext(workoutType);
 
       // Determine if this is a time-based workout
-      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
+      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
       const repFormat = isTimeBasedWorkout ? '"45s" (time format)' : '"8-12" (range format)';
       const repInstruction = isTimeBasedWorkout
         ? '⚠️ CRITICAL: This is a time-based workout - reps MUST use time format like "30s", "45s", "60s" (NOT ranges like "8-12")'
@@ -212,21 +212,16 @@ CRITICAL REQUIREMENTS:
 3. MUST match the workout type: ${workoutType || 'Full Body'}
    - The exercise MUST align with the workout type guidance above
    - Use the example exercises and movement patterns as reference
-   - Upper Body: Only chest, back, shoulders, arms exercises
+   - Upper Body: Only chest, back, shoulders exercises
    - Lower Body: Only legs, glutes, hamstrings, quads exercises
    - Full Body: Balance of upper and lower body
    - Legs/Glutes: Hip-dominant and glute-focused movements
    - Chest/Triceps: Chest pressing and tricep isolation
    - Back/Biceps: Pulling movements and bicep work
    - Shoulders: Deltoid-focused exercises (front, side, rear)
-   - Arms: Bicep and tricep isolation
-   - Push: Pressing movements for chest, shoulders, triceps
-   - Pull: Pulling movements for back, biceps, rear delts
    - Core Focus: Anti-extension, anti-rotation, stability
-   - Abs: Abdominal-focused exercises
    - Cardio: Cardiovascular conditioning movements
    - HIIT: High-intensity explosive movements
-   - Strength Training: Heavy compound lifts
    - Yoga: Flexibility and balance poses
    - Pilates: Core-focused controlled movements
 4. Target muscle groups that are underrepresented in the current workout
@@ -331,7 +326,7 @@ export const swapExercise = onRequest(
         .join(', ');
 
       // Determine if this is a time-based workout
-      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
+      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
       const repInstruction = isTimeBasedWorkout
         ? '⚠️ CRITICAL: This is a time-based workout - reps MUST use time format like "30s", "45s", "60s" (NOT ranges like "8-12")'
         : 'Use the same rep format as the original exercise';

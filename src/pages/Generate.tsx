@@ -16,31 +16,23 @@ import { useIsGuest, useAppStore } from '../store'
 import { clearGuestSession } from '../lib/guest-session'
 import { useApp } from '../providers/app-provider-utils'
 
-// Top 17 most common workout types organized by category and popularity
+// Top 13 most common workout types organized by category and popularity
 const WORKOUT_CATEGORIES = [
   {
     name: 'Full Body & General',
-    types: ['Full Body', 'Strength Training']
+    types: ['Full Body']
   },
   {
     name: 'Body Part Splits',
-    types: ['Upper Body', 'Lower Body', 'Legs/Glutes', 'Chest/Triceps', 'Back/Biceps', 'Shoulders', 'Arms']
-  },
-  {
-    name: 'Push/Pull Splits',
-    types: ['Push', 'Pull']
+    types: ['Upper Body', 'Lower Body', 'Legs/Glutes', 'Chest/Triceps', 'Back/Biceps', 'Shoulders']
   },
   {
     name: 'Cardio & Conditioning',
     types: ['Cardio', 'HIIT']
   },
   {
-    name: 'Core & Abs',
-    types: ['Core Focus', 'Abs']
-  },
-  {
-    name: 'Mind-Body & Recovery',
-    types: ['Yoga', 'Pilates']
+    name: 'Core & Recovery',
+    types: ['Core Focus', 'Yoga', 'Pilates']
   }
 ] as const
 
