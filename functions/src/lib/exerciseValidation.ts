@@ -165,6 +165,32 @@ function validateExercise(exercise: Exercise): ExerciseValidationResult {
     result.isValid = false;
   }
 
+  // Validate difficulty level
+  if (exercise.difficulty) {
+    const validDifficulties = ['beginner', 'intermediate', 'advanced'];
+    if (!validDifficulties.includes(exercise.difficulty.toLowerCase())) {
+      result.errors.push(`Invalid difficulty level: "${exercise.difficulty}". Must be one of: ${validDifficulties.join(', ')}`);
+      result.isValid = false;
+    }
+  }
+
+  // Validate form tips count
+  if (!exercise.formTips || exercise.formTips.length !== 3) {
+    result.errors.push(`Form tips must have exactly 3 items, got ${exercise.formTips?.length || 0}`);
+    result.isValid = false;
+  }
+
+  // Validate safety tips count
+  if (!exercise.safetyTips || exercise.safetyTips.length !== 2) {
+    result.errors.push(`Safety tips must have exactly 2 items, got ${exercise.safetyTips?.length || 0}`);
+    result.isValid = false;
+  }
+
+  // Validate muscle groups
+  if (!exercise.muscleGroups || exercise.muscleGroups.length === 0) {
+    result.warnings.push('Exercise should specify target muscle groups');
+  }
+
   return result;
 }
 

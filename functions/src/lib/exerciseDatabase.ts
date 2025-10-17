@@ -151,3 +151,38 @@ Exercise Complexity: ${adjustments.complexityGuidance}
 Rest Period Adjustment: ${adjustments.restAdjustment > 0 ? '+' : ''}${adjustments.restAdjustment} seconds
 Form Emphasis: ${adjustments.formEmphasis}`;
 }
+
+/**
+ * Get difficulty-specific exercise examples
+ * Provides concrete examples for each difficulty level to guide AI selection
+ */
+export function getDifficultyExamples(experience: string): string {
+  const experienceLevel = experience?.toLowerCase() || 'beginner';
+
+  const examples: Record<string, string> = {
+    beginner: `
+BEGINNER EXERCISE EXAMPLES (Fundamental movements, bilateral, stable):
+- Bodyweight: Push-ups, Squats, Lunges, Planks, Glute Bridges, Rows (assisted)
+- Dumbbells: Dumbbell Bench Press, Goblet Squats, Dumbbell Rows, Shoulder Press
+- Machines: Leg Press, Chest Press, Lat Pulldown, Leg Curl
+- Avoid: Pistol squats, Single-leg deadlifts, Complex Olympic lifts, Advanced plyometrics`,
+
+    intermediate: `
+INTERMEDIATE EXERCISE EXAMPLES (Unilateral work, free weights, moderate complexity):
+- Barbell: Barbell Squats, Deadlifts, Bench Press, Rows, Overhead Press
+- Dumbbells: Single-arm rows, Bulgarian split squats, Dumbbell snatches
+- Bodyweight: Pull-ups, Dips, Handstand holds, Pistol squat progressions
+- Cables: Cable flyes, Pallof press, Cable rows
+- Avoid: Advanced Olympic lift variations, Extreme plyometrics`,
+
+    advanced: `
+ADVANCED EXERCISE EXAMPLES (Complex movements, high skill, explosive):
+- Olympic Lifts: Power cleans, Snatches, Clean and jerk variations
+- Plyometrics: Box jumps, Broad jumps, Clapping push-ups, Explosive pull-ups
+- Advanced Bodyweight: Muscle-ups, Handstand push-ups, Front lever progressions
+- Unilateral: Single-leg deadlifts, Pistol squats, Single-arm snatches
+- Specialty: Farmer carries, Turkish get-ups, Sled pushes`,
+  };
+
+  return (examples[experienceLevel] ?? examples['beginner']) as string;
+}
