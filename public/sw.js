@@ -55,6 +55,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // CRITICAL: Never serve HTML for module/script requests
+  // This prevents MIME type errors for dynamic imports
+  const isModuleRequest = request.destination === 'script' ||
+                          request.destination === 'worker' ||
+                          request.destination === 'sharedworker';
+
+  if (isModuleRequest) {
+    // Always fetch modules from network, never cache as HTML
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Only cache if it's actually JavaScript
+          if (response && response.status === 200) {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/javascript') ||
+                contentType.includes('application/wasm') ||
+                contentType.includes('text/javascript')) {
+              const responseToCache = response.clone();
+              caches.open(RUNTIME_CACHE).then((cache) => {
+                cache.put(request, responseToCache);
+              });
+            }
+          }
+          return response;
+        })
+        .catch(() => {
+          // For modules, don't fall back to HTML - let it fail properly
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
   // Skip Firebase and external API requests - always fetch from network
   if (
     url.hostname.includes('firebase') ||
@@ -104,7 +137,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For assets (JS, CSS, images), use cache-first strategy
+  // For assets (CSS, images), use cache-first strategy
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -132,18 +165,25 @@ self.addEventListener('fetch', (event) => {
 
 // Handle messages from clients
 self.addEventListener('message', (event) => {
+  // CRITICAL: Use waitUntil() for async operations to prevent message channel from closing
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+    return;
   }
 
   if (event.data && event.data.type === 'CLEAR_CACHE') {
-    caches.keys().then((cacheNames) => {
-      Promise.all(
-        cacheNames.map((cacheName) => {
-          return caches.delete(cacheName);
-        })
-      );
-    });
+    // Use waitUntil to ensure async operation completes before message channel closes
+    event.waitUntil(
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            return caches.delete(cacheName);
+          })
+        );
+      })
+    );
+    return;
   }
 });
 

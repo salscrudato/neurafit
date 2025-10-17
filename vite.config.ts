@@ -301,10 +301,11 @@ export default defineConfig(({ mode }) => {
         // Resolve .cjs files as CommonJS
         mainFields: ['module', 'main'],
       },
-      // Disable caching in production builds to prevent stale deps
-      noDiscovery: isProduction,
-      // Force re-optimization on every build
-      force: isProduction,
+      // CRITICAL: Always disable caching to prevent stale React instances
+      // This prevents the "Cannot read properties of null (reading 'useEffect')" error
+      noDiscovery: true,
+      // CRITICAL: Always force re-optimization to ensure React is fresh
+      force: true,
     },
 
     // Global constants

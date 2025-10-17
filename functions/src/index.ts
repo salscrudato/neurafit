@@ -57,6 +57,13 @@ export const generateWorkout = onRequest(
     }
 
     try {
+      // Validate request body exists
+      if (!req.body) {
+        console.warn('Empty request body received');
+        res.status(400).json({ error: 'Request body is required' });
+        return;
+      }
+
       // Initialize OpenAI client with the secret value and timeout
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
@@ -105,6 +112,15 @@ export const generateWorkout = onRequest(
         uid?: string;
       }) || {};
 
+      // Validate required fields
+      if (!experience || !workoutType || !duration) {
+        console.warn('Missing required fields', { experience, workoutType, duration });
+        res.status(400).json({
+          error: 'Missing required fields: experience, workoutType, duration'
+        });
+        return;
+      }
+
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
         ? goals.filter((g): g is string => Boolean(g))
@@ -128,15 +144,57 @@ export const generateWorkout = onRequest(
         preferenceNotes,
       };
 
+      console.log('🏋️ Starting workout generation', {
+        workoutType,
+        duration,
+        experience,
+        uid: uid ? `${uid.substring(0, 8)}...` : 'anonymous',
+      });
+
       // Use new orchestrated generation with multi-pass validation
       const result = await generateWorkoutOrchestrated(workoutContext, client, uid);
+
+      console.log('✅ Workout generated successfully', {
+        exerciseCount: result.exercises?.length || 0,
+        targetDuration: result.metadata?.targetDuration,
+      });
 
       // Return workout with metadata
       res.json(result);
       return;
     } catch (e) {
-      console.error('Workout generation error', e);
-      res.status(500).json({ error: 'Internal Server Error' });
+      // Comprehensive error logging
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const errorStack = e instanceof Error ? e.stack : '';
+
+      console.error('❌ Workout generation error', {
+        message: errorMessage,
+        stack: errorStack,
+        type: e instanceof Error ? e.constructor.name : typeof e,
+      });
+
+      // Return appropriate error response
+      if (e instanceof Error) {
+        if (e.message.includes('timeout')) {
+          res.status(504).json({
+            error: 'Request timeout - workout generation took too long',
+            details: 'Please try again with a shorter duration or simpler workout'
+          });
+          return;
+        }
+        if (e.message.includes('API')) {
+          res.status(502).json({
+            error: 'AI service temporarily unavailable',
+            details: 'Please try again in a moment'
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        error: 'Internal Server Error',
+        details: 'Failed to generate workout. Please try again.'
+      });
       return;
     }
   },

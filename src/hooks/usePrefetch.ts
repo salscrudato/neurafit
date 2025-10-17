@@ -3,10 +3,22 @@
  *
  * Prefetches route chunks on hover or idle to improve perceived performance
  * and reduce First Input Delay (FID) for navigation.
+ *
+ * CRITICAL: This module must be imported AFTER React is fully initialized.
+ * All hooks are guarded to prevent execution before React is ready.
  */
 
 import { useEffect, useCallback, useRef } from 'react';
 import { logger } from '../lib/logger';
+
+// Guard to ensure React is available before using hooks
+if (!useEffect) {
+  throw new Error(
+    'CRITICAL: React hooks not available. This indicates a module loading order issue. ' +
+    'Ensure React is initialized before importing usePrefetch hooks. ' +
+    'Clear cache with: npm run clean:cache'
+  );
+}
 
 // Map of route paths to their lazy-loaded modules
 const routeModules: Record<string, () => Promise<unknown>> = {
@@ -69,49 +81,67 @@ export function usePrefetchOnHover(path: string) {
 /**
  * Hook to prefetch routes on idle
  * Uses requestIdleCallback to prefetch during browser idle time
+ *
+ * SAFE: Includes error handling to gracefully handle React initialization issues
  */
 export function usePrefetchOnIdle(paths: string[], delay = 2000) {
-  useEffect(() => {
-    // Wait for initial delay before starting idle prefetch
-    const timeoutId = setTimeout(() => {
-      // Use requestIdleCallback if available, otherwise use setTimeout
-      const scheduleIdlePrefetch = (callback: () => void) => {
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(callback, { timeout: 5000 });
-        } else {
-          setTimeout(callback, 0);
-        }
-      };
+  try {
+    useEffect(() => {
+      // Wait for initial delay before starting idle prefetch
+      const timeoutId = setTimeout(() => {
+        // Use requestIdleCallback if available, otherwise use setTimeout
+        const scheduleIdlePrefetch = (callback: () => void) => {
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(callback, { timeout: 5000 });
+          } else {
+            setTimeout(callback, 0);
+          }
+        };
 
-      // Prefetch each route during idle time
-      paths.forEach((path, index) => {
-        scheduleIdlePrefetch(() => {
-          // Stagger prefetches to avoid blocking
-          setTimeout(() => {
-            prefetchRoute(path);
-          }, index * 100);
+        // Prefetch each route during idle time
+        paths.forEach((path, index) => {
+          scheduleIdlePrefetch(() => {
+            // Stagger prefetches to avoid blocking
+            setTimeout(() => {
+              prefetchRoute(path);
+            }, index * 100);
+          });
         });
-      });
-    }, delay);
+      }, delay);
 
-    return () => clearTimeout(timeoutId);
-  }, [paths, delay]);
+      return () => clearTimeout(timeoutId);
+    }, [paths, delay]);
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('usePrefetchOnIdle error:', error);
+    }
+    logger.warn('Route prefetching disabled due to error', { error: String(error) });
+  }
 }
 
 /**
  * Hook to prefetch critical routes immediately
+ *
+ * SAFE: Includes error handling to gracefully handle React initialization issues
  */
 export function usePrefetchCritical(paths: string[]) {
-  useEffect(() => {
-    // Prefetch critical routes after a short delay to not block initial render
-    const timeoutId = setTimeout(() => {
-      paths.forEach((path) => {
-        prefetchRoute(path);
-      });
-    }, 100);
+  try {
+    useEffect(() => {
+      // Prefetch critical routes after a short delay to not block initial render
+      const timeoutId = setTimeout(() => {
+        paths.forEach((path) => {
+          prefetchRoute(path);
+        });
+      }, 100);
 
-    return () => clearTimeout(timeoutId);
-  }, [paths]);
+      return () => clearTimeout(timeoutId);
+    }, [paths]);
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('usePrefetchCritical error:', error);
+    }
+    logger.warn('Critical route prefetching disabled due to error', { error: String(error) });
+  }
 }
 
 /**
