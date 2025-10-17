@@ -22,31 +22,15 @@ interface RouteWrapperProps {
  * - Profile completion guards
  * - Lazy loading with suspense
  */
-export function RouteWrapper({ 
-  children, 
-  requireAuth = false, 
-  requireProfile = false, 
-  lazy = false 
+export function RouteWrapper({
+  children,
+  requireAuth = false,
+  requireProfile = false,
+  lazy = false
 }: RouteWrapperProps) {
   let content = children
 
-  // Wrap with Suspense if lazy loading
-  if (lazy) {
-    content = (
-      <Suspense fallback={<PageSkeleton />}>
-        {content}
-      </Suspense>
-    )
-  }
-
-  // Wrap with ErrorBoundary
-  content = (
-    <ErrorBoundary level="page">
-      {content}
-    </ErrorBoundary>
-  )
-
-  // Wrap with profile guard if required
+  // Wrap with profile guard if required (FIRST - before error boundary)
   if (requireProfile) {
     content = (
       <RequireProfile>
@@ -61,6 +45,22 @@ export function RouteWrapper({
       <RequireAuth>
         {content}
       </RequireAuth>
+    )
+  }
+
+  // Wrap with ErrorBoundary (AFTER guards so Router context is available)
+  content = (
+    <ErrorBoundary level="page">
+      {content}
+    </ErrorBoundary>
+  )
+
+  // Wrap with Suspense if lazy loading (LAST - outermost wrapper)
+  if (lazy) {
+    content = (
+      <Suspense fallback={<PageSkeleton />}>
+        {content}
+      </Suspense>
     )
   }
 
