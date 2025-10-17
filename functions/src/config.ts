@@ -18,30 +18,30 @@ export const OPENAI_CONFIG = {
   temperature: 0.25, // Slightly higher (0.2→0.25) for faster generation without sacrificing quality
   topP: 0.85, // Reduced from 0.9 for faster token selection (more focused sampling)
   maxTokens: 3000, // Keep at 3000 to ensure sufficient output for all workout durations
-  timeout: 120000, // 120 second timeout for API calls (allows for streaming + processing, especially for longer workouts)
+  timeout: 180000, // 180 second timeout for API calls (increased from 120s to handle longer workouts better)
 } as const;
 
 /**
  * Get dynamic OpenAI config based on workout duration
- * Reduces token limits for longer workouts to improve performance
- * Also reduces temperature for faster, more deterministic generation
+ * Balances token limits for quality while maintaining reasonable performance
+ * Uses streaming for all durations to avoid timeouts
  */
 export function getOpenAIConfigForDuration(duration: number) {
-  // For 75+ minute workouts, use ultra-aggressive optimization
-  // Reduce maxTokens significantly and use lower temperature for faster generation
+  // For 75+ minute workouts, use balanced optimization
+  // Keep sufficient tokens for quality output while using lower temperature for faster generation
   if (duration >= 75) {
     return {
       ...OPENAI_CONFIG,
-      maxTokens: 1600, // Ultra-aggressive reduction for 75+ min workouts (was 3000)
-      temperature: 0.08, // Very low temperature for fastest, most deterministic generation
+      maxTokens: 2800, // Increased from 1600 to ensure quality for long workouts
+      temperature: 0.15, // Slightly higher than 0.08 for better quality
     };
   }
 
   if (duration >= 60) {
     return {
       ...OPENAI_CONFIG,
-      maxTokens: 2200,
-      temperature: 0.12,
+      maxTokens: 2500, // Increased from 2200 for better quality
+      temperature: 0.15,
     };
   }
 
@@ -55,8 +55,8 @@ export function getOpenAIConfigForDuration(duration: number) {
 export const QUALITY_THRESHOLDS = {
   minOverallScore: 85, // Minimum overall quality score to pass
   minSafetyScore: 90, // Minimum safety score (higher bar for safety)
-  maxRepairAttempts: 2, // Maximum number of repair passes (increased from 1 to handle 60-min workouts better)
-  skipRepairIfScoreAbove: 92, // Skip repair attempts if quality score is above this threshold
+  maxRepairAttempts: 1, // Maximum number of repair passes (reduced from 2 to speed up longer workouts)
+  skipRepairIfScoreAbove: 90, // Skip repair attempts if quality score is above this threshold (lowered from 92)
 } as const;
 
 /**
@@ -102,7 +102,7 @@ export const CORS_ORIGINS: string[] = [
  * Function timeouts and memory
  */
 export const FUNCTION_CONFIG = {
-  timeoutSeconds: 300, // 5 minutes - enough for multi-pass generation
+  timeoutSeconds: 540, // 9 minutes - enough for longer workouts with streaming
   memory: '1GiB' as const, // Increased memory for better performance
   region: 'us-central1' as const,
 } as const;

@@ -166,46 +166,30 @@ export async function generateWorkoutOrchestrated(
 
       // Call OpenAI with appropriate mode based on duration
       const dynamicConfig = getOpenAIConfigForDuration(duration);
-      const useStreaming = duration < 75; // Use non-streaming for 75+ min workouts to reduce overhead
 
-      console.log(`🤖 Calling OpenAI API (${useStreaming ? 'streaming' : 'non-streaming'})...`);
+      // Always use streaming to avoid timeouts on longer workouts
+      console.log(`🤖 Calling OpenAI API (streaming mode)...`);
 
       let content = '';
 
-      if (useStreaming) {
-        // Streaming mode for shorter workouts
-        const stream = await openaiClient.chat.completions.create({
-          model: OPENAI_MODEL,
-          temperature: dynamicConfig.temperature,
-          top_p: dynamicConfig.topP,
-          max_tokens: dynamicConfig.maxTokens,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          response_format: responseFormat as any,
-          messages,
-          stream: true,
-        });
+      // Streaming mode for all workouts - prevents timeouts and provides better UX
+      const stream = await openaiClient.chat.completions.create({
+        model: OPENAI_MODEL,
+        temperature: dynamicConfig.temperature,
+        top_p: dynamicConfig.topP,
+        max_tokens: dynamicConfig.maxTokens,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        response_format: responseFormat as any,
+        messages,
+        stream: true,
+      });
 
-        // Collect streamed response
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content;
-          if (delta) {
-            content += delta;
-          }
+      // Collect streamed response
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          content += delta;
         }
-      } else {
-        // Non-streaming mode for 75+ min workouts to reduce overhead
-        const response = await openaiClient.chat.completions.create({
-          model: OPENAI_MODEL,
-          temperature: dynamicConfig.temperature,
-          top_p: dynamicConfig.topP,
-          max_tokens: dynamicConfig.maxTokens,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          response_format: responseFormat as any,
-          messages,
-          stream: false,
-        });
-
-        content = response.choices[0]?.message?.content || '';
       }
 
       if (!content) {
