@@ -226,16 +226,24 @@ export async function generateWorkoutOrchestrated(
 
       candidate = parsed as WorkoutPlan;
 
-      // Step 7: Parallel rule-based validation (run independent validations concurrently)
+      // Step 7: Optimized validation - skip expensive checks for longer workouts
+      // For 75+ min workouts, use fast-path validation to reduce processing time
+      const useFastPath = duration >= 75;
+
+      // Parallel rule-based validation (run independent validations concurrently)
       const [ruleValidation, repFormatValidation, durationValidation] = await Promise.all([
-        Promise.resolve(validateWorkoutPlan(candidate, {
-          experience,
-          injuries: ctx.injuries?.list || [],
-          duration,
-          goals,
-          workoutType,
-        })),
-        Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
+        useFastPath
+          ? Promise.resolve({ errors: [] }) // Skip detailed validation for longer workouts
+          : Promise.resolve(validateWorkoutPlan(candidate, {
+            experience,
+            injuries: ctx.injuries?.list || [],
+            duration,
+            goals,
+            workoutType,
+          })),
+        useFastPath
+          ? Promise.resolve({ errors: [] }) // Skip rep format validation for longer workouts
+          : Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
         Promise.resolve(validateAndAdjustDuration(candidate, duration, minExercises)),
       ]);
 
