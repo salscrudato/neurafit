@@ -18,6 +18,7 @@ import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
 import { FUNCTION_CONFIG, OPENAI_CONFIG } from './config';
+import { getExerciseContextValidationErrors } from './lib/exerciseContextValidation';
 
 // CORS configuration for all deployment URLs
 const CORS_ORIGINS: string[] = [
@@ -65,8 +66,18 @@ export const generateWorkout = onRequest(
       }
 
       // Initialize OpenAI client with the secret value and timeout
+      const apiKeyValue = openaiApiKey.value();
+      if (!apiKeyValue) {
+        console.error('OpenAI API key is not set');
+        res.status(502).json({
+          error: 'AI service configuration error',
+          details: 'Please try again later'
+        });
+        return;
+      }
+
       const client = new OpenAI({
-        apiKey: openaiApiKey.value(),
+        apiKey: apiKeyValue,
         timeout: OPENAI_CONFIG.timeout, // Use config timeout (120s for longer workouts)
       });
 
@@ -166,26 +177,37 @@ export const generateWorkout = onRequest(
       // Comprehensive error logging
       const errorMessage = e instanceof Error ? e.message : String(e);
       const errorStack = e instanceof Error ? e.stack : '';
+      const errorCode = (e as any)?.code || 'UNKNOWN';
+      const errorStatus = (e as any)?.status || 'UNKNOWN';
 
       console.error('❌ Workout generation error', {
         message: errorMessage,
         stack: errorStack,
         type: e instanceof Error ? e.constructor.name : typeof e,
+        code: errorCode,
+        status: errorStatus,
       });
 
       // Return appropriate error response
       if (e instanceof Error) {
-        if (e.message.includes('timeout')) {
+        if (e.message.includes('timeout') || e.message.includes('ETIMEDOUT')) {
           res.status(504).json({
             error: 'Request timeout - workout generation took too long',
             details: 'Please try again with a shorter duration or simpler workout'
           });
           return;
         }
-        if (e.message.includes('API')) {
+        if (e.message.includes('API') || e.message.includes('401') || e.message.includes('403')) {
           res.status(502).json({
             error: 'AI service temporarily unavailable',
             details: 'Please try again in a moment'
+          });
+          return;
+        }
+        if (e.message.includes('rate_limit') || e.message.includes('429')) {
+          res.status(429).json({
+            error: 'Too many requests',
+            details: 'Please wait a moment and try again'
           });
           return;
         }
@@ -193,7 +215,8 @@ export const generateWorkout = onRequest(
 
       res.status(500).json({
         error: 'Internal Server Error',
-        details: 'Failed to generate workout. Please try again.'
+        details: 'Failed to generate workout. Please try again.',
+        message: errorMessage.substring(0, 100) // Include first 100 chars of error for debugging
       });
       return;
     }
@@ -334,6 +357,24 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
         console.warn('Generated exercise is too similar to existing exercises:', exercise.name);
         res.status(400).json({
           error: 'Generated exercise is too similar to existing exercises',
+          exercise: exercise.name,
+        });
+        return;
+      }
+
+      // Validate exercise matches workout type, equipment, and rep format
+      const contextErrors = getExerciseContextValidationErrors(
+        exercise.name,
+        exercise.reps,
+        workoutType || 'Full Body',
+        equipment || ['Bodyweight'],
+      );
+
+      if (contextErrors.length > 0) {
+        console.warn('Generated exercise failed context validation:', contextErrors);
+        res.status(400).json({
+          error: 'Generated exercise does not match workout context',
+          details: contextErrors,
           exercise: exercise.name,
         });
         return;
@@ -493,6 +534,24 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
           error: 'Replacement exercise is too similar to the original exercise - please provide a different movement pattern',
           original: exerciseToReplace.name,
           replacement: exercise.name,
+        });
+        return;
+      }
+
+      // Validate exercise matches workout type, equipment, and rep format
+      const contextErrors = getExerciseContextValidationErrors(
+        exercise.name,
+        exercise.reps,
+        workoutType || 'Full Body',
+        equipment || ['Bodyweight'],
+      );
+
+      if (contextErrors.length > 0) {
+        console.warn('Replacement exercise failed context validation:', contextErrors);
+        res.status(400).json({
+          error: 'Replacement exercise does not match workout context',
+          details: contextErrors,
+          exercise: exercise.name,
         });
         return;
       }

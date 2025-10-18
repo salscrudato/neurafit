@@ -147,14 +147,18 @@ export async function generateWorkoutOrchestrated(
   };
   const cacheKey = hashRequest(cacheableContext);
 
-  const result = await getCachedOrRun(cacheKey, async () => {
-    // Step 5: Generate candidate with multi-pass repair
-    let candidate: WorkoutPlan | null = null;
-    let repairAttempts = 0;
-    let validationErrors: ValidationErrors | null = null;
+  try {
+    const result = await getCachedOrRun(cacheKey, async () => {
+      // Step 5: Generate candidate with multi-pass repair
+      let candidate: WorkoutPlan | null = null;
+      let repairAttempts = 0;
+      let validationErrors: ValidationErrors | null = null;
+      const maxAttempts = QUALITY_THRESHOLDS.maxRepairAttempts + 1;
 
-    for (let attempt = 0; attempt <= QUALITY_THRESHOLDS.maxRepairAttempts; attempt++) {
-      console.log(`🔄 Generation attempt ${attempt + 1}/${QUALITY_THRESHOLDS.maxRepairAttempts + 1}`);
+      console.log(`📋 Starting generation with max ${maxAttempts} attempts`);
+
+      for (let attempt = 0; attempt <= QUALITY_THRESHOLDS.maxRepairAttempts; attempt++) {
+        console.log(`🔄 Generation attempt ${attempt + 1}/${maxAttempts}`);
 
       const isRepair = attempt > 0;
       const messages = isRepair && validationErrors
@@ -173,23 +177,61 @@ export async function generateWorkoutOrchestrated(
       let content = '';
 
       // Streaming mode for all workouts - prevents timeouts and provides better UX
-      const stream = await openaiClient.chat.completions.create({
-        model: OPENAI_MODEL,
-        temperature: dynamicConfig.temperature,
-        top_p: dynamicConfig.topP,
-        max_tokens: dynamicConfig.maxTokens,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        response_format: responseFormat as any,
-        messages,
-        stream: true,
-      });
+      let stream;
+      try {
+        console.log('📤 Sending request to OpenAI with model:', OPENAI_MODEL);
+        console.log('📋 Response format type:', (responseFormat as any)?.type);
+
+        stream = await openaiClient.chat.completions.create({
+          model: OPENAI_MODEL,
+          temperature: dynamicConfig.temperature,
+          top_p: dynamicConfig.topP,
+          max_tokens: dynamicConfig.maxTokens,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          response_format: responseFormat as any,
+          messages,
+          stream: true,
+        });
+        console.log('✅ OpenAI API call initiated successfully');
+      } catch (apiError) {
+        const apiErrorMsg = apiError instanceof Error ? apiError.message : String(apiError);
+        const apiErrorCode = (apiError as any)?.code || 'UNKNOWN';
+        const apiErrorStatus = (apiError as any)?.status || 'UNKNOWN';
+        const apiErrorType = (apiError as any)?.type || 'UNKNOWN';
+
+        console.error('❌ OpenAI API call failed:', {
+          error: apiErrorMsg,
+          code: apiErrorCode,
+          status: apiErrorStatus,
+          type: apiErrorType,
+          model: OPENAI_MODEL,
+          attempt: attempt + 1,
+        });
+
+        // If it's a 500 error from OpenAI, it might be a temporary issue
+        if (apiErrorStatus === 500 || apiErrorMsg.includes('500')) {
+          console.error('OpenAI returned 500 error - this may be a temporary service issue');
+        }
+
+        throw apiError;
+      }
 
       // Collect streamed response
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          content += delta;
+      try {
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta?.content;
+          if (delta) {
+            content += delta;
+          }
         }
+      } catch (streamError) {
+        const streamErrorMsg = streamError instanceof Error ? streamError.message : String(streamError);
+        console.error('Stream collection failed:', {
+          error: streamErrorMsg,
+          contentLength: content.length,
+          attempt: attempt + 1,
+        });
+        throw streamError;
       }
 
       if (!content) {
@@ -226,14 +268,16 @@ export async function generateWorkoutOrchestrated(
 
       candidate = parsed as WorkoutPlan;
 
-      // Step 7: Optimized validation - skip expensive checks for longer workouts
-      // For 75+ min workouts, use fast-path validation to reduce processing time
-      const useFastPath = duration >= 75;
+      // Step 7: Optimized validation - balance speed and quality
+      // For 90+ min workouts, use fast-path validation to reduce processing time
+      // For 60-89 min workouts, run all validations but in parallel
+      // For <60 min workouts, run all validations with full detail
+      const useFastPath = duration >= 90;
 
       // Parallel rule-based validation (run independent validations concurrently)
       const [ruleValidation, repFormatValidation, durationValidation] = await Promise.all([
         useFastPath
-          ? Promise.resolve({ errors: [] }) // Skip detailed validation for longer workouts
+          ? Promise.resolve({ errors: [] }) // Skip detailed validation for 90+ min workouts
           : Promise.resolve(validateWorkoutPlan(candidate, {
             experience,
             injuries: ctx.injuries?.list || [],
@@ -242,7 +286,7 @@ export async function generateWorkoutOrchestrated(
             workoutType,
           })),
         useFastPath
-          ? Promise.resolve({ errors: [] }) // Skip rep format validation for longer workouts
+          ? Promise.resolve({ errors: [] }) // Skip rep format validation for 90+ min workouts
           : Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
         Promise.resolve(validateAndAdjustDuration(candidate, duration, minExercises)),
       ]);
@@ -337,10 +381,20 @@ export async function generateWorkoutOrchestrated(
       duration: durationValidation.actualDuration.toFixed(1),
     });
 
-    return result;
-  });
+      return result;
+    });
 
-  return result;
+    return result;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('❌ Generation orchestration failed:', {
+      error: errorMsg,
+      workoutType: ctx.workoutType,
+      duration: ctx.duration,
+      experience: ctx.experience,
+    });
+    throw error;
+  }
 }
 
 /**

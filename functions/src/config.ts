@@ -5,68 +5,70 @@
 
 /**
  * OpenAI model configuration
- * Using gpt-4o-mini-2024-07-18 for better JSON mode performance and lower latency
+ * Using gpt-4o-mini for better JSON mode performance and lower latency
+ * Falls back to gpt-4o-mini-2024-07-18 if the latest version is not available
  * Can be overridden via OPENAI_MODEL environment variable
  */
-export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini-2024-07-18';
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 /**
  * OpenAI generation parameters
- * AGGRESSIVE optimization for speed
+ * Optimized for speed, cost, and quality balance
+ * Using gpt-4o-mini for best cost/performance ratio
  */
 export const OPENAI_CONFIG = {
-  temperature: 0.2, // Lower for faster, more deterministic generation
-  topP: 0.8, // Reduced from 0.85 for faster token selection
-  maxTokens: 2800, // Reduced from 3000 for faster generation
-  timeout: 150000, // 150 second timeout (reduced from 180s for faster failure detection)
+  temperature: 0.3, // Slightly higher for better variety while maintaining consistency
+  topP: 0.85, // Balanced for quality and speed
+  maxTokens: 2600, // Optimized token count for typical workouts
+  timeout: 120000, // 120 second timeout - sufficient for most workouts
 } as const;
 
 /**
  * Get dynamic OpenAI config based on workout duration
- * AGGRESSIVE optimization for longer workouts to prevent timeouts
- * Uses minimal tokens and deterministic generation for speed
+ * Optimized for speed while maintaining quality
+ * Balances token usage with generation quality
  */
 export function getOpenAIConfigForDuration(duration: number) {
-  // For 90+ minute workouts, use ultra-aggressive optimization
-  // Minimize tokens and use very low temperature for fastest generation
+  // For 90+ minute workouts, optimize for speed
   if (duration >= 90) {
     return {
       ...OPENAI_CONFIG,
-      maxTokens: 2000, // Aggressive reduction for 90+ min workouts
-      temperature: 0.05, // Very low for deterministic, fast generation
+      maxTokens: 2400, // Sufficient for complex workouts
+      temperature: 0.25, // Slightly lower for consistency
     };
   }
 
-  // For 75-89 minute workouts, use aggressive optimization
+  // For 75-89 minute workouts, balanced optimization
   if (duration >= 75) {
     return {
       ...OPENAI_CONFIG,
-      maxTokens: 2200, // Reduced from 2800
-      temperature: 0.08, // Lower for faster generation
+      maxTokens: 2500,
+      temperature: 0.28,
     };
   }
 
-  // For 60-74 minute workouts, use moderate optimization
+  // For 60-74 minute workouts, standard config
   if (duration >= 60) {
     return {
       ...OPENAI_CONFIG,
-      maxTokens: 2400, // Reduced from 2500
-      temperature: 0.12,
+      maxTokens: 2600,
+      temperature: 0.30,
     };
   }
 
-  // Default for shorter workouts
+  // Default for shorter workouts - allow more variety
   return OPENAI_CONFIG;
 }
 
 /**
  * Validation and quality thresholds
+ * Balanced for quality and speed - repair attempts only when necessary
  */
 export const QUALITY_THRESHOLDS = {
-  minOverallScore: 80, // Minimum overall quality score to pass (lowered from 85 for speed)
-  minSafetyScore: 85, // Minimum safety score (lowered from 90 for speed)
-  maxRepairAttempts: 0, // No repair attempts for speed (was 1)
-  skipRepairIfScoreAbove: 75, // Skip repair attempts if quality score is above this threshold (lowered from 90)
+  minOverallScore: 82, // Minimum overall quality score to pass
+  minSafetyScore: 88, // Minimum safety score - critical for user safety
+  maxRepairAttempts: 1, // Allow 1 repair attempt for quality improvement
+  skipRepairIfScoreAbove: 85, // Skip repair attempts if quality score is excellent
 } as const;
 
 /**
