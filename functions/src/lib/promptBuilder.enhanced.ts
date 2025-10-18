@@ -27,13 +27,24 @@ export { buildOpenAIJsonSchema };
 export function buildEnhancedSystemMessage(duration: number, workoutType?: string): string {
   const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
 
+  // Dynamic variance based on duration
+  // Longer workouts naturally have more variance
+  let variance = 3;
+  if (duration >= 90) {
+    variance = Math.ceil(duration * 0.1); // ±10% for 90+ min workouts
+  } else if (duration >= 60) {
+    variance = Math.ceil(duration * 0.08); // ±8% for 60-89 min workouts
+  } else if (duration >= 45) {
+    variance = 4; // ±4 min for 45-59 min workouts
+  }
+
   return `Elite AI fitness coach. Expert in exercise science, periodization, injury prevention, personalization.
 
-🔴 PRIMARY CONSTRAINT: DURATION MUST BE ${duration}±3 MINUTES (${(duration - 3).toFixed(0)}-${(duration + 3).toFixed(0)} min)
+🔴 PRIMARY CONSTRAINT: DURATION MUST BE ${duration}±${variance} MINUTES (${(duration - variance).toFixed(0)}-${(duration + variance).toFixed(0)} min)
 This is NON-NEGOTIABLE. Calculate total time before outputting.
 
 CONSTRAINTS (PRIORITY ORDER):
-1. Hard: Duration ±3min (PRIMARY), Equipment, Injury contraindications, Safety
+1. Hard: Duration ±${variance}min (PRIMARY), Equipment, Injury contraindications, Safety
 2. Soft: Variety, muscle balance, progression, personalization
 
 PERSONALIZATION REQUIREMENTS:
@@ -59,7 +70,7 @@ PROGRAMMING:
 - Adjust intensity based on experience level
 
 VERIFY:
-✓ Duration = ${duration}±3min (CALCULATE: warmup + sum of all exercise times)
+✓ Duration = ${duration}±${variance}min (CALCULATE: warmup + sum of all exercise times)
 ✓ Exercise count: ${Math.floor(duration/10)}-${Math.ceil(duration/5)}
 ✓ Matches workout type
 ✓ No contraindicated exercises
@@ -71,7 +82,7 @@ VERIFY:
 OUTPUT: Valid JSON only, follow exact schema
 
 CRITICAL (IN ORDER OF IMPORTANCE):
-1. ⚠️ DURATION MUST BE ${duration}±3 MINUTES - CALCULATE BEFORE OUTPUTTING
+1. ⚠️ DURATION MUST BE ${duration}±${variance} MINUTES - CALCULATE BEFORE OUTPUTTING
 2. Never use unavailable equipment
 3. Never include contraindicated exercises
 4. All names unique
@@ -401,6 +412,16 @@ function buildDurationGuidance(
 ): string {
   const isTimeBasedWorkout = ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
 
+  // Dynamic variance based on duration
+  let variance = 3;
+  if (duration >= 90) {
+    variance = Math.ceil(duration * 0.1); // ±10% for 90+ min workouts
+  } else if (duration >= 60) {
+    variance = Math.ceil(duration * 0.08); // ±8% for 60-89 min workouts
+  } else if (duration >= 45) {
+    variance = 4; // ±4 min for 45-59 min workouts
+  }
+
   // Calculate warmup time
   const warmupTime = duration >= 30 ? 2.5 : (duration >= 20 ? 1.5 : 0);
   const availableTime = duration - warmupTime;
@@ -411,7 +432,7 @@ function buildDurationGuidance(
 Formula: Time = (sets × work_seconds / 60) + ((sets - 1) × rest_seconds / 60)
 Example: 4 sets × 45s work + 30s rest = (4 × 45/60) + (3 × 30/60) = 3 + 1.5 = 4.5 min
 
-Target: ${duration} minutes (±3 min acceptable)
+Target: ${duration} minutes (±${variance} min acceptable)
 Warmup: ~${warmupTime} min
 Available for exercises: ~${availableTime.toFixed(1)} min
 Required: ${minExerciseCount}-${maxExerciseCount} exercises
@@ -420,7 +441,7 @@ Typical: 3-5 sets of 30-45s work with 30-45s rest per exercise
 
 🔴 CRITICAL: CALCULATE TOTAL BEFORE OUTPUTTING
 Total = warmup + sum of all exercise times
-Must equal ${duration} ± 3 minutes (${(duration - 3).toFixed(0)}-${(duration + 3).toFixed(0)} min)`;
+Must equal ${duration} ± ${variance} minutes (${(duration - variance).toFixed(0)}-${(duration + variance).toFixed(0)} min)`;
   } else {
     const avgSets = (programming.sets[0] + programming.sets[1]) / 2;
     const avgRest = (programming.restSeconds[0] + programming.restSeconds[1]) / 2;
@@ -430,7 +451,7 @@ Must equal ${duration} ± 3 minutes (${(duration - 3).toFixed(0)}-${(duration + 
 Formula: Time = (sets × 1 min) + ((sets - 1) × rest_seconds / 60)
 Example: ${avgSets} sets × ${avgRest}s rest = ${avgSets} + (${avgSets - 1} × ${avgRest / 60}) = ${(avgSets + (avgSets - 1) * avgRest / 60).toFixed(1)} min
 
-Target: ${duration} minutes (±3 min acceptable)
+Target: ${duration} minutes (±${variance} min acceptable)
 Warmup: ~${warmupTime} min
 Available for exercises: ~${availableTime.toFixed(1)} min
 Required: ${minExerciseCount}-${maxExerciseCount} exercises
@@ -439,7 +460,7 @@ Compound: 120-180s rest, Isolation: 60-90s rest
 
 🔴 CRITICAL: CALCULATE TOTAL BEFORE OUTPUTTING
 Total = warmup + sum of all exercise times
-Must equal ${duration} ± 3 minutes (${(duration - 3).toFixed(0)}-${(duration + 3).toFixed(0)} min)`;
+Must equal ${duration} ± ${variance} minutes (${(duration - variance).toFixed(0)}-${(duration + variance).toFixed(0)} min)`;
   }
 }
 

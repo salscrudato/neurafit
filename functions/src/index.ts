@@ -78,7 +78,7 @@ export const generateWorkout = onRequest(
 
       const client = new OpenAI({
         apiKey: apiKeyValue,
-        timeout: OPENAI_CONFIG.timeout, // Use config timeout (120s for longer workouts)
+        timeout: OPENAI_CONFIG.timeout, // Use config timeout (180s for all workouts)
       });
 
       // Extract request body
@@ -179,6 +179,7 @@ export const generateWorkout = onRequest(
       const errorStack = e instanceof Error ? e.stack : '';
       const errorCode = (e as any)?.code || 'UNKNOWN';
       const errorStatus = (e as any)?.status || 'UNKNOWN';
+      const errorType = (e as any)?.type || 'UNKNOWN';
 
       console.error('❌ Workout generation error', {
         message: errorMessage,
@@ -186,37 +187,90 @@ export const generateWorkout = onRequest(
         type: e instanceof Error ? e.constructor.name : typeof e,
         code: errorCode,
         status: errorStatus,
+        errorType,
       });
 
-      // Return appropriate error response
+      // Return appropriate error response based on error type
       if (e instanceof Error) {
-        if (e.message.includes('timeout') || e.message.includes('ETIMEDOUT')) {
+        // Timeout errors
+        if (
+          e.message.includes('timeout') ||
+          e.message.includes('ETIMEDOUT') ||
+          e.message.includes('Stream timeout')
+        ) {
+          console.warn('⏱️ Timeout error detected');
           res.status(504).json({
-            error: 'Request timeout - workout generation took too long',
-            details: 'Please try again with a shorter duration or simpler workout'
+            error: 'Request timeout',
+            details: 'Workout generation took too long. Please try again.',
+            retryable: true,
           });
           return;
         }
-        if (e.message.includes('API') || e.message.includes('401') || e.message.includes('403')) {
+
+        // Authentication/Authorization errors
+        if (
+          errorStatus === 401 ||
+          errorStatus === 403 ||
+          e.message.includes('Unauthorized') ||
+          e.message.includes('Forbidden')
+        ) {
+          console.error('🔐 Authentication error detected');
           res.status(502).json({
-            error: 'AI service temporarily unavailable',
-            details: 'Please try again in a moment'
+            error: 'AI service configuration error',
+            details: 'Please try again later',
+            retryable: false,
           });
           return;
         }
-        if (e.message.includes('rate_limit') || e.message.includes('429')) {
+
+        // Rate limiting
+        if (
+          errorStatus === 429 ||
+          e.message.includes('rate_limit') ||
+          e.message.includes('Too many requests')
+        ) {
+          console.warn('⚠️ Rate limit error detected');
           res.status(429).json({
             error: 'Too many requests',
-            details: 'Please wait a moment and try again'
+            details: 'Please wait a moment and try again',
+            retryable: true,
+          });
+          return;
+        }
+
+        // Server errors from OpenAI
+        if (
+          errorStatus === 500 ||
+          errorStatus === 502 ||
+          errorStatus === 503 ||
+          errorStatus === 504
+        ) {
+          console.error('🔴 OpenAI server error detected:', { status: errorStatus });
+          res.status(502).json({
+            error: 'AI service temporarily unavailable',
+            details: 'Please try again in a moment',
+            retryable: true,
+          });
+          return;
+        }
+
+        // Validation errors
+        if (e.message.includes('Validation failed')) {
+          console.warn('❌ Validation error detected');
+          res.status(400).json({
+            error: 'Invalid workout configuration',
+            details: 'Please check your input parameters and try again',
+            retryable: false,
           });
           return;
         }
       }
 
+      // Generic server error
       res.status(500).json({
         error: 'Internal Server Error',
         details: 'Failed to generate workout. Please try again.',
-        message: errorMessage.substring(0, 100) // Include first 100 chars of error for debugging
+        retryable: true,
       });
       return;
     }

@@ -20,7 +20,8 @@ export const OPENAI_CONFIG = {
   temperature: 0.3, // Slightly higher for better variety while maintaining consistency
   topP: 0.85, // Balanced for quality and speed
   maxTokens: 2600, // Optimized token count for typical workouts
-  timeout: 120000, // 120 second timeout - sufficient for most workouts
+  timeout: 180000, // 180 second timeout - sufficient for all workouts including 90+ min
+  streamTimeout: 150000, // 150 second timeout for streaming operations
 } as const;
 
 /**
@@ -69,6 +70,18 @@ export const QUALITY_THRESHOLDS = {
   minSafetyScore: 88, // Minimum safety score - critical for user safety
   maxRepairAttempts: 1, // Allow 1 repair attempt for quality improvement
   skipRepairIfScoreAbove: 85, // Skip repair attempts if quality score is excellent
+} as const;
+
+/**
+ * API retry configuration
+ * Handles transient failures and rate limiting
+ */
+export const API_RETRY_CONFIG = {
+  maxRetries: 2, // Maximum number of retry attempts
+  initialDelayMs: 1000, // Initial delay before first retry
+  maxDelayMs: 5000, // Maximum delay between retries
+  backoffMultiplier: 2, // Exponential backoff multiplier
+  retryableStatusCodes: [408, 429, 500, 502, 503, 504], // HTTP status codes to retry on
 } as const;
 
 /**

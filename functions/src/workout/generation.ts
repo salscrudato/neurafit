@@ -15,6 +15,7 @@ import { calculateWorkoutQuality } from '../lib/qualityScoring';
 import { deriveProgression } from '../lib/periodization';
 import { getCachedOrRun, hashRequest, type CacheableContext } from '../lib/cache';
 import { OPENAI_MODEL, OPENAI_CONFIG, QUALITY_THRESHOLDS, getOpenAIConfigForDuration } from '../config';
+import { streamWithTimeout, callOpenAIWithRetry, validateAndRepairJSON, isIncompleteStreamError } from '../lib/streamingUtils';
 import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
 
 /**
@@ -175,83 +176,85 @@ export async function generateWorkoutOrchestrated(
       console.log(`🤖 Calling OpenAI API (streaming mode)...`);
 
       let content = '';
+      let parsed: unknown;
 
-      // Streaming mode for all workouts - prevents timeouts and provides better UX
-      let stream;
+      // Call OpenAI with retry logic
       try {
-        console.log('📤 Sending request to OpenAI with model:', OPENAI_MODEL);
-        console.log('📋 Response format type:', (responseFormat as any)?.type);
+        await callOpenAIWithRetry(
+          async () => {
+            console.log('📤 Sending request to OpenAI with model:', OPENAI_MODEL);
+            console.log('📋 Response format type:', (responseFormat as any)?.type);
 
-        stream = await openaiClient.chat.completions.create({
-          model: OPENAI_MODEL,
-          temperature: dynamicConfig.temperature,
-          top_p: dynamicConfig.topP,
-          max_tokens: dynamicConfig.maxTokens,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          response_format: responseFormat as any,
-          messages,
-          stream: true,
-        });
-        console.log('✅ OpenAI API call initiated successfully');
-      } catch (apiError) {
-        const apiErrorMsg = apiError instanceof Error ? apiError.message : String(apiError);
-        const apiErrorCode = (apiError as any)?.code || 'UNKNOWN';
-        const apiErrorStatus = (apiError as any)?.status || 'UNKNOWN';
-        const apiErrorType = (apiError as any)?.type || 'UNKNOWN';
+            const stream = await openaiClient.chat.completions.create({
+              model: OPENAI_MODEL,
+              temperature: dynamicConfig.temperature,
+              top_p: dynamicConfig.topP,
+              max_tokens: dynamicConfig.maxTokens,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              response_format: responseFormat as any,
+              messages,
+              stream: true,
+            });
+            console.log('✅ OpenAI API call initiated successfully');
 
-        console.error('❌ OpenAI API call failed:', {
-          error: apiErrorMsg,
-          code: apiErrorCode,
-          status: apiErrorStatus,
-          type: apiErrorType,
-          model: OPENAI_MODEL,
-          attempt: attempt + 1,
-        });
+            // Collect streamed response with timeout protection
+            content = await streamWithTimeout(stream, OPENAI_CONFIG.streamTimeout);
 
-        // If it's a 500 error from OpenAI, it might be a temporary issue
-        if (apiErrorStatus === 500 || apiErrorMsg.includes('500')) {
-          console.error('OpenAI returned 500 error - this may be a temporary service issue');
-        }
+            if (!content) {
+              throw new Error('OpenAI returned empty response');
+            }
 
-        throw apiError;
-      }
+            console.log(`✅ Received ${content.length} characters from OpenAI`);
 
-      // Collect streamed response
-      try {
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content;
-          if (delta) {
-            content += delta;
-          }
-        }
-      } catch (streamError) {
-        const streamErrorMsg = streamError instanceof Error ? streamError.message : String(streamError);
-        console.error('Stream collection failed:', {
-          error: streamErrorMsg,
+            // Parse JSON with repair capability
+            const parseResult = validateAndRepairJSON(content);
+            if (!parseResult.valid) {
+              throw new Error(`JSON parse error: ${parseResult.error}`);
+            }
+
+            parsed = parseResult.data;
+            return parsed;
+          },
+          {
+            maxRetries: 2,
+            onRetry: (attemptNum, error) => {
+              console.warn(`⚠️ Retrying OpenAI API call (attempt ${attemptNum})`, {
+                error: error.message,
+                contentLength: content.length,
+              });
+            },
+          },
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error('❌ OpenAI API call failed after retries:', {
+          error: errorMsg,
           contentLength: content.length,
           attempt: attempt + 1,
         });
-        throw streamError;
+
+        // If we have partial content, try to repair it
+        if (content && isIncompleteStreamError(error instanceof Error ? error : new Error(errorMsg))) {
+          console.warn('⚠️ Attempting to repair incomplete JSON response');
+          const repairResult = validateAndRepairJSON(content);
+          if (repairResult.valid) {
+            parsed = repairResult.data;
+            console.log('✅ Successfully repaired JSON from partial response');
+          } else {
+            validationErrors = {
+              schemaErrors: ['Failed to parse AI response - incomplete or malformed JSON'],
+              ruleErrors: [],
+            };
+            repairAttempts++;
+            continue;
+          }
+        } else {
+          throw error;
+        }
       }
 
-      if (!content) {
-        throw new Error('OpenAI returned empty response');
-      }
-
-      console.log(`✅ Received ${content.length} characters from OpenAI`);
-
-      // Parse JSON
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(content);
-      } catch (error) {
-        console.error('JSON parse error:', error);
-        validationErrors = {
-          schemaErrors: ['Invalid JSON response from AI'],
-          ruleErrors: [],
-        };
-        repairAttempts++;
-        continue;
+      if (!parsed) {
+        throw new Error('Failed to generate valid workout');
       }
 
       // Step 6: Validate with AJV
@@ -263,31 +266,27 @@ export async function generateWorkoutOrchestrated(
           ruleErrors: [],
         };
         repairAttempts++;
-        continue;
+
+        if (attempt < QUALITY_THRESHOLDS.maxRepairAttempts) {
+          continue;
+        } else {
+          throw new Error(`Schema validation failed: ${schemaValidation.errors.join(', ')}`);
+        }
       }
 
       candidate = parsed as WorkoutPlan;
 
-      // Step 7: Optimized validation - balance speed and quality
-      // For 90+ min workouts, use fast-path validation to reduce processing time
-      // For 60-89 min workouts, run all validations but in parallel
-      // For <60 min workouts, run all validations with full detail
-      const useFastPath = duration >= 90;
-
-      // Parallel rule-based validation (run independent validations concurrently)
+      // Step 7: Parallel validation - always run all checks for quality
+      // Run independent validations concurrently for better performance
       const [ruleValidation, repFormatValidation, durationValidation] = await Promise.all([
-        useFastPath
-          ? Promise.resolve({ errors: [] }) // Skip detailed validation for 90+ min workouts
-          : Promise.resolve(validateWorkoutPlan(candidate, {
-            experience,
-            injuries: ctx.injuries?.list || [],
-            duration,
-            goals,
-            workoutType,
-          })),
-        useFastPath
-          ? Promise.resolve({ errors: [] }) // Skip rep format validation for 90+ min workouts
-          : Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
+        Promise.resolve(validateWorkoutPlan(candidate, {
+          experience,
+          injuries: ctx.injuries?.list || [],
+          duration,
+          goals,
+          workoutType,
+        })),
+        Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
         Promise.resolve(validateAndAdjustDuration(candidate, duration, minExercises)),
       ]);
 
