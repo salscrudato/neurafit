@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
@@ -8,14 +8,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'lib/',
-        'src/**/*.test.ts',
-        'src/index.old.ts',
-        'src/index.ts.backup',
-      ],
+      exclude: ['node_modules/', 'lib/', 'src/**/*.test.ts', 'src/index.old.ts', 'src/index.ts.backup'],
     },
   },
-});
-
+})

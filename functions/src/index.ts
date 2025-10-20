@@ -17,7 +17,7 @@ import { getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder'
 import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
-import { FUNCTION_CONFIG, OPENAI_CONFIG } from './config';
+import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL } from './config';
 import { getExerciseContextValidationErrors } from './lib/exerciseContextValidation';
 
 // CORS configuration for all deployment URLs
@@ -310,7 +310,7 @@ export const addExerciseToWorkout = onRequest(
 
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-        timeout: OPENAI_CONFIG.timeout, // Use config timeout (120s)
+        timeout: OPENAI_CONFIG.singleExerciseTimeout, // Use config timeout for single exercise generation
       });
 
       const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
@@ -389,8 +389,8 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 }`;
 
       const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        temperature: 0.3,
+        model: OPENAI_MODEL,
+        temperature: OPENAI_CONFIG.temperature,
         max_tokens: 800,
         response_format: { type: 'json_object' },
         messages: [
@@ -442,10 +442,54 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       res.status(200).json({ exercise });
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      console.error('Add exercise error:', errorMsg);
+      const errorStatus = (e as Record<string, unknown>)?.status || 'UNKNOWN';
+
+      console.error('❌ Add exercise error:', {
+        message: errorMsg,
+        status: errorStatus,
+        type: e instanceof Error ? e.constructor.name : typeof e,
+      });
+
+      // Handle specific error types
+      if (e instanceof Error) {
+        const msg = e.message.toLowerCase();
+
+        // Timeout errors
+        if (msg.includes('timeout') || msg.includes('etimedout')) {
+          res.status(504).json({
+            error: 'Request timeout',
+            details: 'Exercise generation took too long. Please try again.',
+            retryable: true,
+          });
+          return;
+        }
+
+        // Rate limiting
+        if (errorStatus === 429 || msg.includes('rate_limit')) {
+          res.status(429).json({
+            error: 'Too many requests',
+            details: 'Please wait a moment and try again',
+            retryable: true,
+          });
+          return;
+        }
+
+        // Server errors
+        if (errorStatus === 500 || errorStatus === 502 || errorStatus === 503) {
+          res.status(502).json({
+            error: 'AI service temporarily unavailable',
+            details: 'Please try again in a moment',
+            retryable: true,
+          });
+          return;
+        }
+      }
+
+      // Generic error
       res.status(500).json({
         error: 'Failed to add exercise',
         details: process.env.NODE_ENV === 'development' ? errorMsg : undefined,
+        retryable: true,
       });
     }
   },
@@ -479,7 +523,7 @@ export const swapExercise = onRequest(
 
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-        timeout: 90000, // 90 second timeout
+        timeout: OPENAI_CONFIG.singleExerciseTimeout, // Use config timeout for single exercise generation
       });
 
       const otherExercises = currentWorkout.exercises
@@ -552,8 +596,8 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 }`;
 
       const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        temperature: 0.3,
+        model: OPENAI_MODEL,
+        temperature: OPENAI_CONFIG.temperature,
         max_tokens: 800,
         response_format: { type: 'json_object' },
         messages: [
@@ -628,8 +672,55 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       res.status(200).json({ exercise });
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      console.error('Swap exercise error:', errorMsg);
-      res.status(500).json({ error: 'Failed to swap exercise' });
+      const errorStatus = (e as Record<string, unknown>)?.status || 'UNKNOWN';
+
+      console.error('❌ Swap exercise error:', {
+        message: errorMsg,
+        status: errorStatus,
+        type: e instanceof Error ? e.constructor.name : typeof e,
+      });
+
+      // Handle specific error types
+      if (e instanceof Error) {
+        const msg = e.message.toLowerCase();
+
+        // Timeout errors
+        if (msg.includes('timeout') || msg.includes('etimedout')) {
+          res.status(504).json({
+            error: 'Request timeout',
+            details: 'Exercise generation took too long. Please try again.',
+            retryable: true,
+          });
+          return;
+        }
+
+        // Rate limiting
+        if (errorStatus === 429 || msg.includes('rate_limit')) {
+          res.status(429).json({
+            error: 'Too many requests',
+            details: 'Please wait a moment and try again',
+            retryable: true,
+          });
+          return;
+        }
+
+        // Server errors
+        if (errorStatus === 500 || errorStatus === 502 || errorStatus === 503) {
+          res.status(502).json({
+            error: 'AI service temporarily unavailable',
+            details: 'Please try again in a moment',
+            retryable: true,
+          });
+          return;
+        }
+      }
+
+      // Generic error
+      res.status(500).json({
+        error: 'Failed to swap exercise',
+        details: process.env.NODE_ENV === 'development' ? errorMsg : undefined,
+        retryable: true,
+      });
     }
   },
 );

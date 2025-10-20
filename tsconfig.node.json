@@ -6,22 +6,14 @@
     "module": "ESNext",
     "types": ["node", "vitest/globals"],
     "skipLibCheck": true,
-
-    /* Path Aliases */
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-
-    /* Bundler mode */
+    "paths": { "@/*": ["src/*"] },
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "resolveJsonModule": true,
     "noEmit": true,
-
-    /* Linting - Production Strictness */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

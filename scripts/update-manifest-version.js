@@ -1,56 +1,28 @@
-/**
- * Update Manifest Version Script
- * 
- * Updates manifest.json with current version and timestamp
- * for cache busting and version tracking.
- * 
- * Run this as part of the build process to ensure manifest
- * always reflects the current app version.
- */
+import { readFileSync, writeFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const rootDir = join(__dirname, '..');
-
-async function updateManifestVersion() {
+const updateManifestVersion = () => {
   try {
-    console.log('📝 Updating manifest.json version...');
+    console.log('📝 Updating manifest.json version...')
+    const appVersion = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8')).version
+    const manifest = JSON.parse(readFileSync(join(rootDir, 'public', 'manifest.json'), 'utf-8'))
+    const now = new Date()
+    const timestamp = now.getTime()
+    const isoTime = now.toISOString()
 
-    // Read package.json for version
-    const packageJsonPath = join(rootDir, 'package.json');
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-    const appVersion = packageJson.version;
+    manifest.version = appVersion
+    manifest.build_time = isoTime
+    manifest.cache_version = `v${appVersion}-${timestamp}`
 
-    // Read manifest.json
-    const manifestPath = join(rootDir, 'public', 'manifest.json');
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
-
-    // Update version fields
-    const now = new Date();
-    const timestamp = now.getTime();
-    const isoTime = now.toISOString();
-
-    manifest.version = appVersion;
-    manifest.build_time = isoTime;
-    manifest.cache_version = `v${appVersion}-${timestamp}`;
-
-    // Write updated manifest
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-
-    console.log(`✅ Manifest updated:`);
-    console.log(`   Version: ${appVersion}`);
-    console.log(`   Build Time: ${isoTime}`);
-    console.log(`   Cache Version: ${manifest.cache_version}`);
+    writeFileSync(join(rootDir, 'public', 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+    console.log(`✅ Manifest updated: v${appVersion}`)
   } catch (error) {
-    console.error('❌ Error updating manifest:', error);
-    process.exit(1);
+    console.error('❌ Error updating manifest:', error.message)
+    process.exit(1)
   }
 }
 
-updateManifestVersion();
-
+updateManifestVersion()

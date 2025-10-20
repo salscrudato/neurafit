@@ -1,86 +1,59 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwind from '@tailwindcss/vite'
 import { resolve } from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { readFileSync, copyFileSync, rmSync } from 'fs'
 
-/**
- * Production-Ready Vite Configuration for NeuraFit
- * React/TypeScript application with Firebase and Tailwind CSS
- *
- * Optimizations:
- * - Firebase SDK properly chunked by service (auth, firestore, functions, analytics)
- * - React/React-DOM in separate vendor chunk
- * - Lazy-loaded routes automatically code-split
- * - Terser minification with console removal in production
- * - Aggressive code splitting for optimal caching
- */
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production'
-
-  // Read package.json for version
   const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8')) as { version: string }
-  const appVersion: string = packageJson.version
-  const buildTime: string = new Date().toISOString()
-  const buildDate: string = new Date().toISOString().split('T')[0] || ''
+  const appVersion = packageJson.version
+  const buildTime = new Date().toISOString()
+  const buildDate = buildTime.split('T')[0] || ''
 
   return {
-    // Base public path - use absolute paths for production
     base: '/',
 
-    // Path resolution - matches tsconfig paths
     resolve: {
-      alias: {
-        '@': resolve(__dirname, 'src'),
-      },
-      // Resolve extensions in order
+      alias: { '@': resolve(__dirname, 'src') },
       extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
-      // Prefer ESM over CJS
       mainFields: ['module', 'jsnext:main', 'jsnext', 'main'],
-      // Dedupe React to prevent multiple instances
       dedupe: ['react', 'react-dom', 'react-is', 'scheduler'],
     },
 
-    // Plugins
     plugins: [
       react(),
       tailwind(),
-      // Clear Vite cache before build to prevent stale dependency issues
       {
         name: 'clear-vite-cache',
-        apply: 'build' as const,
+        apply: 'build',
         enforce: 'pre' as const,
         async configResolved() {
           try {
-            const viteCachePath = resolve(__dirname, 'node_modules/.vite')
-            rmSync(viteCachePath, { recursive: true, force: true })
-            console.log('✅ Cleared Vite cache before build')
-          } catch (error) {
-            console.warn('⚠️ Failed to clear Vite cache:', error)
+            rmSync(resolve(__dirname, 'node_modules/.vite'), { recursive: true, force: true })
+          } catch {
+            // Silently fail if cache doesn't exist
           }
         },
-      },
-      // Bundle analyzer (only when ANALYZE=true)
+      } as Plugin,
       process.env.ANALYZE === 'true' &&
         visualizer({
           open: true,
           filename: 'dist/stats.html',
           gzipSize: true,
           brotliSize: true,
-          template: 'treemap', // 'sunburst', 'treemap', 'network'
+          template: 'treemap',
         }),
-      // HTML transform plugin to inject version and build time
       {
         name: 'html-transform',
-        transformIndexHtml(html: string): string {
+        transformIndexHtml(html: string) {
           return html
             .replaceAll('__APP_VERSION__', appVersion)
             .replaceAll('__BUILD_TIME__', buildTime)
             .replaceAll('__BUILD_DATE__', buildDate)
         },
-      },
-      // Service worker copy plugin
+      } as Plugin,
       {
         name: 'copy-service-worker',
         writeBundle() {
@@ -88,93 +61,50 @@ export default defineConfig(({ mode }) => {
             copyFileSync(
               resolve(__dirname, 'public/sw.js'),
               resolve(__dirname, 'dist/sw.js')
-            );
-            console.log('✅ Service worker copied to dist/sw.js');
-          } catch (error) {
-            console.warn('⚠️ Failed to copy service worker:', error);
+            )
+          } catch {
+            // Silently fail if sw.js doesn't exist
           }
         },
-      },
+      } as Plugin,
     ].filter(Boolean),
 
-    // Development server
     server: {
       port: 5173,
       host: 'localhost',
-      // Enable CORS for development
       cors: true,
-      // Disable COOP in development to allow Firebase Auth popups
       headers: {
         'Cross-Origin-Opener-Policy': 'unsafe-none',
         'Cross-Origin-Embedder-Policy': 'unsafe-none',
       },
-      // Custom middleware to serve sw.js with correct MIME type
-      middlewares: [
-        (req: any, res: any, next: any) => {
-          if (req.url === '/sw.js') {
-            res.setHeader('Content-Type', 'application/javascript');
-          }
-          next();
-        },
-      ],
     },
 
-    // Build configuration
     build: {
       target: 'es2022',
       outDir: 'dist',
-      // Enable sourcemaps for production debugging (hidden from browser by default)
       sourcemap: isProduction ? 'hidden' : true,
-
-      // Minification with Terser
       minify: 'terser',
       terserOptions: {
         compress: {
-          // Remove console statements in production
           drop_console: isProduction,
           drop_debugger: isProduction,
-          // Remove unused code
           pure_funcs: isProduction ? ['console.log', 'console.info', 'console.debug', 'console.trace'] : [],
-          // Additional optimizations
           passes: 2,
           unsafe_arrows: true,
           unsafe_methods: true,
         },
-        mangle: {
-          // Mangle property names for smaller bundle
-          safari10: true,
-        },
-        format: {
-          // Remove comments
-          comments: false,
-        },
+        mangle: { safari10: true },
+        format: { comments: false },
       },
-
-      // Chunk size warnings
-      chunkSizeWarningLimit: 500, // 500KB warning threshold for optimal performance
-
-      // Rollup options for advanced chunking
+      chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
-          // Optimized manual chunks for better caching
           manualChunks: (id: string) => {
-            // Core React libraries - must be loaded first
-            // Include all React-related packages to prevent duplication
-            if (
-              id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/scheduler/') ||
-              id.includes('node_modules/react-is/')
-            ) {
+            if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') ||
+                id.includes('node_modules/scheduler/') || id.includes('node_modules/react-is/')) {
               return 'vendor-react'
             }
-
-            // React Router - changes with route updates
-            if (id.includes('node_modules/react-router-dom/') || id.includes('node_modules/react-router/')) {
-              return 'vendor-router'
-            }
-
-            // Firebase - split by service for better caching and smaller initial bundles
+            if (id.includes('node_modules/react-router')) return 'vendor-router'
             if (id.includes('node_modules/firebase/auth') || id.includes('node_modules/@firebase/auth')) {
               return 'firebase-auth'
             }
@@ -187,100 +117,45 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/firebase/analytics') || id.includes('node_modules/@firebase/analytics')) {
               return 'firebase-analytics'
             }
-            // Remaining Firebase core
             if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
               return 'firebase-core'
             }
-
-            // UI libraries - icons and styling utilities
-            if (id.includes('node_modules/lucide-react/')) {
-              return 'vendor-icons'
-            }
-            if (
-              id.includes('node_modules/class-variance-authority/') ||
-              id.includes('node_modules/clsx/') ||
-              id.includes('node_modules/tailwind-merge/')
-            ) {
+            if (id.includes('node_modules/lucide-react/')) return 'vendor-icons'
+            if (id.includes('node_modules/class-variance-authority/') || id.includes('node_modules/clsx/') ||
+                id.includes('node_modules/tailwind-merge/')) {
               return 'vendor-ui-utils'
             }
-
-            // State management - Zustand and Immer
             if (id.includes('node_modules/zustand/') || id.includes('node_modules/immer/')) {
               return 'vendor-state'
             }
-
-            // React Query - data fetching
-            if (id.includes('node_modules/@tanstack/react-query/')) {
-              return 'vendor-query'
-            }
-
-            // Sentry - error monitoring
-            if (id.includes('node_modules/@sentry/')) {
-              return 'vendor-monitoring'
-            }
-
-            // Zod - validation
-            if (id.includes('node_modules/zod/')) {
-              return 'vendor-validation'
-            }
-
-            // IndexedDB - offline storage
-            if (id.includes('node_modules/idb-keyval/')) {
-              return 'vendor-storage'
-            }
-
-            // Other node_modules - group remaining dependencies
-            if (id.includes('node_modules/')) {
-              return 'vendor-misc'
-            }
-
-            // Application code - let Vite handle automatic splitting
-            // This allows for route-based code splitting via lazy loading
+            if (id.includes('node_modules/@tanstack/react-query/')) return 'vendor-query'
+            if (id.includes('node_modules/@sentry/')) return 'vendor-monitoring'
+            if (id.includes('node_modules/zod/')) return 'vendor-validation'
+            if (id.includes('node_modules/idb-keyval/')) return 'vendor-storage'
+            if (id.includes('node_modules/')) return 'vendor-misc'
             return undefined
           },
-
-          // Naming patterns for chunks
-          chunkFileNames: (chunkInfo) => {
-            // Use content hash for long-term caching
-            const name = chunkInfo.name || 'chunk'
-            return `assets/${name}-[hash].js`
-          },
+          chunkFileNames: (chunkInfo) => `assets/${chunkInfo.name || 'chunk'}-[hash].js`,
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
-            // Organize assets by type
             const name = assetInfo.name || ''
-            if (name.endsWith('.css')) {
-              return 'assets/css/[name]-[hash][extname]'
-            }
-            if (/\.(png|jpe?g|svg|gif|webp|avif)$/.test(name)) {
-              return 'assets/images/[name]-[hash][extname]'
-            }
-            if (/\.(woff2?|eot|ttf|otf)$/.test(name)) {
-              return 'assets/fonts/[name]-[hash][extname]'
-            }
+            if (name.endsWith('.css')) return 'assets/css/[name]-[hash][extname]'
+            if (/\.(png|jpe?g|svg|gif|webp|avif)$/.test(name)) return 'assets/images/[name]-[hash][extname]'
+            if (/\.(woff2?|eot|ttf|otf)$/.test(name)) return 'assets/fonts/[name]-[hash][extname]'
             return 'assets/[name]-[hash][extname]'
           },
         },
-
-        // Tree-shaking optimizations
         treeshake: {
           moduleSideEffects: 'no-external',
           propertyReadSideEffects: false,
           tryCatchDeoptimization: false,
         },
       },
-
-      // CSS code splitting
       cssCodeSplit: true,
-
-      // Report compressed size (disable in CI for faster builds)
       reportCompressedSize: !process.env.CI,
-
-      // Increase chunk size limit for better optimization
-      assetsInlineLimit: 4096, // 4KB - inline small assets as base64
+      assetsInlineLimit: 4096,
     },
 
-    // Optimize dependencies
     optimizeDeps: {
       include: [
         'react',
@@ -291,35 +166,22 @@ export default defineConfig(({ mode }) => {
         'react-router-dom',
         'zustand',
         'immer',
-        // Include Sentry to fix module resolution issues
         '@sentry/react',
         'hoist-non-react-statics',
       ],
-      exclude: [],
-      // Force CommonJS dependencies to be pre-bundled as ESM
-      esbuildOptions: {
-        // Resolve .cjs files as CommonJS
-        mainFields: ['module', 'main'],
-      },
-      // CRITICAL: Always disable caching to prevent stale React instances
-      // This prevents the "Cannot read properties of null (reading 'useEffect')" error
+      esbuildOptions: { mainFields: ['module', 'main'] },
       noDiscovery: true,
-      // CRITICAL: Always force re-optimization to ensure React is fresh
       force: true,
     },
 
-    // Global constants
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
       __BUILD_TIME__: JSON.stringify(buildTime),
       global: 'globalThis',
     },
 
-    // Enable esbuild for faster builds
     esbuild: {
-      // Drop console in production via esbuild (backup to terser)
       drop: isProduction ? ['console', 'debugger'] : [],
-      // Legal comments handling
       legalComments: 'none',
     },
   }

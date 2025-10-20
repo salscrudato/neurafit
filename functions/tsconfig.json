@@ -1,23 +1,16 @@
 {
   "compilerOptions": {
-    /* Language and Environment */
     "target": "es2017",
     "lib": ["es2017"],
-
-    /* Modules */
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-
-    /* Emit */
     "outDir": "lib",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "removeComments": true,
-
-    /* Type Checking */
     "strict": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
@@ -26,19 +19,10 @@
     "noUncheckedIndexedAccess": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
-
-    /* Interop Constraints */
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
   "compileOnSave": true,
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "lib",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "lib", "**/*.test.ts", "**/*.spec.ts"]
 }
