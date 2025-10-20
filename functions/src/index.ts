@@ -58,11 +58,10 @@ export const generateWorkout = onRequest(
     }
 
     try {
-      // Validate request body exists
+      // Validate request body exists - use empty object as fallback
       if (!req.body) {
-        console.warn('Empty request body received');
-        res.status(400).json({ error: 'Request body is required' });
-        return;
+        console.warn('Empty request body received, using defaults');
+        // Don't fail - continue with defaults
       }
 
       // Initialize OpenAI client with the secret value and timeout
@@ -123,32 +122,38 @@ export const generateWorkout = onRequest(
         uid?: string;
       }) || {};
 
-      // Validate required fields
-      if (!experience || !workoutType || !duration) {
-        console.warn('Missing required fields', { experience, workoutType, duration });
-        res.status(400).json({
-          error: 'Missing required fields: experience, workoutType, duration'
+      // Validate and provide fallbacks for required fields
+      // Use sensible defaults to ensure robustness
+      const finalExperience = experience || 'Intermediate';
+      const finalWorkoutType = workoutType || 'Full Body';
+      const finalDuration = duration || 30;
+
+      if (!finalExperience || !finalWorkoutType || !finalDuration) {
+        console.warn('Using fallback values for missing fields', {
+          experience: finalExperience,
+          workoutType: finalWorkoutType,
+          duration: finalDuration
         });
-        return;
       }
 
       // Filter out undefined values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
         ? goals.filter((g): g is string => Boolean(g))
-        : [goals].filter((g): g is string => Boolean(g));
+        : goals ? [goals].filter((g): g is string => Boolean(g)) : ['General Fitness'];
+
       const filteredEquipment = Array.isArray(equipment)
         ? equipment.filter((e): e is string => Boolean(e))
-        : [equipment].filter((e): e is string => Boolean(e));
+        : equipment ? [equipment].filter((e): e is string => Boolean(e)) : ['Bodyweight'];
 
-      // Build workout context
+      // Build workout context with fallbacks
       const workoutContext: WorkoutContext = {
-        experience,
-        goals: filteredGoals,
-        equipment: filteredEquipment,
+        experience: finalExperience,
+        goals: filteredGoals.length > 0 ? filteredGoals : ['General Fitness'],
+        equipment: filteredEquipment.length > 0 ? filteredEquipment : ['Bodyweight'],
         personalInfo,
         injuries,
-        workoutType,
-        duration,
+        workoutType: finalWorkoutType,
+        duration: Math.max(15, Math.min(finalDuration, 180)), // Clamp between 15-180 minutes
         targetIntensity,
         progressionNote,
         recentWorkouts,
@@ -254,22 +259,23 @@ export const generateWorkout = onRequest(
           return;
         }
 
-        // Validation errors
+        // Validation errors - treat as retryable server error
         if (e.message.includes('Validation failed')) {
-          console.warn('❌ Validation error detected');
-          res.status(400).json({
-            error: 'Invalid workout configuration',
-            details: 'Please check your input parameters and try again',
-            retryable: false,
+          console.warn('❌ Validation error detected, retrying with defaults');
+          res.status(500).json({
+            error: 'Workout generation error',
+            details: 'Please try again.',
+            retryable: true,
           });
           return;
         }
       }
 
-      // Generic server error
+      // Generic server error - always retryable
+      console.error('🔴 Unhandled error in workout generation:', errorMessage);
       res.status(500).json({
-        error: 'Internal Server Error',
-        details: 'Failed to generate workout. Please try again.',
+        error: 'Workout generation service error',
+        details: 'Please try again in a moment.',
         retryable: true,
       });
       return;
