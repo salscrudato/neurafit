@@ -20,11 +20,12 @@ import { generateWorkoutOrchestrated } from './workout/generation';
 import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL, CORS_ORIGINS, SINGLE_EXERCISE_CONFIG } from './config';
 import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
 import { validateSingleExercise } from './lib/schemaValidator';
-import { handleApiError, validateRequestBody } from './lib/errorHandler';
+import { handleApiError } from './lib/errorHandler';
 
 /**
  * Generate a single exercise with validation
  * Simplified: Trust AI output, only validate critical constraints
+ * Uses non-streaming structured output for guaranteed valid JSON
  */
 async function generateSingleExerciseWithValidation(
   prompt: string,
@@ -33,14 +34,14 @@ async function generateSingleExerciseWithValidation(
   currentWorkout: { exercises: Array<{ name: string }> },
   exerciseToReplace?: { name: string },
 ): Promise<{ exercise: unknown }> {
-  try {
-    console.log('📤 Generating single exercise (non-streaming, structured output)');
+  console.log('📤 Generating single exercise (non-streaming, structured output)');
 
+  try {
     // Non-streaming with structured output for guaranteed valid JSON
     const completion = await client.chat.completions.create({
       model: OPENAI_MODEL,
       temperature: OPENAI_CONFIG.temperature,
-      max_tokens: 800,
+      max_tokens: 1000,
       frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
       presence_penalty: OPENAI_CONFIG.presencePenalty,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,7 +75,10 @@ async function generateSingleExerciseWithValidation(
       if (hasCriticalError) {
         throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
       }
-      console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors);
+      // Accept despite minor warnings - trust AI
+      if (schemaCheck.errors.length > 0) {
+        console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors.slice(0, 2));
+      }
     }
 
     // Check for duplicates - critical constraint
@@ -95,6 +99,7 @@ async function generateSingleExerciseWithValidation(
     console.log('✅ Single exercise generated successfully', { exerciseName });
     return { exercise };
   } catch (error) {
+    // Re-throw with context for proper error handling
     throw error;
   }
 }
@@ -141,12 +146,11 @@ export const generateWorkout = onRequest(
       }
 
       // Validate request body exists
-      const bodyValidation = validateRequestBody(req.body, []);
-      if (!bodyValidation.valid) {
-        console.warn('⚠️ Invalid request body:', bodyValidation.error);
+      if (!req.body || typeof req.body !== 'object') {
+        console.warn('⚠️ Invalid request body: missing or not an object');
         res.status(400).json({
           error: 'Invalid request',
-          details: bodyValidation.error,
+          details: 'Request body is required',
           retryable: false,
         });
         return;
@@ -201,26 +205,18 @@ export const generateWorkout = onRequest(
 
       // Validate and provide fallbacks for required fields
       // Use sensible defaults to ensure robustness
-      const finalExperience = experience || 'Intermediate';
-      const finalWorkoutType = workoutType || 'Full Body';
-      const finalDuration = duration || 30;
+      const finalExperience = experience?.trim() || 'Intermediate';
+      const finalWorkoutType = workoutType?.trim() || 'Full Body';
+      const finalDuration = Math.max(5, Math.min(duration || 30, 150)); // Clamp between 5-150 minutes
 
-      if (!finalExperience || !finalWorkoutType || !finalDuration) {
-        console.warn('Using fallback values for missing fields', {
-          experience: finalExperience,
-          workoutType: finalWorkoutType,
-          duration: finalDuration,
-        });
-      }
-
-      // Filter out undefined values from arrays and ensure string types
+      // Filter out undefined/empty values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
-        ? goals.filter((g): g is string => Boolean(g))
-        : goals ? [goals].filter((g): g is string => Boolean(g)) : ['General Fitness'];
+        ? goals.filter((g): g is string => typeof g === 'string' && g.trim().length > 0).map(g => g.trim())
+        : goals && typeof goals === 'string' && goals.trim().length > 0 ? [goals.trim()] : ['General Fitness'];
 
       const filteredEquipment = Array.isArray(equipment)
-        ? equipment.filter((e): e is string => Boolean(e))
-        : equipment ? [equipment].filter((e): e is string => Boolean(e)) : ['Bodyweight'];
+        ? equipment.filter((e): e is string => typeof e === 'string' && e.trim().length > 0).map(e => e.trim())
+        : equipment && typeof equipment === 'string' && equipment.trim().length > 0 ? [equipment.trim()] : ['Bodyweight'];
 
       // Build workout context with fallbacks
       const workoutContext: WorkoutContext = {
@@ -230,7 +226,7 @@ export const generateWorkout = onRequest(
         personalInfo,
         injuries,
         workoutType: finalWorkoutType,
-        duration: Math.max(5, Math.min(finalDuration, 150)), // Clamp between 5-150 minutes
+        duration: finalDuration,
         targetIntensity,
         progressionNote,
         recentWorkouts,
@@ -271,6 +267,7 @@ export const generateWorkout = onRequest(
 /**
  * Add an exercise to an existing workout
  * Takes the current workout context and generates one additional exercise
+ * Implements robust error handling and input validation
  */
 export const addExerciseToWorkout = onRequest(
   {
@@ -316,27 +313,33 @@ export const addExerciseToWorkout = onRequest(
         timeout: OPENAI_CONFIG.singleExerciseTimeout,
       });
 
-      const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
-      const programming = getProgrammingRecommendations(goals || ['General Health'], experience || 'Beginner');
-      const workoutTypeGuidance = getWorkoutTypeContext(workoutType);
-      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
+      // Normalize inputs with fallbacks
+      const finalExperience = experience?.trim() || 'Beginner';
+      const finalWorkoutType = workoutType?.trim() || 'Full Body';
+      const finalGoals = Array.isArray(goals) ? goals.filter(g => typeof g === 'string' && g.trim().length > 0) : [];
+      const finalEquipment = Array.isArray(equipment) ? equipment.filter(e => typeof e === 'string' && e.trim().length > 0) : [];
 
-      const prompt = `Add ONE new exercise to a ${workoutType || 'Full Body'} workout.
+      const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
+      const programming = getProgrammingRecommendations(finalGoals.length > 0 ? finalGoals : ['General Health'], finalExperience);
+      const workoutTypeGuidance = getWorkoutTypeContext(finalWorkoutType);
+      const isTimeBasedWorkout = finalWorkoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(finalWorkoutType);
+
+      const prompt = `Add ONE new exercise to a ${finalWorkoutType} workout.
 
 EXISTING EXERCISES (DO NOT DUPLICATE):
 ${existingExercises}
 
-CLIENT: ${experience || 'Beginner'} | Goals: ${(goals || ['General Health']).join(', ')} | Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+CLIENT: ${finalExperience} | Goals: ${finalGoals.length > 0 ? finalGoals.join(', ') : 'General Health'} | Equipment: ${finalEquipment.length > 0 ? finalEquipment.join(', ') : 'Bodyweight'}
 ${injuries?.list?.length > 0 ? `Injuries: ${injuries.list.join(', ')}` : ''}
 
 ${workoutTypeGuidance}
 
 REQUIREMENTS:
 - COMPLETELY different from existing exercises (different movement pattern)
-- Match ${workoutType || 'Full Body'} workout type
+- Match ${finalWorkoutType} workout type
 - ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${isTimeBasedWorkout ? 'time format ("30s", "45s", "60s")' : `${programming.reps?.[0]}-${programming.reps?.[1]} reps`}, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
-- ${(experience || 'beginner').toLowerCase()} difficulty
-- Use ONLY: ${(equipment || ['Bodyweight']).join(', ')}
+- ${finalExperience.toLowerCase()} difficulty
+- Use ONLY: ${finalEquipment.length > 0 ? finalEquipment.join(', ') : 'Bodyweight'}
 ${isTimeBasedWorkout ? '- CRITICAL: Use time format ("30s", "45s", "60s") NOT ranges' : ''}
 
 OUTPUT ONLY valid JSON with no markdown.`;
@@ -360,6 +363,7 @@ OUTPUT ONLY valid JSON with no markdown.`;
 /**
  * Swap an exercise with a similar alternative
  * Takes the exercise to replace and generates a similar but different exercise
+ * Implements robust error handling and input validation
  */
 export const swapExercise = onRequest(
   {
@@ -404,29 +408,35 @@ export const swapExercise = onRequest(
         timeout: OPENAI_CONFIG.singleExerciseTimeout,
       });
 
+      // Normalize inputs with fallbacks
+      const finalExperience = experience?.trim() || 'Beginner';
+      const finalWorkoutType = workoutType?.trim() || 'Full Body';
+      const finalGoals = Array.isArray(goals) ? goals.filter(g => typeof g === 'string' && g.trim().length > 0) : [];
+      const finalEquipment = Array.isArray(equipment) ? equipment.filter(e => typeof e === 'string' && e.trim().length > 0) : [];
+
       const otherExercises = currentWorkout.exercises
         .filter((ex: { name: string }) => ex.name !== exerciseToReplace.name)
         .map((ex: { name: string }) => ex.name)
         .join(', ');
 
-      const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
+      const isTimeBasedWorkout = finalWorkoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(finalWorkoutType);
 
-      const prompt = `Replace "${exerciseToReplace.name}" in a ${workoutType || 'Full Body'} workout with a similar alternative.
+      const prompt = `Replace "${exerciseToReplace.name}" in a ${finalWorkoutType} workout with a similar alternative.
 
 ORIGINAL: ${exerciseToReplace.name} (${exerciseToReplace.muscleGroups?.join(', ') || 'N/A'}) | ${exerciseToReplace.sets}x${exerciseToReplace.reps}
 
 OTHER EXERCISES (DO NOT DUPLICATE):
 ${otherExercises}
 
-CLIENT: ${experience || 'Beginner'} | Goals: ${(goals || ['General Health']).join(', ')} | Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+CLIENT: ${finalExperience} | Goals: ${finalGoals.length > 0 ? finalGoals.join(', ') : 'General Health'} | Equipment: ${finalEquipment.length > 0 ? finalEquipment.join(', ') : 'Bodyweight'}
 ${injuries?.list?.length > 0 ? `Injuries: ${injuries.list.join(', ')}` : ''}
 
 REQUIREMENTS:
 - Target SAME muscle groups as "${exerciseToReplace.name}"
 - Use DIFFERENT movement pattern (not just equipment swap)
 - Match: ${exerciseToReplace.sets}x${exerciseToReplace.reps}, ${exerciseToReplace.restSeconds || 90}s rest
-- ${(experience || 'beginner').toLowerCase()} difficulty
-- Use ONLY: ${(equipment || ['Bodyweight']).join(', ')}
+- ${finalExperience.toLowerCase()} difficulty
+- Use ONLY: ${finalEquipment.length > 0 ? finalEquipment.join(', ') : 'Bodyweight'}
 - NOT similar to: ${otherExercises}
 ${isTimeBasedWorkout ? '- CRITICAL: Use time format ("30s", "45s", "60s") NOT ranges' : ''}
 
@@ -446,7 +456,7 @@ OUTPUT ONLY valid JSON with no markdown.`;
       const exercise = result.exercise as { name: string };
       const isMinorVariation = isMinorExerciseVariation(exerciseToReplace.name, exercise.name);
       if (isMinorVariation) {
-        throw new Error(`Replacement exercise is too similar to the original exercise - please provide a different movement pattern`);
+        throw new Error('Replacement exercise is too similar to the original exercise - please provide a different movement pattern');
       }
 
       res.status(200).json(result);

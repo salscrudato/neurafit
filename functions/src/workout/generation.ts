@@ -14,10 +14,11 @@ import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
 /**
  * Retry logic for transient errors only
  * Implements exponential backoff for rate limits and server errors
+ * Optimized for non-streaming approach with fast response times
  */
 async function retryOnTransientError<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 1,
+  maxRetries: number = 2,
 ): Promise<T> {
   let lastError: Error | null = null;
 
@@ -38,16 +39,17 @@ async function retryOnTransientError<T>(
         status === 503 ||
         status === 504 ||
         code === 'ETIMEDOUT' ||
+        code === 'ECONNRESET' ||
+        code === 'ECONNREFUSED' ||
         errorMsg.includes('timeout') ||
-        errorMsg.includes('rate_limit');
+        errorMsg.includes('rate_limit') ||
+        errorMsg.includes('connection');
 
       if (!isTransient || attempt >= maxRetries) throw lastError;
 
-      // Exponential backoff: 200ms, 400ms
+      // Exponential backoff: 200ms, 400ms, 800ms
       const delayMs = 200 * Math.pow(2, attempt);
-      console.warn(`⚠️ Transient error (${status || code}), retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`, {
-        message: lastError.message,
-      });
+      console.warn(`⚠️ Transient error (${status || code}), retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
@@ -164,24 +166,27 @@ export async function generateWorkoutOrchestrated(
       if (hasCriticalError) {
         throw new Error(`Critical validation error: ${schemaValidation.errors.join(', ')}`);
       }
-      // Accept response despite minor warnings
-      console.warn('⚠️ Minor validation warnings (accepting):', schemaValidation.errors);
+      // Accept response despite minor warnings - trust AI output
+      if (schemaValidation.errors.length > 0) {
+        console.warn('⚠️ Minor validation warnings (accepting):', schemaValidation.errors.slice(0, 2));
+      }
     }
 
     // Validate critical requirements
     if (!candidate?.exercises || candidate.exercises.length === 0) {
-      throw new Error('No exercises generated - AI returned empty workout');
+      throw new Error('No exercises generated');
     }
 
+    // Validate duration is reasonable (at least 5 minutes)
     const durationValidation = validateAndAdjustDuration(candidate, duration, minExerciseCount);
     if (durationValidation.actualDuration < 5) {
-      throw new Error(`Workout duration too short: ${durationValidation.actualDuration.toFixed(1)}min (minimum 5min)`);
+      throw new Error(`Workout duration too short: ${durationValidation.actualDuration.toFixed(1)}min`);
     }
 
-    console.log('✅ Workout generated successfully on first attempt');
+    console.log('✅ Workout generated successfully');
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(`❌ Generation failed:`, errorMsg);
+    console.error('❌ Generation failed:', errorMsg);
     throw error;
   }
 
@@ -206,10 +211,8 @@ export async function generateWorkoutOrchestrated(
     exercises: candidate.exercises.length,
     duration: durationValidation.actualDuration.toFixed(1),
     targetDuration: duration,
-    durationDifference: durationValidation.difference.toFixed(1),
-    method: 'non-streaming-structured-output',
+    durationDiff: durationValidation.difference.toFixed(1),
     model: OPENAI_MODEL,
-    temperature: OPENAI_CONFIG.temperature,
   });
 
   return { ...candidate, metadata };

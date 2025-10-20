@@ -1,18 +1,20 @@
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 export const OPENAI_CONFIG = {
-  // Core parameters for deterministic, high-quality generation
-  temperature: 0.2, // Very low for consistency and reliability (0.0-2.0)
-  topP: 0.9, // Balanced diversity with slight increase for variety (0.0-1.0)
-  maxTokens: 1800, // Sufficient for detailed workouts
+  // Core parameters optimized for high-quality, consistent generation
+  // gpt-4o-mini is fast, cost-effective, and excellent for structured outputs
+  temperature: 0.2, // Very low for consistency and reliability (0.2 is optimal for structured generation)
+  topP: 0.9, // Slightly lower for more focused, deterministic outputs
+  maxTokens: 2000, // Increased for comprehensive exercise descriptions and safety tips
 
   // Penalty parameters to reduce repetition and improve diversity
-  frequencyPenalty: 0.15, // Slight penalty for repeated tokens (0.0-2.0)
-  presencePenalty: 0.05, // Minimal penalty for new tokens (0.0-2.0)
+  frequencyPenalty: 0.3, // Increased to strongly discourage repeated exercises
+  presencePenalty: 0.2, // Increased to encourage diverse exercise selection
 
   // Timeouts - optimized for non-streaming approach
-  timeout: 180000, // 180 seconds for full workouts (non-streaming is faster than streaming)
-  singleExerciseTimeout: 60000, // 60 seconds for single exercises
+  // Non-streaming is significantly faster than streaming (typically 2-5 seconds)
+  timeout: 120000, // 120 seconds for full workouts (non-streaming is very fast)
+  singleExerciseTimeout: 40000, // 40 seconds for single exercises
 } as const;
 
 export const API_RETRY_CONFIG = {
