@@ -70,7 +70,7 @@ export const generateWorkout = onRequest(
         console.error('OpenAI API key is not set');
         res.status(502).json({
           error: 'AI service configuration error',
-          details: 'Please try again later'
+          details: 'Please try again later',
         });
         return;
       }
@@ -132,7 +132,7 @@ export const generateWorkout = onRequest(
         console.warn('Using fallback values for missing fields', {
           experience: finalExperience,
           workoutType: finalWorkoutType,
-          duration: finalDuration
+          duration: finalDuration,
         });
       }
 
@@ -182,9 +182,9 @@ export const generateWorkout = onRequest(
       // Comprehensive error logging
       const errorMessage = e instanceof Error ? e.message : String(e);
       const errorStack = e instanceof Error ? e.stack : '';
-      const errorCode = (e as any)?.code || 'UNKNOWN';
-      const errorStatus = (e as any)?.status || 'UNKNOWN';
-      const errorType = (e as any)?.type || 'UNKNOWN';
+      const errorCode = (e as Record<string, unknown>)?.code || 'UNKNOWN';
+      const errorStatus = (e as Record<string, unknown>)?.status || 'UNKNOWN';
+      const errorType = (e as Record<string, unknown>)?.type || 'UNKNOWN';
 
       console.error('❌ Workout generation error', {
         message: errorMessage,
@@ -482,7 +482,7 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       });
       res.status(500).json({
         error: 'Failed to add exercise',
-        details: process.env.NODE_ENV === 'development' ? errorMsg : undefined
+        details: process.env.NODE_ENV === 'development' ? errorMsg : undefined,
       });
     }
   },
