@@ -19,6 +19,8 @@ import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxon
 import { generateWorkoutOrchestrated } from './workout/generation';
 import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL } from './config';
 import { getExerciseContextValidationErrors } from './lib/exerciseContextValidation';
+import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
+import { validateSingleExercise } from './lib/schemaValidator';
 
 // CORS configuration for all deployment URLs
 const CORS_ORIGINS: string[] = [
@@ -392,7 +394,9 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
         model: OPENAI_MODEL,
         temperature: OPENAI_CONFIG.temperature,
         max_tokens: 800,
-        response_format: { type: 'json_object' },
+        // Use strict JSON Schema for stronger guarantees
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        response_format: buildSingleExerciseSchema() as any,
         messages: [
           {
             role: 'system',
@@ -407,6 +411,18 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
 
       const exercise = JSON.parse(cleanedText);
+
+      // Validate against schema for robustness
+      const schemaCheck = validateSingleExercise(exercise);
+      if (!schemaCheck.valid) {
+        console.warn('Generated exercise failed schema validation:', schemaCheck.errors);
+        res.status(500).json({
+          error: 'Generated exercise failed validation',
+          details: schemaCheck.errors,
+          retryable: true,
+        });
+        return;
+      }
 
       // Validate that the new exercise is not similar to existing ones
       const existingNames = currentWorkout.exercises.map((ex: { name: string }) => ex.name);
@@ -599,7 +615,9 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
         model: OPENAI_MODEL,
         temperature: OPENAI_CONFIG.temperature,
         max_tokens: 800,
-        response_format: { type: 'json_object' },
+        // Use strict JSON Schema for stronger guarantees
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        response_format: buildSingleExerciseSchema() as any,
         messages: [
           {
             role: 'system',
@@ -614,6 +632,18 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
 
       const exercise = JSON.parse(cleanedText);
+
+      // Validate against schema for robustness
+      const schemaCheck = validateSingleExercise(exercise);
+      if (!schemaCheck.valid) {
+        console.warn('Replacement exercise failed schema validation:', schemaCheck.errors);
+        res.status(500).json({
+          error: 'Replacement exercise failed validation',
+          details: schemaCheck.errors,
+          retryable: true,
+        });
+        return;
+      }
 
       // Validate that the replacement is not similar to existing exercises (except the one being replaced)
       const otherExerciseNames = currentWorkout.exercises
