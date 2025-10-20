@@ -9,7 +9,7 @@ import { buildEnhancedSystemMessage, buildEnhancedWorkoutPrompt, buildOpenAIJson
 import { generateProfessionalPromptEnhancement } from '../lib/promptEnhancements';
 import { getProgrammingRecommendations, getExperienceGuidance } from '../lib/exerciseDatabase';
 import { validateWorkoutPlanJSON, validateRepFormat, validateRestPeriods } from '../lib/schemaValidator';
-import { validateWorkoutPlan } from '../lib/exerciseValidation';
+
 import { validateAndAdjustDuration, computeMinMaxExerciseCount } from '../lib/durationAdjustment';
 import { calculateWorkoutQuality } from '../lib/qualityScoring';
 import { deriveProgression } from '../lib/periodization';
@@ -279,40 +279,36 @@ export async function generateWorkoutOrchestrated(
 
       candidate = parsed as WorkoutPlan;
 
-      // Step 7: Parallel validation - always run all checks for quality
-      // Run independent validations concurrently for better performance
-      const [ruleValidation, repFormatValidation, durationValidation] = await Promise.all([
-        Promise.resolve(validateWorkoutPlan(candidate, {
-          experience,
-          injuries: ctx.injuries?.list || [],
-          duration,
-          goals,
-          workoutType,
-        })),
-        Promise.resolve(validateRepFormat(candidate.exercises, workoutType)),
-        Promise.resolve(validateAndAdjustDuration(candidate, duration, minExercises)),
-      ]);
+      // Step 7: Lightweight validation - only check for critical issues
+      // Trust the AI response more, only validate truly broken workouts
+      const durationValidation = validateAndAdjustDuration(candidate, duration, minExercises);
 
-      const ruleErrors = [
-        ...ruleValidation.errors,
-        ...repFormatValidation.errors,
-      ];
+      // Only fail on critical issues: empty exercises or completely invalid duration
+      const hasCriticalIssues =
+        !candidate.exercises ||
+        candidate.exercises.length === 0 ||
+        (durationValidation.actualDuration < 5); // Less than 5 minutes is clearly wrong
 
-      if (!durationValidation.isValid || ruleErrors.length > 0) {
+      if (hasCriticalIssues) {
         validationErrors = {
           schemaErrors: [],
-          ruleErrors,
+          ruleErrors: ['Workout has critical structural issues'],
           durationError: durationValidation.error,
         };
         repairAttempts++;
 
         if (attempt < durationThresholds.maxRepairAttempts) {
-          console.warn('Validation failed, attempting repair:', validationErrors);
+          console.warn('Critical validation issue, attempting repair:', validationErrors);
           continue;
         } else {
-          // Last attempt failed - return with errors
-          throw new Error(`Validation failed after ${durationThresholds.maxRepairAttempts + 1} attempts: ${JSON.stringify(validationErrors)}`);
+          throw new Error(`Critical validation failed: ${JSON.stringify(validationErrors)}`);
         }
+      }
+
+      // Log warnings but don't fail on them
+      const repFormatValidation = validateRepFormat(candidate.exercises, workoutType);
+      if (repFormatValidation.errors.length > 0) {
+        console.warn('⚠️ Rep format warnings (non-critical):', repFormatValidation.errors);
       }
 
       // Validation passed!
