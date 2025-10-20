@@ -298,8 +298,29 @@ export const addExerciseToWorkout = onRequest(
     try {
       const { currentWorkout, workoutType, experience, goals, equipment, injuries } = req.body;
 
-      if (!currentWorkout?.exercises || !Array.isArray(currentWorkout.exercises)) {
-        res.status(400).json({ error: 'Invalid workout data' });
+      // Validate request body
+      if (!req.body) {
+        console.error('Empty request body');
+        res.status(400).json({ error: 'Request body is required' });
+        return;
+      }
+
+      // Validate currentWorkout structure
+      if (!currentWorkout) {
+        console.error('Missing currentWorkout in request body');
+        res.status(400).json({ error: 'currentWorkout is required' });
+        return;
+      }
+
+      if (!Array.isArray(currentWorkout.exercises)) {
+        console.error('currentWorkout.exercises is not an array:', typeof currentWorkout.exercises, currentWorkout.exercises);
+        res.status(400).json({ error: 'currentWorkout.exercises must be an array' });
+        return;
+      }
+
+      if (currentWorkout.exercises.length === 0) {
+        console.error('currentWorkout.exercises is empty');
+        res.status(400).json({ error: 'currentWorkout must have at least one exercise' });
         return;
       }
 
@@ -436,8 +457,16 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 
       res.status(200).json({ exercise });
     } catch (e) {
-      console.error('Add exercise error', e);
-      res.status(500).json({ error: 'Failed to add exercise' });
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      console.error('Add exercise error:', {
+        error: errorMsg,
+        stack: e instanceof Error ? e.stack : undefined,
+        requestBody: req.body ? Object.keys(req.body) : 'no body',
+      });
+      res.status(500).json({
+        error: 'Failed to add exercise',
+        details: process.env.NODE_ENV === 'development' ? errorMsg : undefined
+      });
     }
   },
 );

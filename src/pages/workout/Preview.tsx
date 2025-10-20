@@ -65,21 +65,39 @@ export default function Preview() {
   const handleAddExercise = async () => {
     setLoadingAdd(true)
     try {
+      // Validate we have exercises to work with
+      if (!initialWorkoutContext.exercises || initialWorkoutContext.exercises.length === 0) {
+        alert('No exercises found in workout. Please try again.')
+        return
+      }
+
+      const payload = {
+        // Use initial workout context, not current modified exercises
+        currentWorkout: { exercises: initialWorkoutContext.exercises },
+        workoutType: initialWorkoutContext.type,
+        experience: profile?.experience,
+        goals: profile?.goals,
+        equipment: profile?.equipment,
+        injuries: profile?.injuries,
+      }
+
+      logger.debug('Adding exercise with payload:', {
+        exerciseCount: initialWorkoutContext.exercises.length,
+        workoutType: initialWorkoutContext.type,
+        hasProfile: !!profile,
+      })
+
       const res = await fetch(import.meta.env['VITE_ADD_EXERCISE_FN_URL'] as string, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // Use initial workout context, not current modified exercises
-          currentWorkout: { exercises: initialWorkoutContext.exercises },
-          workoutType: initialWorkoutContext.type,
-          experience: profile?.experience,
-          goals: profile?.goals,
-          equipment: profile?.equipment,
-          injuries: profile?.injuries,
-        }),
+        body: JSON.stringify(payload),
       })
 
-      if (!res.ok) throw new Error('Failed to add exercise')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        const errorMsg = errorData.error || `HTTP ${res.status}`
+        throw new Error(`Failed to add exercise: ${errorMsg}`)
+      }
 
       const data = await res.json()
       const newExercises = [...exercises, data.exercise]
