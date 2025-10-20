@@ -1,0 +1,5 @@
+✓ Very Short Duration (15min) - Status: 200
+✓ Very Long Duration (120min) - Status: 200
+✓ Multiple Injuries - Status: 200
+✓ Multiple Goals - Status: 200
+✗ All Equipment Types - Status: 500

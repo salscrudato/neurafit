@@ -28,66 +28,43 @@ export function buildEnhancedSystemMessage(duration: number, workoutType?: strin
   const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT', 'Abs'].includes(workoutType);
 
   // Dynamic variance based on duration
-  // Longer workouts naturally have more variance
   let variance = 3;
   if (duration >= 90) {
-    variance = Math.ceil(duration * 0.1); // ±10% for 90+ min workouts
+    variance = Math.ceil(duration * 0.15); // ±15% for 90+ min workouts
   } else if (duration >= 60) {
-    variance = Math.ceil(duration * 0.08); // ±8% for 60-89 min workouts
+    variance = Math.ceil(duration * 0.1); // ±10% for 60-89 min workouts
   } else if (duration >= 45) {
-    variance = 4; // ±4 min for 45-59 min workouts
+    variance = 5; // ±5 min for 45-59 min workouts
   }
 
-  return `Elite AI fitness coach. Expert in exercise science, periodization, injury prevention, personalization.
+  return `You are an expert fitness coach. Generate a valid, personalized workout.
 
-🔴 PRIMARY CONSTRAINT: DURATION MUST BE ${duration}±${variance} MINUTES (${(duration - variance).toFixed(0)}-${(duration + variance).toFixed(0)} min)
-This is NON-NEGOTIABLE. Calculate total time before outputting.
+🔴 CRITICAL: Duration must be ${duration}±${variance} minutes (${(duration - variance).toFixed(0)}-${(duration + variance).toFixed(0)} min)
 
-CONSTRAINTS (PRIORITY ORDER):
-1. Hard: Duration ±${variance}min (PRIMARY), Equipment, Injury contraindications, Safety
-2. Soft: Variety, muscle balance, progression, personalization
+HARD CONSTRAINTS (non-negotiable):
+- Duration: ${duration}±${variance} min
+- Equipment: Use ONLY available equipment
+- Safety: Avoid contraindicated exercises
+- Format: Valid JSON matching schema
 
-PERSONALIZATION REQUIREMENTS:
-- Adapt exercise selection based on experience level
-- Consider recent workout history to avoid repetition
-- Match intensity to user's progression trajectory
-- Provide modifications for different fitness levels
-- Ensure progressive overload opportunities
-
-DURATION BUDGET:
-${isTimeBasedWorkout ? `TIME-BASED (${workoutType}): 3-5min/exercise, ${duration}min target: ${Math.floor(duration/4)}-${Math.ceil(duration/3)} exercises` : `STRENGTH: Compound 12-17min, Isolation 5-8min, ${duration}min target: ${Math.floor(duration/10)}-${Math.ceil(duration/6)} exercises`}
-
-EXERCISE SELECTION:
-- Match workout type exactly
-- Use ONLY available equipment
-- Avoid contraindicated exercises
-- Unique names only
-- Vary exercises from recent history when possible
+SOFT CONSTRAINTS (optimize for):
+- Personalization to experience level
+- Exercise variety
+- Proper progression
 
 PROGRAMMING:
 - Reps: ${isTimeBasedWorkout ? '"30s","45s","60s"' : '"8-12","6-10"'}
-- Rest: compound 120-180s, isolation 60-90s
-- Adjust intensity based on experience level
+- Rest: 60-180s depending on exercise type
+- Sets: 3-5 per exercise
 
-VERIFY:
-✓ Duration = ${duration}±${variance}min (CALCULATE: warmup + sum of all exercise times)
-✓ Exercise count: ${Math.floor(duration/10)}-${Math.ceil(duration/5)}
-✓ Matches workout type
-✓ No contraindicated exercises
-✓ Only available equipment
-✓ Unique names
-✓ Required fields: formTips(3), safetyTips(2)
-✓ Personalized to user profile
+BEFORE OUTPUTTING:
+1. Calculate total duration (warmup + all exercises + rest)
+2. Verify it equals ${duration}±${variance} minutes
+3. Check all exercises match available equipment
+4. Ensure no contraindicated exercises
+5. Verify JSON is valid
 
-OUTPUT: Valid JSON only, follow exact schema
-
-CRITICAL (IN ORDER OF IMPORTANCE):
-1. ⚠️ DURATION MUST BE ${duration}±${variance} MINUTES - CALCULATE BEFORE OUTPUTTING
-2. Never use unavailable equipment
-3. Never include contraindicated exercises
-4. All names unique
-5. Match workout type exactly
-6. Personalize to user experience and goals`;
+OUTPUT: Valid JSON only`;
 }
 
 /**

@@ -153,7 +153,7 @@ export const generateWorkout = onRequest(
         personalInfo,
         injuries,
         workoutType: finalWorkoutType,
-        duration: Math.max(15, Math.min(finalDuration, 180)), // Clamp between 15-180 minutes
+        duration: Math.max(5, Math.min(finalDuration, 150)), // Clamp between 5-150 minutes
         targetIntensity,
         progressionNote,
         recentWorkouts,
@@ -261,10 +261,21 @@ export const generateWorkout = onRequest(
 
         // Validation errors - treat as retryable server error
         if (e.message.includes('Validation failed')) {
-          console.warn('❌ Validation error detected, retrying with defaults');
+          console.warn('❌ Validation error detected');
           res.status(500).json({
-            error: 'Workout generation error',
-            details: 'Please try again.',
+            error: 'Workout validation error',
+            details: 'The generated workout did not meet quality standards. Please try again.',
+            retryable: true,
+          });
+          return;
+        }
+
+        // JSON parsing errors
+        if (e.message.includes('JSON') || e.message.includes('parse')) {
+          console.warn('❌ JSON parsing error detected');
+          res.status(502).json({
+            error: 'AI response format error',
+            details: 'The AI service returned an invalid response. Please try again.',
             retryable: true,
           });
           return;
@@ -275,7 +286,7 @@ export const generateWorkout = onRequest(
       console.error('🔴 Unhandled error in workout generation:', errorMessage);
       res.status(500).json({
         error: 'Workout generation service error',
-        details: 'Please try again in a moment.',
+        details: 'An unexpected error occurred. Please try again in a moment.',
         retryable: true,
       });
       return;

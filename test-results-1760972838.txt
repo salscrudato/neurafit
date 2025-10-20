@@ -1,0 +1,15 @@
+✓ Strength/Full Body/30min/Beginner - Status: 200, Exercises: 4
+✓ Strength/Upper Body/45min/Intermediate - Status: 200, Exercises: 4
+✓ Strength/Lower Body/60min/Advanced - Status: 200, Exercises: 4
+✓ Cardio/30min/Beginner - Status: 200, Exercises: 6
+✓ HIIT/20min/Intermediate - Status: 200, Exercises: 4
+✓ Flexibility/30min/Beginner - Status: 200, Exercises: 4
+✓ Yoga/45min/Intermediate - Status: 200, Exercises: 7
+✓ Core Focus/20min/Beginner - Status: 200, Exercises: 4
+✓ Pilates/30min/Intermediate - Status: 200, Exercises: 5
+✓ Full Body/90min/Advanced - Status: 200, Exercises: 6
+✓ Bodyweight Only/30min - Status: 200, Exercises: 4
+✓ With Injuries/30min - Status: 200, Exercises: 4
+✓ Minimal Payload - Status: 200, Exercises: 4
+✓ Guest User/30min - Status: 200, Exercises: 4
+✓ Long Duration/120min - Status: 200, Exercises: 7

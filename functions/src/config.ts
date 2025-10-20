@@ -86,21 +86,12 @@ export const QUALITY_THRESHOLDS = {
  * For longer workouts, we skip quality gates to prioritize speed
  */
 export function getQualityThresholdsForDuration(duration: number) {
-  // For 120+ minute workouts, skip quality gate entirely (speed priority)
-  if (duration >= 120) {
-    return {
-      ...QUALITY_THRESHOLDS,
-      maxRepairAttempts: 0, // No repair attempts - accept first valid result
-      skipRepairIfScoreAbove: 0, // Skip quality scoring entirely
-    };
-  }
-
-  // For 90-119 minute workouts, minimal quality gate
+  // For 90+ minute workouts, skip quality gates entirely (speed priority)
   if (duration >= 90) {
     return {
       ...QUALITY_THRESHOLDS,
       maxRepairAttempts: 0, // No repair attempts - accept first valid result
-      skipRepairIfScoreAbove: 100, // Always skip quality scoring
+      skipRepairIfScoreAbove: 0, // Skip quality scoring entirely
     };
   }
 

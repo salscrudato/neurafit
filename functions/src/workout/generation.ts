@@ -325,45 +325,30 @@ export async function generateWorkoutOrchestrated(
     }
 
     // Step 9: Quality gate with early exit optimization
-    // Skip quality scoring for 120+ minute workouts (speed priority)
-    let qualityScore;
-    if (duration >= 120) {
-      console.log('⚡ Skipping quality scoring for 120+ min workout (speed priority)');
-      qualityScore = {
-        overall: 85,
-        grade: 'B+',
-        breakdown: {
-          completeness: 85,
-          safety: 90,
-          programming: 85,
-          personalization: 80,
-        },
-      };
-    } else {
-      qualityScore = calculateWorkoutQuality(candidate, {
-        experience,
-        injuries: ctx.injuries?.list || [],
-        duration,
-        goals,
-        equipment,
-        workoutType,
-      });
+    // Always run quality scoring for comprehensive validation
+    const qualityScore = calculateWorkoutQuality(candidate, {
+      experience,
+      injuries: ctx.injuries?.list || [],
+      duration,
+      goals,
+      equipment,
+      workoutType,
+    });
 
-      console.log('📊 Quality score:', qualityScore);
+    console.log('📊 Quality score:', qualityScore);
 
-      // Early exit: If quality is excellent, skip repair attempts (cost optimization)
-      if (qualityScore.overall >= durationThresholds.skipRepairIfScoreAbove) {
-        console.log(`✅ Excellent quality score (${qualityScore.overall}) - skipping repair attempts`);
-        // Break out of repair loop - no need to try again
-      } else if (
-        (qualityScore.overall < durationThresholds.minOverallScore ||
-          qualityScore.breakdown.safety < durationThresholds.minSafetyScore) &&
-        repairAttempts < durationThresholds.maxRepairAttempts
-      ) {
-        console.warn(`⚠️ Quality below threshold (${qualityScore.overall}) - repair attempts remaining: ${durationThresholds.maxRepairAttempts - repairAttempts}`);
-        // This would trigger another repair pass, but we've already exhausted attempts
-        // In production, you might want to add specific quality improvement suggestions
-      }
+    // Early exit: If quality is excellent, skip repair attempts (cost optimization)
+    if (qualityScore.overall >= durationThresholds.skipRepairIfScoreAbove) {
+      console.log(`✅ Excellent quality score (${qualityScore.overall}) - skipping repair attempts`);
+      // Break out of repair loop - no need to try again
+    } else if (
+      (qualityScore.overall < durationThresholds.minOverallScore ||
+        qualityScore.breakdown.safety < durationThresholds.minSafetyScore) &&
+      repairAttempts < durationThresholds.maxRepairAttempts
+    ) {
+      console.warn(`⚠️ Quality below threshold (${qualityScore.overall}) - repair attempts remaining: ${durationThresholds.maxRepairAttempts - repairAttempts}`);
+      // This would trigger another repair pass, but we've already exhausted attempts
+      // In production, you might want to add specific quality improvement suggestions
     }
 
     // Step 10: Collect metadata
@@ -425,10 +410,9 @@ function buildRepairMessages(
   previousCandidate: WorkoutPlan | null,
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const errorSummary = [
-    '❌ VALIDATION ERRORS - PLEASE FIX:',
-    '',
-    ...errors.schemaErrors.map((e) => `- Schema: ${e}`),
-    ...errors.ruleErrors.map((e) => `- Rule: ${e}`),
+    '❌ VALIDATION ERRORS:',
+    ...errors.schemaErrors.map((e) => `- ${e}`),
+    ...errors.ruleErrors.map((e) => `- ${e}`),
   ];
 
   if (errors.durationError) {
@@ -439,7 +423,7 @@ function buildRepairMessages(
 
 ${errorSummary.join('\n')}
 
-Please generate a CORRECTED workout that fixes ALL of the above errors while maintaining the same schema and requirements.`;
+Generate a corrected workout fixing all errors above.`;
 
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: systemMessage },
