@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
+// src/providers/AppProvider.tsx
+import { useEffect, type ReactNode, useRef } from 'react';
 import { auth, db } from '../lib/firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -8,9 +9,49 @@ import type { UserProfile } from '../session/types';
 import { ensureUserDocument } from '../lib/user-utils';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { setUserContext, clearUserContext } from '../lib/sentry';
+import { logger } from '../lib/logger';
 
 interface AppProviderProps {
   children: ReactNode;
+}
+
+/** Small helper to safely schedule work during idle time (with fallback). */
+function scheduleIdle(fn: () => void, timeout = 2000) {
+  const w = window as Window & {
+    requestIdleCallback?: (
+      cb: (deadline: { didTimeout: boolean; timeRemaining: () => number }) => void,
+      opts?: { timeout?: number }
+    ) => number;
+  };
+  if (typeof w.requestIdleCallback === 'function') {
+    w.requestIdleCallback(() => fn(), { timeout });
+  } else {
+    setTimeout(fn, Math.min(500, timeout));
+  }
+}
+
+/** Session-scoped profile cache to minimize UI flicker after reloads. */
+const PROFILE_CACHE_KEY = (uid: string) => `nf:profile-cache:${uid}`;
+
+function loadCachedProfile(uid: string): UserProfile | null {
+  try {
+    const raw = sessionStorage.getItem(PROFILE_CACHE_KEY(uid));
+    return raw ? (JSON.parse(raw) as UserProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedProfile(uid: string, profile: UserProfile | null) {
+  try {
+    if (!profile) {
+      sessionStorage.removeItem(PROFILE_CACHE_KEY(uid));
+    } else {
+      sessionStorage.setItem(PROFILE_CACHE_KEY(uid), JSON.stringify(profile));
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function AppProvider({ children }: AppProviderProps) {
@@ -23,192 +64,245 @@ export function AppProvider({ children }: AppProviderProps) {
     updateLastSyncTime,
   } = useAppStore();
 
-  // Authentication state management with coordinated async operations
+  /**
+   * Track the current "auth flow" to prevent stale async completions from
+   * mutating state after a quick sign-out/sign-in or provider switch.
+   */
+  const flowIdRef = useRef(0); // increments on each auth change
+
+  // Authentication + profile state
   useEffect(() => {
     let unsubDoc: (() => void) | null = null;
     let unsubAuth: (() => void) | null = null;
-    let isMounted = true; // Track mount status to prevent race conditions
-    let initializationTimeout: NodeJS.Timeout | null = null; // Track timeout for cleanup
+    let mounted = true;
+    let initTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const setupAuthListener = () => {
-      unsubAuth = onAuthStateChanged(auth, async (user: User | null) => {
-      try {
-        if (!isMounted) return; // Prevent updates after unmount
-
-        if (import.meta.env.MODE === 'development') {
-          console.log('🔐 Auth state changed:', user?.email || 'signed out');
-        }
-
-        // Cleanup existing listeners and pending operations
-        if (initializationTimeout) {
-          clearTimeout(initializationTimeout);
-          initializationTimeout = null;
-        }
-        unsubDoc?.();
+    const cleanupDoc = () => {
+      if (unsubDoc) {
+        unsubDoc();
         unsubDoc = null;
+      }
+    };
 
-        // Update auth state atomically
-        setUser(user);
-        setProfile(null);
+    const handleAuthChange = async (user: User | null) => {
+      // New flow for each auth transition
+      const myFlow = ++flowIdRef.current;
 
-        if (!user) {
-          if (import.meta.env.MODE === 'development') {
-            console.log('🔐 No user, setting status to signedOut');
-          }
-          setAuthStatus('signedOut');
-          clearUserContext(); // Clear Sentry user context
-          return;
-        }
+      if (!mounted) return;
 
-        // Set Sentry user context
-        setUserContext({
-          id: user.uid,
-          email: user.email || undefined,
-        });
+      logger.debug('🔐 Auth state changed', { email: user?.email ?? 'signed out' });
 
-        // Delay to ensure auth stability - store timeout for cleanup
-        initializationTimeout = setTimeout(async () => {
-          if (!isMounted) return; // Check again after timeout
+      // Cancel previous doc listener and any pending init timer
+      if (initTimer) {
+        clearTimeout(initTimer);
+        initTimer = null;
+      }
+      cleanupDoc();
 
-          try {
-            // Ensure user document exists before setting up listeners
-            await ensureUserDocument(user);
+      // Atomically reset user+profile in store
+      setUser(user);
+      setProfile(null);
 
-            const profileRef = doc(db, 'users', user.uid);
-            unsubDoc = onSnapshot(profileRef,
-              (snapshot) => {
-                if (!isMounted) return; // Prevent updates after unmount
+      if (!user) {
+        setAuthStatus('signedOut');
+        clearUserContext();
+        return;
+      }
 
-                if (!snapshot.exists()) {
-                  setProfile(null);
-                  setAuthStatus('needsOnboarding');
-                  return;
-                }
+      // Bind Sentry user context
+      setUserContext({ id: user.uid, email: user.email ?? undefined });
 
-                const profileData = snapshot.data() as UserProfile;
-                setProfile(profileData);
-                setAuthStatus(isProfileComplete(profileData) ? 'ready' : 'needsOnboarding');
-              },
-              (error) => {
-                if (import.meta.env.MODE === 'development') {
-                  console.error('Profile listener error:', error);
-                }
+      // Optimistically hydrate from session cache to reduce flicker
+      const cached = loadCachedProfile(user.uid);
+      if (cached) {
+        setProfile(cached);
+        setAuthStatus(isProfileComplete(cached) ? 'ready' : 'needsOnboarding');
+      } else {
+        // While we prepare Firestore listener, keep UI in a known loading state
+        setAuthStatus('loading');
+      }
 
-                if (error.code === 'permission-denied') {
-                  unsubDoc?.();
-                  unsubDoc = null;
-                  setProfile(null);
-                  setAuthStatus('signedOut');
-                }
+      // Slight defer to allow Firebase to settle any token refresh
+      initTimer = setTimeout(async () => {
+        if (!mounted || myFlow !== flowIdRef.current) return;
+
+        try {
+          // Make sure a base user document exists (idempotent)
+          await ensureUserDocument(user);
+
+          // Live profile listener (includes cache → server updates)
+          const profileRef = doc(db, 'users', user.uid);
+
+          unsubDoc = onSnapshot(
+            profileRef,
+            // Data
+            (snapshot) => {
+              if (!mounted || myFlow !== flowIdRef.current) return;
+
+              if (!snapshot.exists()) {
+                setProfile(null);
+                setAuthStatus('needsOnboarding');
+                saveCachedProfile(user.uid, null);
+                return;
               }
-            );
 
-            // Coordinate async operations sequentially to prevent race conditions
-            if (isMounted) {
-              try {
-                await syncPendingOperations();
-                if (isMounted) {
-                  updateLastSyncTime();
-                }
-              } catch (syncError) {
-                if (import.meta.env.MODE === 'development') {
-                  console.error('Sync operations error:', syncError);
-                }
+              const profile = snapshot.data() as UserProfile;
+              setProfile(profile);
+              // Persist session cache for snappy subsequent loads
+              saveCachedProfile(user.uid, profile);
+
+              const complete = isProfileComplete(profile);
+              setAuthStatus(complete ? 'ready' : 'needsOnboarding');
+            },
+            // Errors
+            (error: Error) => {
+              const errorCode = (error as { code?: string }).code;
+              logger.error('Profile listener error', { code: errorCode, message: String(error) });
+
+              // Permission denied → treat as signed out (likely token invalidated or rules mismatch)
+              if (errorCode === 'permission-denied') {
+                cleanupDoc();
+                setProfile(null);
+                setAuthStatus('signedOut');
+                clearUserContext();
               }
             }
-          } catch (error) {
-            if (import.meta.env.MODE === 'development') {
-              console.error('User initialization error:', error);
+          );
+
+          // After listener attaches, perform a background sync (best-effort)
+          scheduleIdle(async () => {
+            if (!mounted || myFlow !== flowIdRef.current) return;
+            try {
+              await syncPendingOperations();
+              if (mounted && myFlow === flowIdRef.current) updateLastSyncTime();
+            } catch (syncError) {
+              logger.warn('Deferred sync error', { error: String(syncError) });
             }
-            if (isMounted) {
+          });
+        } catch (e) {
+          logger.error('User initialization error', { error: String(e) });
+          if (mounted && myFlow === flowIdRef.current) {
+            // Only downgrade to signedOut on clear auth-related errors; otherwise keep cached state
+            const code = (e as { code?: string }).code;
+            if (code === 'permission-denied' || code === 'unauthenticated') {
               setAuthStatus('signedOut');
+              clearUserContext();
+            } else {
+              // Keep whatever cached profile (if any) and mark as loading to allow retry via snapshot
+              setAuthStatus('loading');
             }
           }
-        }, 100);
-      } catch (error) {
-        if (import.meta.env.MODE === 'development') {
-          console.error('Auth state change error:', error);
         }
-        if (isMounted) {
-          setAuthStatus('signedOut');
+      }, 100);
+    };
+
+    // Prime state with current user (reduces first-paint flicker)
+    try {
+      const u = auth.currentUser;
+      if (u) {
+        setUser(u);
+        const cached = loadCachedProfile(u.uid);
+        if (cached) {
+          setProfile(cached);
+          setAuthStatus(isProfileComplete(cached) ? 'ready' : 'needsOnboarding');
+        } else {
+          setAuthStatus('loading');
         }
-      }
-      });
-    };
-
-    setupAuthListener();
-
-    return () => {
-      isMounted = false; // Mark as unmounted
-      if (initializationTimeout) {
-        clearTimeout(initializationTimeout);
-      }
-      if (unsubAuth) {
-        unsubAuth();
-      }
-      unsubDoc?.();
-    };
-  }, [
-    setUser,
-    setProfile,
-    setAuthStatus,
-    syncPendingOperations,
-    updateLastSyncTime,
-  ]);
-
-  // Online/offline detection
-  useEffect(() => {
-    const handleOnline = () => {
-      setOnlineStatus(true);
-      syncPendingOperations();
-    };
-
-    const handleOffline = () => {
-      setOnlineStatus(false);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    setOnlineStatus(navigator.onLine);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [setOnlineStatus, syncPendingOperations]);
-
-  // Periodic sync for pending operations
-  useEffect(() => {
-    const syncInterval = setInterval(() => {
-      if (navigator.onLine) {
-        syncPendingOperations();
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
-
-    return () => clearInterval(syncInterval);
-  }, [syncPendingOperations]);
-
-
-
-  // Global error recovery
-  useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (import.meta.env.MODE === 'development') {
-        console.error('Unhandled promise rejection:', event.reason);
-      }
-
-      if (event.reason?.code === 'permission-denied') {
+      } else {
         setAuthStatus('signedOut');
       }
+    } catch {
+      // ignore
+    }
 
+    // Subscribe to auth state
+    unsubAuth = onAuthStateChanged(
+      auth,
+      (user) => void handleAuthChange(user),
+      (err) => {
+        logger.error('Auth listener error', { error: String(err) });
+        setAuthStatus('signedOut');
+        clearUserContext();
+      }
+    );
+
+    return () => {
+      mounted = false;
+      if (initTimer) clearTimeout(initTimer);
+      if (unsubAuth) unsubAuth();
+      cleanupDoc();
+    };
+  }, [setUser, setProfile, setAuthStatus, syncPendingOperations, updateLastSyncTime]);
+
+  // Online/offline + visibility-aware sync
+  useEffect(() => {
+    const syncNow = async (reason: string) => {
+      logger.debug('🔄 Sync trigger', { reason, online: navigator.onLine });
+      if (!navigator.onLine) return;
+      try {
+        await syncPendingOperations();
+        updateLastSyncTime();
+      } catch (e) {
+        logger.warn('Sync failed', { error: String(e) });
+      }
+    };
+
+    const onOnline = () => {
+      setOnlineStatus(true);
+      // Immediately kick a sync; queue to next tick to avoid blocking event loop
+      Promise.resolve().then(() => syncNow('online'));
+    };
+
+    const onOffline = () => setOnlineStatus(false);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        scheduleIdle(() => void syncNow('visibility'));
+      }
+    };
+
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // Initialize online status
+    setOnlineStatus(navigator.onLine);
+    if (navigator.onLine) scheduleIdle(() => void syncNow('mount'));
+
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [setOnlineStatus, syncPendingOperations, updateLastSyncTime]);
+
+  // Periodic background sync (lightweight cadence)
+  useEffect(() => {
+    const intervalMs = 3 * 60 * 1000; // 3 minutes
+    const id = setInterval(() => {
+      if (navigator.onLine) {
+        void syncPendingOperations().then(updateLastSyncTime).catch((e) => {
+          logger.warn('Periodic sync failed', { error: String(e) });
+        });
+      }
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [syncPendingOperations, updateLastSyncTime]);
+
+  // Global error recovery (kept minimal and safe)
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      logger.error('Unhandled promise rejection', { reason: String(event.reason) });
+      const reasonCode = (event.reason as { code?: string }).code;
+      if (reasonCode === 'permission-denied') {
+        setAuthStatus('signedOut');
+        clearUserContext();
+      }
       event.preventDefault();
     };
 
     const handleError = (event: ErrorEvent) => {
-      if (import.meta.env.MODE === 'development') {
-        console.error('Global error:', event.error);
-      }
+      logger.error('Global error', { error: String(event.error || event.message) });
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
@@ -220,12 +314,5 @@ export function AppProvider({ children }: AppProviderProps) {
     };
   }, [setAuthStatus]);
 
-  return (
-    <ErrorBoundary level="component">
-      {children}
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary level="component">{children}</ErrorBoundary>;
 }
-
-// Note: useApp hook has been moved to app-provider-utils.ts
-// to fix Fast Refresh warnings. Import it from there instead.

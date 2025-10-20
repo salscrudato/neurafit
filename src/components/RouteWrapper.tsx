@@ -1,87 +1,100 @@
+// src/components/RouteWrapper.tsx
+
 /**
  * Route Wrapper Components
  * Simplifies route definitions by providing reusable wrappers
+ *
+ * Enhancements:
+ * - ErrorBoundary now wraps Suspense to catch lazy import errors.
+ * - Boundary resets on navigation via location.key (avoids "stuck" error UI).
+ * - Optional `fallback` prop to override the loading UI when `lazy` is true.
+ * - Guard order preserved: Profile guard implies Auth guard.
  */
 
-import { Suspense, type ReactNode } from 'react'
-import { PageSkeleton } from './SkeletonLoader'
-import ErrorBoundary from './ErrorBoundary'
-import { RequireAuth, RequireProfile } from '../routes/guards'
+import { Suspense, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { PageSkeleton } from './SkeletonLoader';
+import ErrorBoundary from './ErrorBoundary';
+import { RequireAuth, RequireProfile } from '../routes/guards';
 
 interface RouteWrapperProps {
-  children: ReactNode
-  requireAuth?: boolean
-  requireProfile?: boolean
-  lazy?: boolean
+  children: ReactNode;
+  requireAuth?: boolean;
+  requireProfile?: boolean;
+  /** When true, wraps children in <Suspense>. */
+  lazy?: boolean;
+  /** Optional custom fallback used when `lazy` is true. */
+  fallback?: ReactNode;
 }
 
 /**
  * Unified route wrapper that handles common patterns:
- * - Error boundaries
+ * - Error boundaries (outermost, keyed to navigation)
  * - Authentication guards
  * - Profile completion guards
- * - Lazy loading with suspense
+ * - Optional lazy loading with Suspense (fallback customizable)
  */
 export function RouteWrapper({
   children,
   requireAuth = false,
   requireProfile = false,
-  lazy = false
+  lazy = false,
+  fallback,
 }: RouteWrapperProps) {
-  let content = children
+  const location = useLocation();
 
-  // Wrap with profile guard if required (FIRST - before error boundary)
+  let content = children;
+
+  // Profile guard (includes auth)
   if (requireProfile) {
-    content = (
-      <RequireProfile>
-        {content}
-      </RequireProfile>
-    )
+    content = <RequireProfile>{content}</RequireProfile>;
+  }
+  // Auth-only guard (when profile not required)
+  else if (requireAuth) {
+    content = <RequireAuth>{content}</RequireAuth>;
   }
 
-  // Wrap with auth guard if required (but not if profile is required, as RequireProfile includes auth)
-  if (requireAuth && !requireProfile) {
-    content = (
-      <RequireAuth>
-        {content}
-      </RequireAuth>
-    )
-  }
+  // Optional Suspense wrapper
+  const maybeSuspense = lazy ? (
+    <Suspense fallback={fallback ?? <PageSkeleton />}>{content}</Suspense>
+  ) : (
+    content
+  );
 
-  // Wrap with ErrorBoundary (AFTER guards so Router context is available)
-  content = (
-    <ErrorBoundary level="page">
-      {content}
+  // Error boundary as the outermost wrapper.
+  // Keyed by navigation so the boundary resets when the user routes.
+  return (
+    <ErrorBoundary key={location.key} level="page">
+      {maybeSuspense}
     </ErrorBoundary>
-  )
-
-  // Wrap with Suspense if lazy loading (LAST - outermost wrapper)
-  if (lazy) {
-    content = (
-      <Suspense fallback={<PageSkeleton />}>
-        {content}
-      </Suspense>
-    )
-  }
-
-  return <>{content}</>
+  );
 }
 
 /**
- * Convenience components for common route patterns
+ * Convenience wrappers
  */
+type SimpleRouteProps = { children: ReactNode; lazy?: boolean; fallback?: ReactNode };
 
-// Public route (no auth required)
-export function PublicRoute({ children, lazy = false }: { children: ReactNode; lazy?: boolean }) {
-  return <RouteWrapper lazy={lazy}>{children}</RouteWrapper>
+export function PublicRoute({ children, lazy = false, fallback }: SimpleRouteProps) {
+  return (
+    <RouteWrapper lazy={lazy} fallback={fallback}>
+      {children}
+    </RouteWrapper>
+  );
 }
 
-// Auth required route
-export function AuthRoute({ children, lazy = false }: { children: ReactNode; lazy?: boolean }) {
-  return <RouteWrapper requireAuth lazy={lazy}>{children}</RouteWrapper>
+export function AuthRoute({ children, lazy = false, fallback }: SimpleRouteProps) {
+  return (
+    <RouteWrapper requireAuth lazy={lazy} fallback={fallback}>
+      {children}
+    </RouteWrapper>
+  );
 }
 
-// Profile required route (includes auth)
-export function ProfileRoute({ children, lazy = false }: { children: ReactNode; lazy?: boolean }) {
-  return <RouteWrapper requireProfile lazy={lazy}>{children}</RouteWrapper>
+export function ProfileRoute({ children, lazy = false, fallback }: SimpleRouteProps) {
+  return (
+    <RouteWrapper requireProfile lazy={lazy} fallback={fallback}>
+      {children}
+    </RouteWrapper>
+  );
 }

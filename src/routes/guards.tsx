@@ -1,151 +1,233 @@
-import { Navigate, useLocation } from 'react-router-dom'
-import { useApp } from '../providers/app-provider-utils'
-import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
-import { logger } from '../lib/logger'
+// src/routes/guards.tsx
+import { Navigate, useLocation, type Location } from 'react-router-dom';
+import { useApp } from '../providers/app-provider-utils';
+import type { ReactNode } from 'react';
+import { useEffect, useMemo } from 'react';
+import { logger } from '../lib/logger';
 
-/**
- * Hook to detect and prevent redirect loops
- */
-function useRedirectLoopDetection(guardName: string) {
-  const location = useLocation()
-  const redirectCountRef = useRef(0)
-  const lastPathRef = useRef('')
+/** ---------------------------------------------
+ * Utilities
+ * ----------------------------------------------*/
 
-  useEffect(() => {
-    // Reset counter if path actually changed
-    if (lastPathRef.current !== location.pathname) {
-      redirectCountRef.current = 0
-      lastPathRef.current = location.pathname
-    }
-  }, [location.pathname])
-
-  const checkRedirect = (targetPath: string) => {
-    // Increment counter
-    redirectCountRef.current++
-
-    // If we've redirected too many times, log error and break the loop
-    if (redirectCountRef.current > 5) {
-      logger.error('Redirect loop detected', {
-        guard: guardName,
-        targetPath,
-        redirectCount: redirectCountRef.current,
-        currentPath: location.pathname
-      })
-      // Reset counter and return false to break the loop
-      redirectCountRef.current = 0
-      return false
-    }
-
-    return true
-  }
-
-  return { checkRedirect }
+/** Build a stable "returnTo" URL (pathname + search + hash). */
+function buildReturnTo(loc: Location): string {
+  const search = loc.search ?? '';
+  const hash = loc.hash ?? '';
+  return `${loc.pathname}${search}${hash}` || '/';
 }
 
-// Landing gate at "/"
+/**
+ * Loop detection persisted in sessionStorage so it survives route unmounts.
+ * We treat > MAX_REDIRECTS within WINDOW_MS between the same two routes
+ * as a loop and stop redirecting.
+ */
+function useRedirectLoopDetection(guardName: string) {
+  const location = useLocation();
+  const STORAGE_KEY = `nf:redir:${guardName}`;
+
+  const checkRedirect = (targetPath: string): boolean => {
+    const now = Date.now();
+    const WINDOW_MS = 3000;
+    const MAX_REDIRECTS = 6;
+
+    type Rec = {
+      count: number;
+      ts: number;
+      from: string;
+      to: string;
+    };
+
+    let rec: Rec;
+    try {
+      rec = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null') as Rec | null || {
+        count: 0,
+        ts: now,
+        from: location.pathname,
+        to: targetPath,
+      };
+    } catch {
+      rec = { count: 0, ts: now, from: location.pathname, to: targetPath };
+    }
+
+    const samePair = rec.from === location.pathname && rec.to === targetPath;
+    const withinWindow = now - rec.ts <= WINDOW_MS;
+
+    if (samePair && withinWindow) {
+      rec.count += 1;
+    } else {
+      rec = { count: 1, ts: now, from: location.pathname, to: targetPath };
+    }
+
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(rec));
+
+    if (rec.count > MAX_REDIRECTS) {
+      logger.error('Redirect loop detected', {
+        guard: guardName,
+        currentPath: location.pathname,
+        targetPath,
+        count: rec.count,
+      });
+      sessionStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
+
+    return true;
+  };
+
+  // Clean up storage when leaving this guard's context
+  useEffect(() => {
+    return () => {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { checkRedirect };
+}
+
+/** Accessible full-screen loader (dark-mode aware, test-friendly). */
+function ScreenLoader({ label = 'Loading…' }: { label?: string }) {
+  return (
+    <div
+      className="min-h-screen grid place-items-center bg-white dark:bg-slate-900"
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      data-testid="screen-loader"
+    >
+      <div
+        className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-slate-900 dark:border-t-white border-r-slate-900 dark:border-r-white"
+        aria-hidden="true"
+      />
+      <span className="sr-only">{label}</span>
+    </div>
+  );
+}
+
+/** ---------------------------------------------
+ * HomeGate at "/"
+ * ----------------------------------------------*/
+
 export function HomeGate({ authPage }: { authPage: ReactNode }) {
-  const { authStatus, user, isGuest } = useApp()
-  const location = useLocation()
-  const { checkRedirect } = useRedirectLoopDetection('HomeGate')
+  const { authStatus, user, isGuest } = useApp();
+  const location = useLocation();
+  const { checkRedirect } = useRedirectLoopDetection('HomeGate');
 
-  // Check if there's a saved destination from a protected route redirect
-  const from = (location.state as { from?: string })?.from
+  // Accept `from` when user was bounced here by a guard.
+  const from = useMemo(() => {
+    const s = location.state as { from?: string } | null;
+    return s?.from;
+  }, [location.state]);
 
-  // Log authentication state for debugging
   logger.debug('HomeGate check', {
     authStatus,
     userEmail: user?.email || 'no user',
     isGuest,
-    from: from || 'none'
-  })
+    from: from || 'none',
+  });
 
-  if (authStatus === 'loading') return <ScreenLoader />
-  if (authStatus === 'signedOut') return <>{authPage}</>
+  if (authStatus === 'loading') return <ScreenLoader />;
 
-  // Guest users go directly to generate page
+  // Not signed in: show the provided auth page (no redirect).
+  if (authStatus === 'signedOut') return <>{authPage}</>;
+
+  // Guest users → Generate
   if (authStatus === 'guest' && isGuest) {
-    if (checkRedirect('/generate')) {
-      return <Navigate to="/generate" replace />
+    const dest = '/generate';
+    if (dest !== location.pathname && checkRedirect(dest)) {
+      return <Navigate to={dest} replace />;
     }
+    return <ScreenLoader label="Preparing guest session…" />;
   }
 
+  // Needs onboarding → Onboarding (preserve intended destination)
   if (authStatus === 'needsOnboarding') {
-    if (checkRedirect('/onboarding')) {
-      // Preserve the intended destination through onboarding
-      return <Navigate to="/onboarding" state={{ from }} replace />
+    const dest = '/onboarding';
+    if (dest !== location.pathname && checkRedirect(dest)) {
+      return <Navigate to={dest} state={{ from }} replace />;
     }
+    return <ScreenLoader label="Redirecting to onboarding…" />;
   }
 
+  // Ready → go to saved `from` (if present and not "/"), else dashboard
   if (authStatus === 'ready') {
-    // If there's a saved destination, redirect there instead of dashboard
-    const destination = from && from !== '/' ? from : '/dashboard'
-    if (checkRedirect(destination)) {
-      return <Navigate to={destination} replace />
+    const preferred = from && from !== '/' ? from : '/dashboard';
+    if (preferred !== location.pathname && checkRedirect(preferred)) {
+      return <Navigate to={preferred} replace />;
     }
+    // Already on destination (or loop guard tripped) — render nothing.
+    return null;
   }
 
-  // Fallback: show auth page if status is unknown
-  return <>{authPage}</>
+  // Fallback: render auth page if state is unknown
+  return <>{authPage}</>;
 }
 
-// Require any signed-in user
+/** ---------------------------------------------
+ * RequireAuth — any signed-in user
+ * ----------------------------------------------*/
+
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { authStatus } = useApp()
-  const location = useLocation()
-  const { checkRedirect } = useRedirectLoopDetection('RequireAuth')
+  const { authStatus } = useApp();
+  const location = useLocation();
+  const { checkRedirect } = useRedirectLoopDetection('RequireAuth');
 
-  // Wait for auth to be ready
-  if (authStatus === 'loading') return <ScreenLoader />
+  // Wait for auth readiness
+  if (authStatus === 'loading') return <ScreenLoader />;
 
-  // Redirect to home if not signed in, preserving the intended destination
+  // Bounce unauthenticated users to Home and remember the full return URL
   if (authStatus === 'signedOut') {
-    if (checkRedirect('/')) {
-      return <Navigate to="/" state={{ from: location.pathname }} replace />
+    const returnTo = buildReturnTo(location);
+    const dest = '/';
+    if (dest !== location.pathname && checkRedirect(dest)) {
+      return <Navigate to={dest} state={{ from: returnTo }} replace />;
     }
+    return <ScreenLoader label="Redirecting to sign in…" />;
   }
 
-  // Allow access for any authenticated user
-  return <>{children}</>
+  return <>{children}</>;
 }
 
-// Require completed profile (ready status) or guest session
+/** ---------------------------------------------
+ * RequireProfile — completed profile OR guest session
+ * ----------------------------------------------*/
+
 export function RequireProfile({ children }: { children: ReactNode }) {
-  const { authStatus, isGuest } = useApp()
-  const location = useLocation()
-  const { checkRedirect } = useRedirectLoopDetection('RequireProfile')
+  const { authStatus, isGuest } = useApp();
+  const location = useLocation();
+  const { checkRedirect } = useRedirectLoopDetection('RequireProfile');
 
-  // Wait for auth to be ready
-  if (authStatus === 'loading') return <ScreenLoader />
+  if (authStatus === 'loading') return <ScreenLoader />;
 
-  // Redirect to home if not signed in, preserving the intended destination
+  // Not signed in → go Home (preserve returnTo)
   if (authStatus === 'signedOut') {
-    if (checkRedirect('/')) {
-      return <Navigate to="/" state={{ from: location.pathname }} replace />
+    const returnTo = buildReturnTo(location);
+    const dest = '/';
+    if (dest !== location.pathname && checkRedirect(dest)) {
+      return <Navigate to={dest} state={{ from: returnTo }} replace />;
     }
+    return <ScreenLoader label="Redirecting to sign in…" />;
   }
 
-  // Redirect to onboarding if profile is incomplete
+  // Profile incomplete → Onboarding (preserve returnTo)
   if (authStatus === 'needsOnboarding') {
-    if (checkRedirect('/onboarding')) {
-      return <Navigate to="/onboarding" state={{ from: location.pathname }} replace />
+    const returnTo = buildReturnTo(location);
+    const dest = '/onboarding';
+    if (dest !== location.pathname && checkRedirect(dest)) {
+      return <Navigate to={dest} state={{ from: returnTo }} replace />;
     }
+    return <ScreenLoader label="Redirecting to onboarding…" />;
   }
 
-  // Allow access when status is 'ready' or guest session is active
+  // Allow when ready OR in guest mode
   if (authStatus === 'ready' || (authStatus === 'guest' && isGuest)) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
-  // Fallback: show loader for unknown states
-  return <ScreenLoader />
-}
-
-// Simple full-screen loader using Tailwind classes
-function ScreenLoader() {
-  return (
-    <div className="min-h-screen grid place-items-center bg-white">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 border-r-slate-900" />
-    </div>
-  )
+  // Unknown state — remain safe
+  return <ScreenLoader />;
 }
