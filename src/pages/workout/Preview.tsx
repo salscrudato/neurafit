@@ -93,13 +93,13 @@ export default function Preview() {
         body: JSON.stringify(payload),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        const errorMsg = errorData.error || `HTTP ${res.status}`
-        throw new Error(`Failed to add exercise: ${errorMsg}`)
+        const errorMsg = data?.details?.join(', ') || data?.error || `HTTP ${res.status}`
+        throw new Error(errorMsg)
       }
 
-      const data = await res.json()
       const newExercises = [...exercises, data.exercise]
       setExercises(newExercises)
 
@@ -107,8 +107,9 @@ export default function Preview() {
       const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
       sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to add exercise'
       logger.error('Error adding exercise', error as Error)
-      alert('Failed to add exercise. Please try again.')
+      alert(errorMsg)
     } finally {
       setLoadingAdd(false)
     }
@@ -155,9 +156,13 @@ export default function Preview() {
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to swap exercise')
-
       const data = await res.json()
+
+      if (!res.ok) {
+        const errorMsg = data?.details?.join(', ') || data?.error || 'Failed to swap exercise'
+        throw new Error(errorMsg)
+      }
+
       const newExercises = [...exercises]
       newExercises[index] = data.exercise
       setExercises(newExercises)
@@ -166,8 +171,9 @@ export default function Preview() {
       const updatedPlan = { ...parsedData, plan: { ...parsedData.plan, exercises: newExercises } }
       sessionStorage.setItem('nf_workout_plan', JSON.stringify(updatedPlan))
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to swap exercise'
       logger.error('Error swapping exercise', error as Error)
-      alert('Failed to swap exercise. Please try again.')
+      alert(errorMsg)
     } finally {
       setSwappingIndex(null)
     }

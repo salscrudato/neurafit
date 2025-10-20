@@ -647,7 +647,13 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       );
 
       if (contextErrors.length > 0) {
-        console.warn('Replacement exercise failed context validation:', contextErrors);
+        console.warn('Replacement exercise failed context validation:', {
+          exercise: exercise.name,
+          reps: exercise.reps,
+          workoutType,
+          equipment,
+          errors: contextErrors,
+        });
         res.status(400).json({
           error: 'Replacement exercise does not match workout context',
           details: contextErrors,
@@ -658,7 +664,11 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 
       res.status(200).json({ exercise });
     } catch (e) {
-      console.error('Swap exercise error', e);
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      console.error('Swap exercise error', {
+        error: errorMsg,
+        stack: e instanceof Error ? e.stack : undefined,
+      });
       res.status(500).json({ error: 'Failed to swap exercise' });
     }
   },
