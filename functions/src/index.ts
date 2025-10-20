@@ -1,6 +1,6 @@
 /**
  * Firebase Cloud Functions for NeuraFit AI Workout Generator
- * Refactored for better maintainability and modularity
+ * Production-ready backend with robust error handling and AI API best practices
  */
 
 import { initializeApp } from 'firebase-admin/app';
@@ -17,10 +17,10 @@ import { getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder'
 import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
-import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL } from './config';
+import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL, CORS_ORIGINS, SINGLE_EXERCISE_CONFIG } from './config';
 import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
 import { validateSingleExercise } from './lib/schemaValidator';
-import { handleApiError } from './lib/errorHandler';
+import { handleApiError, validateRequestBody } from './lib/errorHandler';
 
 /**
  * Generate a single exercise with validation
@@ -33,66 +33,71 @@ async function generateSingleExerciseWithValidation(
   currentWorkout: { exercises: Array<{ name: string }> },
   exerciseToReplace?: { name: string },
 ): Promise<{ exercise: unknown }> {
-  const completion = await client.chat.completions.create({
-    model: OPENAI_MODEL,
-    temperature: OPENAI_CONFIG.temperature,
-    max_tokens: 800,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    response_format: buildSingleExerciseSchema() as any,
-    messages: [
-      { role: 'system', content: systemMessage },
-      { role: 'user', content: prompt },
-    ],
-  });
-
-  const text = completion.choices[0]?.message?.content?.trim() || '';
-  const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-
-  let exercise: unknown;
   try {
-    exercise = JSON.parse(cleanedText);
-  } catch (e) {
-    throw new Error(`Failed to parse exercise JSON: ${e instanceof Error ? e.message : String(e)}`);
-  }
+    console.log('📤 Generating single exercise (non-streaming, structured output)');
 
-  // Validate schema - only fail on critical errors
-  const schemaCheck = validateSingleExercise(exercise);
-  if (!schemaCheck.valid) {
-    const hasCriticalError = schemaCheck.errors.some(
-      (err) => err.includes('missing required') || err.includes('invalid type'),
-    );
-    if (hasCriticalError) {
-      throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+    // Non-streaming with structured output for guaranteed valid JSON
+    const completion = await client.chat.completions.create({
+      model: OPENAI_MODEL,
+      temperature: OPENAI_CONFIG.temperature,
+      max_tokens: 800,
+      frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
+      presence_penalty: OPENAI_CONFIG.presencePenalty,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      response_format: buildSingleExerciseSchema() as any,
+      messages: [
+        { role: 'system', content: systemMessage },
+        { role: 'user', content: prompt },
+      ],
+      // NO streaming - simpler, guaranteed valid JSON
+    });
+
+    const content = completion.choices[0]?.message?.content?.trim() || '';
+    if (!content) {
+      throw new Error('Empty response from OpenAI');
     }
-    console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors);
+
+    // Parse JSON (guaranteed valid from structured output)
+    let exercise: unknown;
+    try {
+      exercise = JSON.parse(content);
+    } catch (e) {
+      throw new Error(`Failed to parse exercise JSON: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    // Validate schema - only fail on critical errors
+    const schemaCheck = validateSingleExercise(exercise);
+    if (!schemaCheck.valid) {
+      const hasCriticalError = schemaCheck.errors.some(
+        (err) => err.includes('missing required') || err.includes('invalid type'),
+      );
+      if (hasCriticalError) {
+        throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+      }
+      console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors);
+    }
+
+    // Check for duplicates - critical constraint
+    const otherExercises = currentWorkout.exercises
+      .filter((ex: { name: string }) => !exerciseToReplace || ex.name !== exerciseToReplace.name)
+      .map((ex: { name: string }) => ex.name);
+
+    const exerciseName = (exercise as Record<string, unknown>)?.name as string | undefined;
+    if (!exerciseName) {
+      throw new Error('Generated exercise missing name');
+    }
+
+    const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exerciseName));
+    if (hasSimilar) {
+      throw new Error(`Generated exercise is too similar to existing exercises: ${exerciseName}`);
+    }
+
+    console.log('✅ Single exercise generated successfully', { exerciseName });
+    return { exercise };
+  } catch (error) {
+    throw error;
   }
-
-  // Check for duplicates - critical constraint
-  const otherExercises = currentWorkout.exercises
-    .filter((ex: { name: string }) => !exerciseToReplace || ex.name !== exerciseToReplace.name)
-    .map((ex: { name: string }) => ex.name);
-
-  const exerciseName = (exercise as Record<string, unknown>)?.name as string | undefined;
-  if (!exerciseName) {
-    throw new Error('Generated exercise missing name');
-  }
-
-  const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exerciseName));
-  if (hasSimilar) {
-    throw new Error(`Generated exercise is too similar to existing exercises: ${exerciseName}`);
-  }
-
-  return { exercise };
 }
-
-// CORS configuration for all deployment URLs
-const CORS_ORIGINS: string[] = [
-  'http://localhost:5173', // local dev
-  'https://neurafit-ai-2025.web.app', // Firebase Hosting
-  'https://neurafit-ai-2025.firebaseapp.com',
-  'https://neurastack.ai', // Custom domain
-  'https://www.neurastack.ai', // Custom domain with www
-];
 
 // Define the OpenAI API key secret
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
@@ -126,17 +131,25 @@ export const generateWorkout = onRequest(
       // Initialize OpenAI client with the secret value and timeout
       const apiKeyValue = openaiApiKey.value();
       if (!apiKeyValue) {
-        console.error('OpenAI API key is not set');
+        console.error('❌ OpenAI API key is not configured');
         res.status(502).json({
           error: 'Service configuration error',
           details: 'Our AI service is temporarily unavailable. Please try again later.',
+          retryable: false,
         });
         return;
       }
 
       // Validate request body exists
-      if (!req.body) {
-        console.warn('Empty request body received, using defaults');
+      const bodyValidation = validateRequestBody(req.body, []);
+      if (!bodyValidation.valid) {
+        console.warn('⚠️ Invalid request body:', bodyValidation.error);
+        res.status(400).json({
+          error: 'Invalid request',
+          details: bodyValidation.error,
+          retryable: false,
+        });
+        return;
       }
 
       const client = new OpenAI({
@@ -144,7 +157,7 @@ export const generateWorkout = onRequest(
         timeout: OPENAI_CONFIG.timeout, // Use config timeout (180s for all workouts)
       });
 
-      // Extract request body
+      // Extract and validate request body
       const {
         experience,
         goals,
@@ -225,18 +238,24 @@ export const generateWorkout = onRequest(
       };
 
       console.log('🏋️ Starting workout generation', {
-        workoutType,
-        duration,
-        experience,
+        workoutType: finalWorkoutType,
+        duration: finalDuration,
+        experience: finalExperience,
+        goals: filteredGoals,
+        equipment: filteredEquipment,
         uid: uid ? `${uid.substring(0, 8)}...` : 'anonymous',
+        timestamp: new Date().toISOString(),
       });
 
-      // Use new orchestrated generation with multi-pass validation
+      // Use orchestrated generation with structured output
       const result = await generateWorkoutOrchestrated(workoutContext, client, uid);
 
       console.log('✅ Workout generated successfully', {
         exerciseCount: result.exercises?.length || 0,
         targetDuration: result.metadata?.targetDuration,
+        actualDuration: result.metadata?.actualDuration,
+        durationDifference: result.metadata?.durationDifference,
+        generationTime: Date.now() - (result.metadata?.generatedAt || 0),
       });
 
       // Return workout with metadata
@@ -256,14 +275,14 @@ export const generateWorkout = onRequest(
 export const addExerciseToWorkout = onRequest(
   {
     cors: CORS_ORIGINS,
-    region: 'us-central1',
+    region: SINGLE_EXERCISE_CONFIG.region,
     secrets: [openaiApiKey],
-    timeoutSeconds: 60,
-    memory: '512MiB',
+    timeoutSeconds: SINGLE_EXERCISE_CONFIG.timeoutSeconds,
+    memory: SINGLE_EXERCISE_CONFIG.memory,
   },
   async (req: Request, res: Response) => {
     if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Method not allowed' });
+      res.status(405).json({ error: 'Method not allowed', retryable: false });
       return;
     }
 
@@ -272,12 +291,28 @@ export const addExerciseToWorkout = onRequest(
 
       // Validate request
       if (!currentWorkout?.exercises || !Array.isArray(currentWorkout.exercises) || currentWorkout.exercises.length === 0) {
-        res.status(400).json({ error: 'currentWorkout with exercises is required' });
+        console.warn('⚠️ Invalid add exercise request: missing or empty exercises');
+        res.status(400).json({
+          error: 'Invalid request',
+          details: 'currentWorkout with exercises is required',
+          retryable: false,
+        });
+        return;
+      }
+
+      const apiKeyValue = openaiApiKey.value();
+      if (!apiKeyValue) {
+        console.error('❌ OpenAI API key not configured for add exercise');
+        res.status(502).json({
+          error: 'Service configuration error',
+          details: 'Our AI service is temporarily unavailable. Please try again later.',
+          retryable: false,
+        });
         return;
       }
 
       const client = new OpenAI({
-        apiKey: openaiApiKey.value(),
+        apiKey: apiKeyValue,
         timeout: OPENAI_CONFIG.singleExerciseTimeout,
       });
 
@@ -329,14 +364,14 @@ OUTPUT ONLY valid JSON with no markdown.`;
 export const swapExercise = onRequest(
   {
     cors: CORS_ORIGINS,
-    region: 'us-central1',
+    region: SINGLE_EXERCISE_CONFIG.region,
     secrets: [openaiApiKey],
-    timeoutSeconds: 60,
-    memory: '512MiB',
+    timeoutSeconds: SINGLE_EXERCISE_CONFIG.timeoutSeconds,
+    memory: SINGLE_EXERCISE_CONFIG.memory,
   },
   async (req: Request, res: Response) => {
     if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Method not allowed' });
+      res.status(405).json({ error: 'Method not allowed', retryable: false });
       return;
     }
 
@@ -344,12 +379,28 @@ export const swapExercise = onRequest(
       const { exerciseToReplace, currentWorkout, workoutType, experience, goals, equipment, injuries } = req.body;
 
       if (!exerciseToReplace?.name || !currentWorkout?.exercises) {
-        res.status(400).json({ error: 'Invalid request data' });
+        console.warn('⚠️ Invalid swap exercise request: missing exercise or workout data');
+        res.status(400).json({
+          error: 'Invalid request',
+          details: 'exerciseToReplace and currentWorkout are required',
+          retryable: false,
+        });
+        return;
+      }
+
+      const apiKeyValue = openaiApiKey.value();
+      if (!apiKeyValue) {
+        console.error('❌ OpenAI API key not configured for swap exercise');
+        res.status(502).json({
+          error: 'Service configuration error',
+          details: 'Our AI service is temporarily unavailable. Please try again later.',
+          retryable: false,
+        });
         return;
       }
 
       const client = new OpenAI({
-        apiKey: openaiApiKey.value(),
+        apiKey: apiKeyValue,
         timeout: OPENAI_CONFIG.singleExerciseTimeout,
       });
 

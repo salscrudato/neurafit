@@ -9,8 +9,51 @@ import { getProgrammingRecommendations } from '../lib/exerciseDatabase';
 import { validateWorkoutPlanJSON } from '../lib/schemaValidator';
 import { validateAndAdjustDuration } from '../lib/durationAdjustment';
 import { OPENAI_MODEL, OPENAI_CONFIG } from '../config';
-import { streamWithTimeout, callOpenAIWithRetry, validateAndRepairJSON } from '../lib/streamingUtils';
 import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
+
+/**
+ * Retry logic for transient errors only
+ * Implements exponential backoff for rate limits and server errors
+ */
+async function retryOnTransientError<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 1,
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const status = (error as Record<string, unknown>)?.status as number | undefined;
+      const code = (error as Record<string, unknown>)?.code as string | undefined;
+      const errorMsg = lastError.message.toLowerCase();
+
+      // Only retry on transient errors (rate limits, server errors, timeouts)
+      const isTransient =
+        status === 429 ||
+        status === 500 ||
+        status === 502 ||
+        status === 503 ||
+        status === 504 ||
+        code === 'ETIMEDOUT' ||
+        errorMsg.includes('timeout') ||
+        errorMsg.includes('rate_limit');
+
+      if (!isTransient || attempt >= maxRetries) throw lastError;
+
+      // Exponential backoff: 200ms, 400ms
+      const delayMs = 200 * Math.pow(2, attempt);
+      console.warn(`⚠️ Transient error (${status || code}), retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`, {
+        message: lastError.message,
+      });
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError || new Error('API call failed');
+}
 
 /**
  * Generation metadata attached to successful workouts
@@ -47,7 +90,10 @@ export async function generateWorkoutOrchestrated(
     type: ctx.workoutType,
     duration: ctx.duration,
     experience: ctx.experience,
+    goals: ctx.goals,
+    equipment: ctx.equipment,
     uid: uid ? `${uid.substring(0, 8)}...` : 'anonymous',
+    timestamp: new Date().toISOString(),
   });
 
   // Normalize inputs
@@ -70,87 +116,77 @@ export async function generateWorkoutOrchestrated(
   const systemMessage = buildSystemMessage(duration, workoutType);
   const responseFormat = buildOpenAIJsonSchema(minExerciseCount, maxExerciseCount);
 
-  let repairAttempts = 0;
   let candidate: WorkoutPlan | undefined;
 
-  // Try generation with one retry
-  for (let attempt = 0; attempt <= 1; attempt++) {
-    try {
-      console.log(`📤 Generation attempt ${attempt + 1}/2`);
+  // Generate with retry on transient errors only
+  try {
+    console.log('📤 Generating workout (non-streaming, structured output)');
 
-      let content = '';
-
-      // Call OpenAI with retry logic
-      await callOpenAIWithRetry(async () => {
-        const stream = await openaiClient.chat.completions.create({
-          model: OPENAI_MODEL,
-          temperature: OPENAI_CONFIG.temperature,
-          top_p: OPENAI_CONFIG.topP,
-          max_tokens: OPENAI_CONFIG.maxTokens,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          response_format: responseFormat as any,
-          messages: [
-            { role: 'system' as const, content: systemMessage },
-            { role: 'user' as const, content: prompt },
-          ],
-          stream: true,
-        });
-
-        content = await streamWithTimeout(stream, OPENAI_CONFIG.streamTimeout);
-        if (!content) throw new Error('Empty response from OpenAI');
-
-        // Parse and validate JSON
-        const parseResult = validateAndRepairJSON(content);
-        if (!parseResult.valid) {
-          throw new Error(`JSON parse failed: ${parseResult.error}`);
-        }
-
-
-
-        // Validate schema - trust AI, only fail on critical errors
-        const schemaValidation = validateWorkoutPlanJSON(parseResult.data, minExerciseCount, maxExerciseCount);
-        if (!schemaValidation.valid) {
-          const hasCriticalError = schemaValidation.errors.some(
-            (e) => e.includes('Duplicate') || e.includes('missing required'),
-          );
-
-          if (hasCriticalError) {
-            throw new Error(`Critical validation error: ${schemaValidation.errors.join(', ')}`);
-          }
-          // Accept response despite minor warnings
-          console.warn('⚠️ Minor validation warnings (accepting):', schemaValidation.errors);
-        }
-
-        candidate = parseResult.data as WorkoutPlan;
+    // Call OpenAI with structured JSON output (guarantees valid JSON)
+    const response = await retryOnTransientError(async () => {
+      return await openaiClient.chat.completions.create({
+        model: OPENAI_MODEL,
+        temperature: OPENAI_CONFIG.temperature,
+        top_p: OPENAI_CONFIG.topP,
+        max_tokens: OPENAI_CONFIG.maxTokens,
+        frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
+        presence_penalty: OPENAI_CONFIG.presencePenalty,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        response_format: responseFormat as any,
+        messages: [
+          { role: 'system' as const, content: systemMessage },
+          { role: 'user' as const, content: prompt },
+        ],
+        // NO streaming - simpler, more robust
       });
+    });
 
-      // Validate critical requirements
-      if (!candidate?.exercises || candidate.exercises.length === 0) {
-        throw new Error('No exercises generated');
-      }
-
-      const durationValidation = validateAndAdjustDuration(candidate, duration, minExerciseCount);
-      if (durationValidation.actualDuration < 5) {
-        throw new Error('Workout duration too short');
-      }
-
-      console.log('✅ Workout generated successfully');
-      break;
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.warn(`⚠️ Attempt ${attempt + 1} failed:`, errorMsg);
-
-      if (attempt < 1) {
-        repairAttempts++;
-        continue;
-      }
-
-      throw error;
+    // Extract content (guaranteed valid JSON from structured output)
+    const content = response.choices[0]?.message?.content;
+    if (!content || content.trim().length === 0) {
+      throw new Error('Empty response from OpenAI');
     }
+
+    // Parse JSON (should always succeed with structured output)
+    try {
+      candidate = JSON.parse(content) as WorkoutPlan;
+    } catch (parseError) {
+      throw new Error(`JSON parse failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+    }
+
+    // Validate schema - trust AI, only fail on critical errors
+    const schemaValidation = validateWorkoutPlanJSON(candidate, minExerciseCount, maxExerciseCount);
+    if (!schemaValidation.valid) {
+      const hasCriticalError = schemaValidation.errors.some(
+        (e) => e.includes('Duplicate') || e.includes('missing required'),
+      );
+
+      if (hasCriticalError) {
+        throw new Error(`Critical validation error: ${schemaValidation.errors.join(', ')}`);
+      }
+      // Accept response despite minor warnings
+      console.warn('⚠️ Minor validation warnings (accepting):', schemaValidation.errors);
+    }
+
+    // Validate critical requirements
+    if (!candidate?.exercises || candidate.exercises.length === 0) {
+      throw new Error('No exercises generated - AI returned empty workout');
+    }
+
+    const durationValidation = validateAndAdjustDuration(candidate, duration, minExerciseCount);
+    if (durationValidation.actualDuration < 5) {
+      throw new Error(`Workout duration too short: ${durationValidation.actualDuration.toFixed(1)}min (minimum 5min)`);
+    }
+
+    console.log('✅ Workout generated successfully on first attempt');
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Generation failed:`, errorMsg);
+    throw error;
   }
 
   if (!candidate) {
-    throw new Error('Failed to generate valid workout after retries');
+    throw new Error('Failed to generate valid workout');
   }
 
   // Collect metadata
@@ -161,14 +197,19 @@ export async function generateWorkoutOrchestrated(
     actualDuration: durationValidation.actualDuration,
     targetDuration: duration,
     durationDifference: durationValidation.difference,
-    repairAttempts,
+    repairAttempts: 0, // No repairs needed with structured output
     generatedAt: Date.now(),
   };
 
   const elapsed = Date.now() - startTime;
-  console.log(`✨ Complete in ${elapsed}ms`, {
+  console.log(`✨ Generated in ${elapsed}ms`, {
     exercises: candidate.exercises.length,
     duration: durationValidation.actualDuration.toFixed(1),
+    targetDuration: duration,
+    durationDifference: durationValidation.difference.toFixed(1),
+    method: 'non-streaming-structured-output',
+    model: OPENAI_MODEL,
+    temperature: OPENAI_CONFIG.temperature,
   });
 
   return { ...candidate, metadata };
