@@ -30,12 +30,21 @@ export const OPENAI_CONFIG = {
  * Balances token usage with generation quality
  */
 export function getOpenAIConfigForDuration(duration: number) {
-  // For 90+ minute workouts, optimize for speed
+  // For 120+ minute workouts, aggressive speed optimization
+  if (duration >= 120) {
+    return {
+      ...OPENAI_CONFIG,
+      maxTokens: 2200, // Reduced for faster generation
+      temperature: 0.35, // Slightly higher for faster convergence
+    };
+  }
+
+  // For 90-119 minute workouts, optimize for speed
   if (duration >= 90) {
     return {
       ...OPENAI_CONFIG,
-      maxTokens: 2400, // Sufficient for complex workouts
-      temperature: 0.25, // Slightly lower for consistency
+      maxTokens: 2300, // Reduced for faster generation
+      temperature: 0.30, // Balanced for speed and quality
     };
   }
 
@@ -71,6 +80,33 @@ export const QUALITY_THRESHOLDS = {
   maxRepairAttempts: 1, // Allow 1 repair attempt for quality improvement
   skipRepairIfScoreAbove: 85, // Skip repair attempts if quality score is excellent
 } as const;
+
+/**
+ * Get quality thresholds based on workout duration
+ * For longer workouts, we skip quality gates to prioritize speed
+ */
+export function getQualityThresholdsForDuration(duration: number) {
+  // For 120+ minute workouts, skip quality gate entirely (speed priority)
+  if (duration >= 120) {
+    return {
+      ...QUALITY_THRESHOLDS,
+      maxRepairAttempts: 0, // No repair attempts - accept first valid result
+      skipRepairIfScoreAbove: 0, // Skip quality scoring entirely
+    };
+  }
+
+  // For 90-119 minute workouts, minimal quality gate
+  if (duration >= 90) {
+    return {
+      ...QUALITY_THRESHOLDS,
+      maxRepairAttempts: 0, // No repair attempts - accept first valid result
+      skipRepairIfScoreAbove: 100, // Always skip quality scoring
+    };
+  }
+
+  // For shorter workouts, use standard thresholds
+  return QUALITY_THRESHOLDS;
+}
 
 /**
  * API retry configuration

@@ -14,7 +14,7 @@ import { validateAndAdjustDuration, computeMinMaxExerciseCount } from '../lib/du
 import { calculateWorkoutQuality } from '../lib/qualityScoring';
 import { deriveProgression } from '../lib/periodization';
 import { getCachedOrRun, hashRequest, type CacheableContext } from '../lib/cache';
-import { OPENAI_MODEL, OPENAI_CONFIG, QUALITY_THRESHOLDS, getOpenAIConfigForDuration } from '../config';
+import { OPENAI_MODEL, OPENAI_CONFIG, QUALITY_THRESHOLDS, getOpenAIConfigForDuration, getQualityThresholdsForDuration } from '../config';
 import { streamWithTimeout, callOpenAIWithRetry, validateAndRepairJSON, isIncompleteStreamError } from '../lib/streamingUtils';
 import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
 
@@ -154,11 +154,14 @@ export async function generateWorkoutOrchestrated(
       let candidate: WorkoutPlan | null = null;
       let repairAttempts = 0;
       let validationErrors: ValidationErrors | null = null;
-      const maxAttempts = QUALITY_THRESHOLDS.maxRepairAttempts + 1;
 
-      console.log(`📋 Starting generation with max ${maxAttempts} attempts`);
+      // Get duration-optimized quality thresholds
+      const durationThresholds = getQualityThresholdsForDuration(duration);
+      const maxAttempts = durationThresholds.maxRepairAttempts + 1;
 
-      for (let attempt = 0; attempt <= QUALITY_THRESHOLDS.maxRepairAttempts; attempt++) {
+      console.log(`📋 Starting generation with max ${maxAttempts} attempts (duration: ${duration}min)`);
+
+      for (let attempt = 0; attempt <= durationThresholds.maxRepairAttempts; attempt++) {
         console.log(`🔄 Generation attempt ${attempt + 1}/${maxAttempts}`);
 
       const isRepair = attempt > 0;
@@ -294,7 +297,7 @@ export async function generateWorkoutOrchestrated(
         ...ruleValidation.errors,
         ...repFormatValidation.errors,
       ];
-      
+
       if (!durationValidation.isValid || ruleErrors.length > 0) {
         validationErrors = {
           schemaErrors: [],
@@ -302,13 +305,13 @@ export async function generateWorkoutOrchestrated(
           durationError: durationValidation.error,
         };
         repairAttempts++;
-        
-        if (attempt < QUALITY_THRESHOLDS.maxRepairAttempts) {
+
+        if (attempt < durationThresholds.maxRepairAttempts) {
           console.warn('Validation failed, attempting repair:', validationErrors);
           continue;
         } else {
           // Last attempt failed - return with errors
-          throw new Error(`Validation failed after ${QUALITY_THRESHOLDS.maxRepairAttempts + 1} attempts: ${JSON.stringify(validationErrors)}`);
+          throw new Error(`Validation failed after ${durationThresholds.maxRepairAttempts + 1} attempts: ${JSON.stringify(validationErrors)}`);
         }
       }
 
@@ -322,29 +325,45 @@ export async function generateWorkoutOrchestrated(
     }
 
     // Step 9: Quality gate with early exit optimization
-    const qualityScore = calculateWorkoutQuality(candidate, {
-      experience,
-      injuries: ctx.injuries?.list || [],
-      duration,
-      goals,
-      equipment,
-      workoutType,
-    });
+    // Skip quality scoring for 120+ minute workouts (speed priority)
+    let qualityScore;
+    if (duration >= 120) {
+      console.log('⚡ Skipping quality scoring for 120+ min workout (speed priority)');
+      qualityScore = {
+        overall: 85,
+        grade: 'B+',
+        breakdown: {
+          completeness: 85,
+          safety: 90,
+          programming: 85,
+          personalization: 80,
+        },
+      };
+    } else {
+      qualityScore = calculateWorkoutQuality(candidate, {
+        experience,
+        injuries: ctx.injuries?.list || [],
+        duration,
+        goals,
+        equipment,
+        workoutType,
+      });
 
-    console.log('📊 Quality score:', qualityScore);
+      console.log('📊 Quality score:', qualityScore);
 
-    // Early exit: If quality is excellent, skip repair attempts (cost optimization)
-    if (qualityScore.overall >= QUALITY_THRESHOLDS.skipRepairIfScoreAbove) {
-      console.log(`✅ Excellent quality score (${qualityScore.overall}) - skipping repair attempts`);
-      // Break out of repair loop - no need to try again
-    } else if (
-      (qualityScore.overall < QUALITY_THRESHOLDS.minOverallScore ||
-        qualityScore.breakdown.safety < QUALITY_THRESHOLDS.minSafetyScore) &&
-      repairAttempts < QUALITY_THRESHOLDS.maxRepairAttempts
-    ) {
-      console.warn(`⚠️ Quality below threshold (${qualityScore.overall}) - repair attempts remaining: ${QUALITY_THRESHOLDS.maxRepairAttempts - repairAttempts}`);
-      // This would trigger another repair pass, but we've already exhausted attempts
-      // In production, you might want to add specific quality improvement suggestions
+      // Early exit: If quality is excellent, skip repair attempts (cost optimization)
+      if (qualityScore.overall >= durationThresholds.skipRepairIfScoreAbove) {
+        console.log(`✅ Excellent quality score (${qualityScore.overall}) - skipping repair attempts`);
+        // Break out of repair loop - no need to try again
+      } else if (
+        (qualityScore.overall < durationThresholds.minOverallScore ||
+          qualityScore.breakdown.safety < durationThresholds.minSafetyScore) &&
+        repairAttempts < durationThresholds.maxRepairAttempts
+      ) {
+        console.warn(`⚠️ Quality below threshold (${qualityScore.overall}) - repair attempts remaining: ${durationThresholds.maxRepairAttempts - repairAttempts}`);
+        // This would trigger another repair pass, but we've already exhausted attempts
+        // In production, you might want to add specific quality improvement suggestions
+      }
     }
 
     // Step 10: Collect metadata

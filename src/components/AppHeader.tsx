@@ -6,6 +6,8 @@ import { auth } from '../lib/firebase'
 import { Menu, X, Zap, Home, Dumbbell, History, User, LogOut, type LucideIcon } from 'lucide-react'
 import { usePrefetchOnIdle, usePrefetchOnHover } from '../hooks/usePrefetch'
 import { logger } from '../lib/logger'
+import { useAppStore } from '../store'
+import { clearGuestSession } from '../lib/guest-session'
 
 // MenuItem component to properly use hooks - memoized to prevent re-renders
 const MenuItem = memo(function MenuItem({
@@ -37,6 +39,7 @@ const MenuItem = memo(function MenuItem({
 export default function AppHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const nav = useNavigate()
+  const { isGuest, setIsGuest, setAuthStatus } = useAppStore()
 
   // Prefetch critical routes on idle
   usePrefetchOnIdle(['/generate', '/history'], 2000)
@@ -58,6 +61,17 @@ export default function AppHeader() {
   // Memoize sign out handler to prevent recreation
   const handleSignOut = useCallback(async () => {
     try {
+      // Handle guest logout
+      if (isGuest) {
+        clearGuestSession()
+        setIsGuest(false)
+        setAuthStatus('signedOut')
+        nav('/')
+        setIsMenuOpen(false)
+        return
+      }
+
+      // Handle authenticated user logout
       await signOut(auth)
       nav('/')
       setIsMenuOpen(false)
@@ -65,7 +79,7 @@ export default function AppHeader() {
       logger.error('Sign out failed', e as Error)
       alert('Sign out failed. Please try again.')
     }
-  }, [nav])
+  }, [nav, isGuest, setIsGuest, setAuthStatus])
 
   return (
     <>

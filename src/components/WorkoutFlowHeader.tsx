@@ -17,6 +17,8 @@ import {
   Play,
   SkipForward
 } from 'lucide-react'
+import { useAppStore } from '../store'
+import { clearGuestSession } from '../lib/guest-session'
 
 interface WorkoutFlowHeaderProps {
   title?: string
@@ -43,6 +45,7 @@ export default function WorkoutFlowHeader({
 }: WorkoutFlowHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const nav = useNavigate()
+  const { isGuest, setIsGuest, setAuthStatus } = useAppStore()
 
   const menuItems = [
     { label: 'Dashboard', path: '/dashboard', icon: Home },
@@ -58,6 +61,17 @@ export default function WorkoutFlowHeader({
 
   const handleSignOut = async () => {
     try {
+      // Handle guest logout
+      if (isGuest) {
+        clearGuestSession()
+        setIsGuest(false)
+        setAuthStatus('signedOut')
+        nav('/')
+        setIsMenuOpen(false)
+        return
+      }
+
+      // Handle authenticated user logout
       await signOut(auth)
       nav('/')
       setIsMenuOpen(false)
