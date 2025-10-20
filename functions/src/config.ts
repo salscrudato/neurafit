@@ -1,9 +1,9 @@
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 export const OPENAI_CONFIG = {
-  temperature: 0.3,
+  temperature: 0.4, // Slightly higher for variety while maintaining consistency
   topP: 0.85,
-  maxTokens: 2600,
+  maxTokens: 2400, // Optimized for cost while maintaining quality
   timeout: 180000,
   streamTimeout: 150000,
   singleExerciseTimeout: 60000,

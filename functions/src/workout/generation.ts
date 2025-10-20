@@ -107,19 +107,18 @@ export async function generateWorkoutOrchestrated(
 
 
 
-        // Validate schema - simplified to trust AI more
+        // Validate schema - trust AI, only fail on critical errors
         const schemaValidation = validateWorkoutPlanJSON(parseResult.data, minExerciseCount, maxExerciseCount);
         if (!schemaValidation.valid) {
-          console.warn('⚠️ Schema validation warnings:', schemaValidation.errors);
-          // Trust AI output - only fail on critical errors (duplicate exercises, missing required fields)
-          const hasDuplicates = schemaValidation.errors.some(e => e.includes('Duplicate'));
-          const hasMissingFields = schemaValidation.errors.some(e => e.includes('missing required'));
+          const hasCriticalError = schemaValidation.errors.some(
+            (e) => e.includes('Duplicate') || e.includes('missing required'),
+          );
 
-          if (hasDuplicates || hasMissingFields) {
+          if (hasCriticalError) {
             throw new Error(`Critical validation error: ${schemaValidation.errors.join(', ')}`);
           }
-          // Otherwise, accept the response and log warnings
-          console.log('✅ Accepting AI response despite minor validation warnings');
+          // Accept response despite minor warnings
+          console.warn('⚠️ Minor validation warnings (accepting):', schemaValidation.errors);
         }
 
         candidate = parseResult.data as WorkoutPlan;

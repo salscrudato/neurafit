@@ -18,20 +18,20 @@ import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
 import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL } from './config';
-import { getExerciseContextValidationErrors } from './lib/exerciseContextValidation';
 import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
 import { validateSingleExercise } from './lib/schemaValidator';
 import { handleApiError } from './lib/errorHandler';
 
-// Helper function to generate a single exercise with validation
+/**
+ * Generate a single exercise with validation
+ * Simplified: Trust AI output, only validate critical constraints
+ */
 async function generateSingleExerciseWithValidation(
   prompt: string,
   systemMessage: string,
   client: OpenAI,
   currentWorkout: { exercises: Array<{ name: string }> },
   exerciseToReplace?: { name: string },
-  workoutType?: string,
-  equipment?: string[],
 ): Promise<{ exercise: unknown }> {
   const completion = await client.chat.completions.create({
     model: OPENAI_MODEL,
@@ -47,34 +47,39 @@ async function generateSingleExerciseWithValidation(
 
   const text = completion.choices[0]?.message?.content?.trim() || '';
   const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-  const exercise = JSON.parse(cleanedText);
 
-  // Validate against schema
+  let exercise: unknown;
+  try {
+    exercise = JSON.parse(cleanedText);
+  } catch (e) {
+    throw new Error(`Failed to parse exercise JSON: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // Validate schema - only fail on critical errors
   const schemaCheck = validateSingleExercise(exercise);
   if (!schemaCheck.valid) {
-    throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+    const hasCriticalError = schemaCheck.errors.some(
+      (err) => err.includes('missing required') || err.includes('invalid type'),
+    );
+    if (hasCriticalError) {
+      throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+    }
+    console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors);
   }
 
-  // Validate context
-  const contextErrors = getExerciseContextValidationErrors(
-    exercise.name,
-    exercise.reps,
-    workoutType || 'Full Body',
-    equipment || ['Bodyweight'],
-  );
-
-  if (contextErrors.length > 0) {
-    throw new Error(`Context validation failed: ${contextErrors.join(', ')}`);
-  }
-
-  // Check for duplicates
+  // Check for duplicates - critical constraint
   const otherExercises = currentWorkout.exercises
     .filter((ex: { name: string }) => !exerciseToReplace || ex.name !== exerciseToReplace.name)
     .map((ex: { name: string }) => ex.name);
 
-  const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exercise.name));
+  const exerciseName = (exercise as Record<string, unknown>)?.name as string | undefined;
+  if (!exerciseName) {
+    throw new Error('Generated exercise missing name');
+  }
+
+  const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exerciseName));
   if (hasSimilar) {
-    throw new Error(`Generated exercise is too similar to existing exercises: ${exercise.name}`);
+    throw new Error(`Generated exercise is too similar to existing exercises: ${exerciseName}`);
   }
 
   return { exercise };
@@ -118,21 +123,20 @@ export const generateWorkout = onRequest(
     }
 
     try {
-      // Validate request body exists - use empty object as fallback
-      if (!req.body) {
-        console.warn('Empty request body received, using defaults');
-        // Don't fail - continue with defaults
-      }
-
       // Initialize OpenAI client with the secret value and timeout
       const apiKeyValue = openaiApiKey.value();
       if (!apiKeyValue) {
         console.error('OpenAI API key is not set');
         res.status(502).json({
-          error: 'AI service configuration error',
-          details: 'Please try again later',
+          error: 'Service configuration error',
+          details: 'Our AI service is temporarily unavailable. Please try again later.',
         });
         return;
+      }
+
+      // Validate request body exists
+      if (!req.body) {
+        console.warn('Empty request body received, using defaults');
       }
 
       const client = new OpenAI({
@@ -309,9 +313,6 @@ OUTPUT ONLY valid JSON with no markdown.`;
         systemMessage,
         client,
         currentWorkout,
-        undefined,
-        workoutType,
-        equipment,
       );
 
       res.status(200).json(result);
@@ -388,8 +389,6 @@ OUTPUT ONLY valid JSON with no markdown.`;
         client,
         currentWorkout,
         exerciseToReplace,
-        workoutType,
-        equipment,
       );
 
       // Additional check: ensure it's not a minor variation of the original
