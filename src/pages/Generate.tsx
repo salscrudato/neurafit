@@ -36,8 +36,8 @@ const WORKOUT_CATEGORIES = [
   }
 ] as const
 
-// Workout durations: 15-90 minutes (optimized for user preferences)
-const DUR = [15, 30, 45, 60, 75, 90] as const
+// Workout durations: 15-60 minutes (optimized for user preferences)
+const DUR = [15, 30, 45, 60] as const
 
 // Profile type moved to types file for better organization
 // type Profile = {
