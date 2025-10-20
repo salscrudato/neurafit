@@ -21,6 +21,7 @@ import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL } from './config';
 import { getExerciseContextValidationErrors } from './lib/exerciseContextValidation';
 import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
 import { validateSingleExercise } from './lib/schemaValidator';
+import { handleApiError } from './lib/errorHandler';
 
 // CORS configuration for all deployment URLs
 const CORS_ORIGINS: string[] = [
@@ -181,83 +182,7 @@ export const generateWorkout = onRequest(
       res.json(result);
       return;
     } catch (e) {
-      // Comprehensive error logging
-      const errorMessage = e instanceof Error ? e.message : String(e);
-      const errorStack = e instanceof Error ? e.stack : '';
-      const errorCode = (e as Record<string, unknown>)?.code || 'UNKNOWN';
-      const errorStatus = (e as Record<string, unknown>)?.status || 'UNKNOWN';
-      const errorType = (e as Record<string, unknown>)?.type || 'UNKNOWN';
-
-      console.error('❌ Workout generation error', {
-        message: errorMessage,
-        stack: errorStack,
-        type: e instanceof Error ? e.constructor.name : typeof e,
-        code: errorCode,
-        status: errorStatus,
-        errorType,
-      });
-
-      // Handle specific error types
-      if (e instanceof Error) {
-        const msg = e.message.toLowerCase();
-
-        // Timeout errors
-        if (msg.includes('timeout') || msg.includes('etimedout')) {
-          res.status(504).json({
-            error: 'Request timeout',
-            details: 'Workout generation took too long. Please try again.',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Authentication errors
-        if (errorStatus === 401 || errorStatus === 403 || msg.includes('unauthorized')) {
-          res.status(502).json({
-            error: 'AI service configuration error',
-            details: 'Please try again later',
-            retryable: false,
-          });
-          return;
-        }
-
-        // Rate limiting
-        if (errorStatus === 429 || msg.includes('rate_limit')) {
-          res.status(429).json({
-            error: 'Too many requests',
-            details: 'Please wait a moment and try again',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Server errors
-        if (errorStatus === 500 || errorStatus === 502 || errorStatus === 503 || errorStatus === 504) {
-          res.status(502).json({
-            error: 'AI service temporarily unavailable',
-            details: 'Please try again in a moment',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Validation or JSON errors - retryable
-        if (msg.includes('validation') || msg.includes('json') || msg.includes('parse')) {
-          res.status(500).json({
-            error: 'Workout generation error',
-            details: 'The generated workout did not meet quality standards. Please try again.',
-            retryable: true,
-          });
-          return;
-        }
-      }
-
-      // Generic error - always retryable
-      res.status(500).json({
-        error: 'Workout generation service error',
-        details: 'An unexpected error occurred. Please try again in a moment.',
-        retryable: true,
-      });
+      handleApiError(e, res, 'Workout generation');
       return;
     }
   },
@@ -324,66 +249,33 @@ export const addExerciseToWorkout = onRequest(
       // Determine if this is a time-based workout
       const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
       const repFormat = isTimeBasedWorkout ? '"45s" (time format)' : '"8-12" (range format)';
-      const repInstruction = isTimeBasedWorkout
-        ? '⚠️ CRITICAL: This is a time-based workout - reps MUST use time format like "30s", "45s", "60s" (NOT ranges like "8-12")'
-        : 'Use rep range format like "8-12", "6-10", "12-15"';
 
-      const prompt = `You are adding ONE additional exercise to an existing ${workoutType || 'Full Body'} workout.
+      const prompt = `Add ONE new exercise to a ${workoutType || 'Full Body'} workout.
 
-⚠️ CRITICAL: The exercise you generate MUST be completely different from all existing exercises.
-
-EXISTING EXERCISES IN WORKOUT (ABSOLUTELY DO NOT DUPLICATE OR USE SIMILAR VARIATIONS):
+EXISTING EXERCISES (DO NOT DUPLICATE):
 ${existingExercises}
 
-CLIENT PROFILE:
-- Experience: ${experience || 'Beginner'}
-- Goals: ${(goals || ['General Health']).join(', ')}
-- Equipment: ${(equipment || ['Bodyweight']).join(', ')}
-- Workout Type: ${workoutType || 'Full Body'}
-${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
+CLIENT: ${experience || 'Beginner'} | Goals: ${(goals || ['General Health']).join(', ')} | Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+${injuries?.list?.length > 0 ? `Injuries: ${injuries.list.join(', ')}` : ''}
 
-WORKOUT TYPE GUIDANCE FOR ${workoutType || 'Full Body'}:
 ${workoutTypeGuidance}
 
-CRITICAL REQUIREMENTS:
-1. Generate ONE exercise that complements the existing workout
-2. ⚠️ ABSOLUTELY DO NOT duplicate or use variations of existing exercises
-   - If "Dumbbell Bench Press" exists, DO NOT use "Dumbbell Incline Press" or "Dumbbell Close-Grip Press"
-   - If "Barbell Row" exists, DO NOT use "Dumbbell Row" or "Cable Row"
-   - Choose a COMPLETELY DIFFERENT exercise targeting different movement patterns
-3. MUST match the workout type: ${workoutType || 'Full Body'}
-   - The exercise MUST align with the workout type guidance above
-   - Use the example exercises and movement patterns as reference
-   - Upper Body: Only chest, back, shoulders exercises
-   - Lower Body: Only legs, glutes, hamstrings, quads exercises
-   - Full Body: Balance of upper and lower body
-   - Legs/Glutes: Hip-dominant and glute-focused movements
-   - Chest/Triceps: Chest pressing and tricep isolation
-   - Back/Biceps: Pulling movements and bicep work
-   - Shoulders: Deltoid-focused exercises (front, side, rear)
-   - Core Focus: Anti-extension, anti-rotation, stability
-   - Cardio: Cardiovascular conditioning movements
-   - HIIT: High-intensity explosive movements
-   - Yoga: Flexibility and balance poses
-   - Pilates: Core-focused controlled movements
-4. Target muscle groups that are underrepresented in the current workout
-5. Follow programming guidelines: ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${isTimeBasedWorkout ? 'time-based reps (30s, 45s, 60s)' : `${programming.reps?.[0]}-${programming.reps?.[1]} reps`}, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
-6. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
-7. Avoid contraindicated exercises if injuries are present
-8. Use ONLY available equipment: ${(equipment || ['Bodyweight']).join(', ')}
-9. ⚠️ BEFORE OUTPUTTING: Verify the exercise name is NOT similar to any existing exercise
+REQUIREMENTS:
+- COMPLETELY different from existing exercises (different movement pattern)
+- Match ${workoutType || 'Full Body'} workout type
+- ${programming.sets?.[0]}-${programming.sets?.[1]} sets, ${isTimeBasedWorkout ? 'time format ("30s", "45s", "60s")' : `${programming.reps?.[0]}-${programming.reps?.[1]} reps`}, ${programming.restSeconds?.[0]}-${programming.restSeconds?.[1]}s rest
+- ${(experience || 'beginner').toLowerCase()} difficulty
+- Use ONLY: ${(equipment || ['Bodyweight']).join(', ')}
+${isTimeBasedWorkout ? '- CRITICAL: Use time format ("30s", "45s", "60s") NOT ranges' : ''}
 
-REP FORMAT REQUIREMENT:
-${repInstruction}
-
-ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
+OUTPUT ONLY valid JSON:
 {
-  "name": "Exercise Name (MUST be completely unique and different from existing exercises)",
-  "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
+  "name": "Exercise Name",
+  "description": "Setup, execution, breathing cues",
   "sets": 3,
   "reps": ${repFormat},
-  "formTips": ["First form tip - specific and actionable", "Second form tip - addresses common error", "Third form tip - joint alignment or quality cue"],
-  "safetyTips": ["First safety tip - injury prevention", "Second safety tip - modification option"],
+  "formTips": ["Tip 1", "Tip 2", "Tip 3"],
+  "safetyTips": ["Safety 1", "Safety 2"],
   "restSeconds": 90,
   "usesWeight": ${isTimeBasedWorkout ? 'false' : 'true'},
   "muscleGroups": ["muscle1", "muscle2"],
@@ -457,56 +349,7 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 
       res.status(200).json({ exercise });
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      const errorStatus = (e as Record<string, unknown>)?.status || 'UNKNOWN';
-
-      console.error('❌ Add exercise error:', {
-        message: errorMsg,
-        status: errorStatus,
-        type: e instanceof Error ? e.constructor.name : typeof e,
-      });
-
-      // Handle specific error types
-      if (e instanceof Error) {
-        const msg = e.message.toLowerCase();
-
-        // Timeout errors
-        if (msg.includes('timeout') || msg.includes('etimedout')) {
-          res.status(504).json({
-            error: 'Request timeout',
-            details: 'Exercise generation took too long. Please try again.',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Rate limiting
-        if (errorStatus === 429 || msg.includes('rate_limit')) {
-          res.status(429).json({
-            error: 'Too many requests',
-            details: 'Please wait a moment and try again',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Server errors
-        if (errorStatus === 500 || errorStatus === 502 || errorStatus === 503) {
-          res.status(502).json({
-            error: 'AI service temporarily unavailable',
-            details: 'Please try again in a moment',
-            retryable: true,
-          });
-          return;
-        }
-      }
-
-      // Generic error
-      res.status(500).json({
-        error: 'Failed to add exercise',
-        details: process.env.NODE_ENV === 'development' ? errorMsg : undefined,
-        retryable: true,
-      });
+      handleApiError(e, res, 'Add exercise');
     }
   },
 );
@@ -549,62 +392,34 @@ export const swapExercise = onRequest(
 
       // Determine if this is a time-based workout
       const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
-      const repInstruction = isTimeBasedWorkout
-        ? '⚠️ CRITICAL: This is a time-based workout - reps MUST use time format like "30s", "45s", "60s" (NOT ranges like "8-12")'
-        : 'Use the same rep format as the original exercise';
 
-      const prompt = `You are replacing an exercise in a ${workoutType || 'Full Body'} workout with a similar alternative.
+      const prompt = `Replace "${exerciseToReplace.name}" in a ${workoutType || 'Full Body'} workout with a similar alternative.
 
-EXERCISE TO REPLACE:
-- Name: ${exerciseToReplace.name}
-- Muscle Groups: ${exerciseToReplace.muscleGroups?.join(', ') || 'N/A'}
-- Sets: ${exerciseToReplace.sets}, Reps: ${exerciseToReplace.reps}
-- Rest: ${exerciseToReplace.restSeconds || 90}s
-- Uses Weight: ${exerciseToReplace.usesWeight ? 'Yes' : 'No'}
+ORIGINAL: ${exerciseToReplace.name} (${exerciseToReplace.muscleGroups?.join(', ') || 'N/A'}) | ${exerciseToReplace.sets}x${exerciseToReplace.reps}
 
-OTHER EXERCISES IN WORKOUT (ABSOLUTELY DO NOT DUPLICATE):
+OTHER EXERCISES (DO NOT DUPLICATE):
 ${otherExercises}
 
-CLIENT PROFILE:
-- Experience: ${experience || 'Beginner'}
-- Goals: ${(goals || ['General Health']).join(', ')}
-- Equipment: ${(equipment || ['Bodyweight']).join(', ')}
-- Workout Type: ${workoutType || 'Full Body'}
-${injuries?.list?.length > 0 ? `- Injuries: ${injuries.list.join(', ')} - ${injuries.notes || ''}` : ''}
+CLIENT: ${experience || 'Beginner'} | Goals: ${(goals || ['General Health']).join(', ')} | Equipment: ${(equipment || ['Bodyweight']).join(', ')}
+${injuries?.list?.length > 0 ? `Injuries: ${injuries.list.join(', ')}` : ''}
 
-CRITICAL REQUIREMENTS:
-1. Generate ONE exercise that targets the SAME or SIMILAR muscle groups as "${exerciseToReplace.name}"
-2. Use a DIFFERENT movement pattern or equipment (acceptable variations):
-   ✅ GOOD SWAPS (different movement pattern or equipment):
-   - Barbell Bench Press → Cable Chest Press, Dumbbell Flyes, Push-ups, Dips
-   - Barbell Row → Pull-ups, Lat Pulldown, Cable Row, Face Pulls
-   - Barbell Squat → Leg Press, Bulgarian Split Squats, Goblet Squats
-   - Dumbbell Curl → Cable Curl, Hammer Curl, Concentration Curl
+REQUIREMENTS:
+- Target SAME muscle groups as "${exerciseToReplace.name}"
+- Use DIFFERENT movement pattern (not just equipment swap)
+- Match: ${exerciseToReplace.sets}x${exerciseToReplace.reps}, ${exerciseToReplace.restSeconds || 90}s rest
+- ${(experience || 'beginner').toLowerCase()} difficulty
+- Use ONLY: ${(equipment || ['Bodyweight']).join(', ')}
+- NOT similar to: ${otherExercises}
+${isTimeBasedWorkout ? '- CRITICAL: Use time format ("30s", "45s", "60s") NOT ranges' : ''}
 
-   ❌ BAD SWAPS (too similar - just equipment change):
-   - Barbell Bench Press → Dumbbell Bench Press (same movement, different equipment)
-   - Barbell Row → Dumbbell Row (same movement, different equipment)
-   - Barbell Squat → Dumbbell Squat (same movement, different equipment)
-
-3. ⚠️ ABSOLUTELY DO NOT duplicate "${exerciseToReplace.name}" or any of these exercises: ${otherExercises}
-4. MUST match the same sets/reps/rest scheme as the original exercise
-5. Match the difficulty level: ${(experience || 'beginner').toLowerCase()}
-6. Respect equipment availability: ${(equipment || ['Bodyweight']).join(', ')}
-7. Avoid contraindicated exercises if injuries are present
-8. The replacement should provide variety while maintaining workout effectiveness
-9. ⚠️ BEFORE OUTPUTTING: Verify the exercise is NOT in the existing workout
-
-REP FORMAT REQUIREMENT:
-${repInstruction}
-
-ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
+OUTPUT ONLY valid JSON:
 {
-  "name": "Exercise Name (MUST be different from ${exerciseToReplace.name} and all other exercises)",
-  "description": "Detailed description with setup, execution, and breathing cues (100-150 chars)",
+  "name": "Exercise Name",
+  "description": "Setup, execution, breathing cues",
   "sets": ${exerciseToReplace.sets},
   "reps": "${exerciseToReplace.reps}",
-  "formTips": ["First form tip - specific and actionable", "Second form tip - addresses common error", "Third form tip - joint alignment or quality cue"],
-  "safetyTips": ["First safety tip - injury prevention", "Second safety tip - modification option"],
+  "formTips": ["Tip 1", "Tip 2", "Tip 3"],
+  "safetyTips": ["Safety 1", "Safety 2"],
   "restSeconds": ${exerciseToReplace.restSeconds || 90},
   "usesWeight": ${exerciseToReplace.usesWeight ? 'true' : 'false'},
   "muscleGroups": ["${exerciseToReplace.muscleGroups?.join('", "') || 'muscle1", "muscle2'}"],
@@ -701,56 +516,7 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
 
       res.status(200).json({ exercise });
     } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      const errorStatus = (e as Record<string, unknown>)?.status || 'UNKNOWN';
-
-      console.error('❌ Swap exercise error:', {
-        message: errorMsg,
-        status: errorStatus,
-        type: e instanceof Error ? e.constructor.name : typeof e,
-      });
-
-      // Handle specific error types
-      if (e instanceof Error) {
-        const msg = e.message.toLowerCase();
-
-        // Timeout errors
-        if (msg.includes('timeout') || msg.includes('etimedout')) {
-          res.status(504).json({
-            error: 'Request timeout',
-            details: 'Exercise generation took too long. Please try again.',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Rate limiting
-        if (errorStatus === 429 || msg.includes('rate_limit')) {
-          res.status(429).json({
-            error: 'Too many requests',
-            details: 'Please wait a moment and try again',
-            retryable: true,
-          });
-          return;
-        }
-
-        // Server errors
-        if (errorStatus === 500 || errorStatus === 502 || errorStatus === 503) {
-          res.status(502).json({
-            error: 'AI service temporarily unavailable',
-            details: 'Please try again in a moment',
-            retryable: true,
-          });
-          return;
-        }
-      }
-
-      // Generic error
-      res.status(500).json({
-        error: 'Failed to swap exercise',
-        details: process.env.NODE_ENV === 'development' ? errorMsg : undefined,
-        retryable: true,
-      });
+      handleApiError(e, res, 'Swap exercise');
     }
   },
 );
