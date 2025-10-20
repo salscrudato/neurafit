@@ -23,6 +23,63 @@ import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
 import { validateSingleExercise } from './lib/schemaValidator';
 import { handleApiError } from './lib/errorHandler';
 
+// Helper function to generate a single exercise with validation
+async function generateSingleExerciseWithValidation(
+  prompt: string,
+  systemMessage: string,
+  client: OpenAI,
+  currentWorkout: { exercises: Array<{ name: string }> },
+  exerciseToReplace?: { name: string },
+  workoutType?: string,
+  equipment?: string[],
+): Promise<{ exercise: unknown }> {
+  const completion = await client.chat.completions.create({
+    model: OPENAI_MODEL,
+    temperature: OPENAI_CONFIG.temperature,
+    max_tokens: 800,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    response_format: buildSingleExerciseSchema() as any,
+    messages: [
+      { role: 'system', content: systemMessage },
+      { role: 'user', content: prompt },
+    ],
+  });
+
+  const text = completion.choices[0]?.message?.content?.trim() || '';
+  const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+  const exercise = JSON.parse(cleanedText);
+
+  // Validate against schema
+  const schemaCheck = validateSingleExercise(exercise);
+  if (!schemaCheck.valid) {
+    throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+  }
+
+  // Validate context
+  const contextErrors = getExerciseContextValidationErrors(
+    exercise.name,
+    exercise.reps,
+    workoutType || 'Full Body',
+    equipment || ['Bodyweight'],
+  );
+
+  if (contextErrors.length > 0) {
+    throw new Error(`Context validation failed: ${contextErrors.join(', ')}`);
+  }
+
+  // Check for duplicates
+  const otherExercises = currentWorkout.exercises
+    .filter((ex: { name: string }) => !exerciseToReplace || ex.name !== exerciseToReplace.name)
+    .map((ex: { name: string }) => ex.name);
+
+  const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exercise.name));
+  if (hasSimilar) {
+    throw new Error(`Generated exercise is too similar to existing exercises: ${exercise.name}`);
+  }
+
+  return { exercise };
+}
+
 // CORS configuration for all deployment URLs
 const CORS_ORIGINS: string[] = [
   'http://localhost:5173', // local dev
@@ -209,46 +266,21 @@ export const addExerciseToWorkout = onRequest(
     try {
       const { currentWorkout, workoutType, experience, goals, equipment, injuries } = req.body;
 
-      // Validate request body
-      if (!req.body) {
-        console.error('Empty request body');
-        res.status(400).json({ error: 'Request body is required' });
-        return;
-      }
-
-      // Validate currentWorkout structure
-      if (!currentWorkout) {
-        console.error('Missing currentWorkout in request body');
-        res.status(400).json({ error: 'currentWorkout is required' });
-        return;
-      }
-
-      if (!Array.isArray(currentWorkout.exercises)) {
-        console.error('currentWorkout.exercises is not an array:', typeof currentWorkout.exercises, currentWorkout.exercises);
-        res.status(400).json({ error: 'currentWorkout.exercises must be an array' });
-        return;
-      }
-
-      if (currentWorkout.exercises.length === 0) {
-        console.error('currentWorkout.exercises is empty');
-        res.status(400).json({ error: 'currentWorkout must have at least one exercise' });
+      // Validate request
+      if (!currentWorkout?.exercises || !Array.isArray(currentWorkout.exercises) || currentWorkout.exercises.length === 0) {
+        res.status(400).json({ error: 'currentWorkout with exercises is required' });
         return;
       }
 
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-        timeout: OPENAI_CONFIG.singleExerciseTimeout, // Use config timeout for single exercise generation
+        timeout: OPENAI_CONFIG.singleExerciseTimeout,
       });
 
       const existingExercises = currentWorkout.exercises.map((ex: { name: string }) => ex.name).join(', ');
       const programming = getProgrammingRecommendations(goals || ['General Health'], experience || 'Beginner');
-
-      // Get workout type context for better exercise matching
       const workoutTypeGuidance = getWorkoutTypeContext(workoutType);
-
-      // Determine if this is a time-based workout
       const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
-      const repFormat = isTimeBasedWorkout ? '"45s" (time format)' : '"8-12" (range format)';
 
       const prompt = `Add ONE new exercise to a ${workoutType || 'Full Body'} workout.
 
@@ -268,86 +300,21 @@ REQUIREMENTS:
 - Use ONLY: ${(equipment || ['Bodyweight']).join(', ')}
 ${isTimeBasedWorkout ? '- CRITICAL: Use time format ("30s", "45s", "60s") NOT ranges' : ''}
 
-OUTPUT ONLY valid JSON:
-{
-  "name": "Exercise Name",
-  "description": "Setup, execution, breathing cues",
-  "sets": 3,
-  "reps": ${repFormat},
-  "formTips": ["Tip 1", "Tip 2", "Tip 3"],
-  "safetyTips": ["Safety 1", "Safety 2"],
-  "restSeconds": 90,
-  "usesWeight": ${isTimeBasedWorkout ? 'false' : 'true'},
-  "muscleGroups": ["muscle1", "muscle2"],
-  "difficulty": "${(experience || 'beginner').toLowerCase()}"
-}`;
+OUTPUT ONLY valid JSON with no markdown.`;
 
-      const completion = await client.chat.completions.create({
-        model: OPENAI_MODEL,
-        temperature: OPENAI_CONFIG.temperature,
-        max_tokens: 800,
-        // Use strict JSON Schema for stronger guarantees
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        response_format: buildSingleExerciseSchema() as any,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. The exercise MUST be completely unique and different from all existing exercises - no variations or similar movements. Output ONLY valid JSON with no markdown formatting.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      });
+      const systemMessage = 'You are an expert personal trainer. Generate ONE exercise that complements an existing workout. The exercise MUST be completely unique and different from all existing exercises - no variations or similar movements. Output ONLY valid JSON.';
 
-      const text = completion.choices[0]?.message?.content?.trim() || '';
-      const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-
-      const exercise = JSON.parse(cleanedText);
-
-      // Validate against schema for robustness
-      const schemaCheck = validateSingleExercise(exercise);
-      if (!schemaCheck.valid) {
-        console.warn('Generated exercise failed schema validation:', schemaCheck.errors);
-        res.status(500).json({
-          error: 'Generated exercise failed validation',
-          details: schemaCheck.errors,
-          retryable: true,
-        });
-        return;
-      }
-
-      // Validate that the new exercise is not similar to existing ones
-      const existingNames = currentWorkout.exercises.map((ex: { name: string }) => ex.name);
-      const hasSimilar = existingNames.some((name: string) => isSimilarExercise(name, exercise.name));
-
-      if (hasSimilar) {
-        console.warn('Generated exercise is too similar to existing exercises:', exercise.name);
-        res.status(400).json({
-          error: 'Generated exercise is too similar to existing exercises',
-          exercise: exercise.name,
-        });
-        return;
-      }
-
-      // Validate exercise matches workout type, equipment, and rep format
-      const contextErrors = getExerciseContextValidationErrors(
-        exercise.name,
-        exercise.reps,
-        workoutType || 'Full Body',
-        equipment || ['Bodyweight'],
+      const result = await generateSingleExerciseWithValidation(
+        prompt,
+        systemMessage,
+        client,
+        currentWorkout,
+        undefined,
+        workoutType,
+        equipment,
       );
 
-      if (contextErrors.length > 0) {
-        console.warn('Generated exercise failed context validation:', contextErrors);
-        res.status(400).json({
-          error: 'Generated exercise does not match workout context',
-          details: contextErrors,
-          exercise: exercise.name,
-        });
-        return;
-      }
-
-      res.status(200).json({ exercise });
+      res.status(200).json(result);
     } catch (e) {
       handleApiError(e, res, 'Add exercise');
     }
@@ -382,7 +349,7 @@ export const swapExercise = onRequest(
 
       const client = new OpenAI({
         apiKey: openaiApiKey.value(),
-        timeout: OPENAI_CONFIG.singleExerciseTimeout, // Use config timeout for single exercise generation
+        timeout: OPENAI_CONFIG.singleExerciseTimeout,
       });
 
       const otherExercises = currentWorkout.exercises
@@ -390,7 +357,6 @@ export const swapExercise = onRequest(
         .map((ex: { name: string }) => ex.name)
         .join(', ');
 
-      // Determine if this is a time-based workout
       const isTimeBasedWorkout = workoutType && ['Cardio', 'Yoga', 'Pilates', 'Core Focus', 'HIIT'].includes(workoutType);
 
       const prompt = `Replace "${exerciseToReplace.name}" in a ${workoutType || 'Full Body'} workout with a similar alternative.
@@ -412,109 +378,28 @@ REQUIREMENTS:
 - NOT similar to: ${otherExercises}
 ${isTimeBasedWorkout ? '- CRITICAL: Use time format ("30s", "45s", "60s") NOT ranges' : ''}
 
-OUTPUT ONLY valid JSON:
-{
-  "name": "Exercise Name",
-  "description": "Setup, execution, breathing cues",
-  "sets": ${exerciseToReplace.sets},
-  "reps": "${exerciseToReplace.reps}",
-  "formTips": ["Tip 1", "Tip 2", "Tip 3"],
-  "safetyTips": ["Safety 1", "Safety 2"],
-  "restSeconds": ${exerciseToReplace.restSeconds || 90},
-  "usesWeight": ${exerciseToReplace.usesWeight ? 'true' : 'false'},
-  "muscleGroups": ["${exerciseToReplace.muscleGroups?.join('", "') || 'muscle1", "muscle2'}"],
-  "difficulty": "${(experience || 'beginner').toLowerCase()}"
-}`;
+OUTPUT ONLY valid JSON with no markdown.`;
 
-      const completion = await client.chat.completions.create({
-        model: OPENAI_MODEL,
-        temperature: OPENAI_CONFIG.temperature,
-        max_tokens: 800,
-        // Use strict JSON Schema for stronger guarantees
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        response_format: buildSingleExerciseSchema() as any,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles but using a DIFFERENT movement pattern. The replacement MUST NOT duplicate any existing exercises. Output ONLY valid JSON with no markdown formatting.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      });
+      const systemMessage = 'You are an expert personal trainer. Generate ONE exercise that replaces another while targeting the same muscles but using a DIFFERENT movement pattern. The replacement MUST NOT duplicate any existing exercises. Output ONLY valid JSON.';
 
-      const text = completion.choices[0]?.message?.content?.trim() || '';
-      const cleanedText = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-
-      const exercise = JSON.parse(cleanedText);
-
-      // Validate against schema for robustness
-      const schemaCheck = validateSingleExercise(exercise);
-      if (!schemaCheck.valid) {
-        console.warn('Replacement exercise failed schema validation:', schemaCheck.errors);
-        res.status(500).json({
-          error: 'Replacement exercise failed validation',
-          details: schemaCheck.errors,
-          retryable: true,
-        });
-        return;
-      }
-
-      // Validate that the replacement is not similar to existing exercises (except the one being replaced)
-      const otherExerciseNames = currentWorkout.exercises
-        .filter((ex: { name: string }) => ex.name !== exerciseToReplace.name)
-        .map((ex: { name: string }) => ex.name);
-
-      const hasSimilar = otherExerciseNames.some((name: string) => isSimilarExercise(name, exercise.name));
-
-      if (hasSimilar) {
-        console.warn('Replacement exercise is too similar to existing exercises:', exercise.name);
-        res.status(400).json({
-          error: 'Replacement exercise is too similar to existing exercises',
-          exercise: exercise.name,
-        });
-        return;
-      }
-
-      // Check that it's not too similar to the original
-      // For swaps, we allow different equipment variations (e.g., Cable Chest Press for Barbell Bench Press)
-      // but reject minor variations (e.g., Dumbbell Bench Press for Barbell Bench Press)
-      const isMinorVariation = isMinorExerciseVariation(exerciseToReplace.name, exercise.name);
-      if (isMinorVariation) {
-        console.warn('Replacement exercise is a minor variation of original:', exercise.name);
-        res.status(400).json({
-          error: 'Replacement exercise is too similar to the original exercise - please provide a different movement pattern',
-          original: exerciseToReplace.name,
-          replacement: exercise.name,
-        });
-        return;
-      }
-
-      // Validate exercise matches workout type, equipment, and rep format
-      const contextErrors = getExerciseContextValidationErrors(
-        exercise.name,
-        exercise.reps,
-        workoutType || 'Full Body',
-        equipment || ['Bodyweight'],
+      const result = await generateSingleExerciseWithValidation(
+        prompt,
+        systemMessage,
+        client,
+        currentWorkout,
+        exerciseToReplace,
+        workoutType,
+        equipment,
       );
 
-      if (contextErrors.length > 0) {
-        console.warn('Replacement exercise failed context validation:', {
-          exercise: exercise.name,
-          reps: exercise.reps,
-          workoutType,
-          equipment,
-          errors: contextErrors,
-        });
-        res.status(400).json({
-          error: 'Replacement exercise does not match workout context',
-          details: contextErrors,
-          exercise: exercise.name,
-        });
-        return;
+      // Additional check: ensure it's not a minor variation of the original
+      const exercise = result.exercise as { name: string };
+      const isMinorVariation = isMinorExerciseVariation(exerciseToReplace.name, exercise.name);
+      if (isMinorVariation) {
+        throw new Error(`Replacement exercise is too similar to the original exercise - please provide a different movement pattern`);
       }
 
-      res.status(200).json({ exercise });
+      res.status(200).json(result);
     } catch (e) {
       handleApiError(e, res, 'Swap exercise');
     }
