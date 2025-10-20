@@ -12,6 +12,23 @@ import { OPENAI_MODEL, OPENAI_CONFIG } from '../config';
 import type { WorkoutPlan } from '../lib/jsonSchema/workoutPlan.schema';
 
 /**
+ * Fill in missing usesWeight values based on exercise name patterns
+ * This handles cases where AI doesn't include this optional field
+ */
+function fillMissingUsesWeight(exercises: WorkoutPlan['exercises']): WorkoutPlan['exercises'] {
+  const weightKeywords = ['dumbbell', 'barbell', 'kettlebell', 'weight', 'plate', 'cable', 'machine', 'smith'];
+
+  return exercises.map((exercise) => {
+    if (exercise.usesWeight === undefined || exercise.usesWeight === null) {
+      const nameLower = exercise.name.toLowerCase();
+      const usesWeight = weightKeywords.some((keyword) => nameLower.includes(keyword));
+      return { ...exercise, usesWeight };
+    }
+    return exercise;
+  });
+}
+
+/**
  * Retry logic for transient errors only
  * Implements exponential backoff for rate limits and server errors
  * Optimized for non-streaming approach with fast response times
@@ -156,11 +173,14 @@ export async function generateWorkoutOrchestrated(
       throw new Error(`JSON parse failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
     }
 
+    // Fill in missing usesWeight values before validation
+    candidate.exercises = fillMissingUsesWeight(candidate.exercises);
+
     // Validate schema - trust AI, only fail on critical errors
     const schemaValidation = validateWorkoutPlanJSON(candidate, minExerciseCount, maxExerciseCount);
     if (!schemaValidation.valid) {
       const hasCriticalError = schemaValidation.errors.some(
-        (e) => e.includes('Duplicate') || e.includes('missing required'),
+        (e) => e.includes('Duplicate') || (e.includes('missing required') && !e.includes('usesWeight')),
       );
 
       if (hasCriticalError) {
