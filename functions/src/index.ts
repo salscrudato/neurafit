@@ -195,15 +195,12 @@ export const generateWorkout = onRequest(
         errorType,
       });
 
-      // Return appropriate error response based on error type
+      // Handle specific error types
       if (e instanceof Error) {
+        const msg = e.message.toLowerCase();
+
         // Timeout errors
-        if (
-          e.message.includes('timeout') ||
-          e.message.includes('ETIMEDOUT') ||
-          e.message.includes('Stream timeout')
-        ) {
-          console.warn('⏱️ Timeout error detected');
+        if (msg.includes('timeout') || msg.includes('etimedout')) {
           res.status(504).json({
             error: 'Request timeout',
             details: 'Workout generation took too long. Please try again.',
@@ -212,14 +209,8 @@ export const generateWorkout = onRequest(
           return;
         }
 
-        // Authentication/Authorization errors
-        if (
-          errorStatus === 401 ||
-          errorStatus === 403 ||
-          e.message.includes('Unauthorized') ||
-          e.message.includes('Forbidden')
-        ) {
-          console.error('🔐 Authentication error detected');
+        // Authentication errors
+        if (errorStatus === 401 || errorStatus === 403 || msg.includes('unauthorized')) {
           res.status(502).json({
             error: 'AI service configuration error',
             details: 'Please try again later',
@@ -229,12 +220,7 @@ export const generateWorkout = onRequest(
         }
 
         // Rate limiting
-        if (
-          errorStatus === 429 ||
-          e.message.includes('rate_limit') ||
-          e.message.includes('Too many requests')
-        ) {
-          console.warn('⚠️ Rate limit error detected');
+        if (errorStatus === 429 || msg.includes('rate_limit')) {
           res.status(429).json({
             error: 'Too many requests',
             details: 'Please wait a moment and try again',
@@ -243,14 +229,8 @@ export const generateWorkout = onRequest(
           return;
         }
 
-        // Server errors from OpenAI
-        if (
-          errorStatus === 500 ||
-          errorStatus === 502 ||
-          errorStatus === 503 ||
-          errorStatus === 504
-        ) {
-          console.error('🔴 OpenAI server error detected:', { status: errorStatus });
+        // Server errors
+        if (errorStatus === 500 || errorStatus === 502 || errorStatus === 503 || errorStatus === 504) {
           res.status(502).json({
             error: 'AI service temporarily unavailable',
             details: 'Please try again in a moment',
@@ -259,31 +239,18 @@ export const generateWorkout = onRequest(
           return;
         }
 
-        // Validation errors - treat as retryable server error
-        if (e.message.includes('Validation failed')) {
-          console.warn('❌ Validation error detected');
+        // Validation or JSON errors - retryable
+        if (msg.includes('validation') || msg.includes('json') || msg.includes('parse')) {
           res.status(500).json({
-            error: 'Workout validation error',
+            error: 'Workout generation error',
             details: 'The generated workout did not meet quality standards. Please try again.',
-            retryable: true,
-          });
-          return;
-        }
-
-        // JSON parsing errors
-        if (e.message.includes('JSON') || e.message.includes('parse')) {
-          console.warn('❌ JSON parsing error detected');
-          res.status(502).json({
-            error: 'AI response format error',
-            details: 'The AI service returned an invalid response. Please try again.',
             retryable: true,
           });
           return;
         }
       }
 
-      // Generic server error - always retryable
-      console.error('🔴 Unhandled error in workout generation:', errorMessage);
+      // Generic error - always retryable
       res.status(500).json({
         error: 'Workout generation service error',
         details: 'An unexpected error occurred. Please try again in a moment.',
@@ -475,11 +442,7 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       res.status(200).json({ exercise });
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      console.error('Add exercise error:', {
-        error: errorMsg,
-        stack: e instanceof Error ? e.stack : undefined,
-        requestBody: req.body ? Object.keys(req.body) : 'no body',
-      });
+      console.error('Add exercise error:', errorMsg);
       res.status(500).json({
         error: 'Failed to add exercise',
         details: process.env.NODE_ENV === 'development' ? errorMsg : undefined,
@@ -665,10 +628,7 @@ ALL FIELDS ARE MANDATORY - OUTPUT ONLY valid JSON (no markdown, no code blocks):
       res.status(200).json({ exercise });
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
-      console.error('Swap exercise error', {
-        error: errorMsg,
-        stack: e instanceof Error ? e.stack : undefined,
-      });
+      console.error('Swap exercise error:', errorMsg);
       res.status(500).json({ error: 'Failed to swap exercise' });
     }
   },

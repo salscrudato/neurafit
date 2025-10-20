@@ -161,7 +161,7 @@ describe('Schema Validation', () => {
   });
 
   describe('validateRestPeriods', () => {
-    it('should warn about very short rest periods for heavy exercises', () => {
+    it('should reject rest periods outside valid range', () => {
       const exercises = [
         {
           name: 'Squat',
@@ -170,7 +170,7 @@ describe('Schema Validation', () => {
           reps: '3-5',
           formTips: ['Depth to parallel', 'Knees track toes', 'Chest up'],
           safetyTips: ['Use safety bars', 'Proper depth'],
-          restSeconds: 45, // Too short for heavy squats
+          restSeconds: 5, // Too short - outside valid range
           usesWeight: true,
           muscleGroups: ['Legs'],
           difficulty: 'advanced',
@@ -178,11 +178,11 @@ describe('Schema Validation', () => {
       ];
 
       const result = validateRestPeriods(exercises);
-      expect(result.warnings).toBeDefined();
-      expect(result.warnings!.length).toBeGreaterThan(0);
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should not warn about appropriate rest periods', () => {
+    it('should accept appropriate rest periods', () => {
       const exercises = [
         {
           name: 'Bicep Curl',
@@ -199,7 +199,8 @@ describe('Schema Validation', () => {
       ];
 
       const result = validateRestPeriods(exercises);
-      expect(result.warnings || []).toHaveLength(0);
+      expect(result.valid).toBe(true);
+      expect(result.errors.length).toBe(0);
     });
   });
 });
