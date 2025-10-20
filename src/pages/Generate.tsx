@@ -36,8 +36,8 @@ const WORKOUT_CATEGORIES = [
   }
 ] as const
 
-// Top 6 most common workout durations (optimized for user preferences)
-const DUR = [15, 30, 45, 60, 75, 90] as const
+// Top 4 most common workout durations (optimized for user preferences)
+const DUR = [15, 30, 45, 60] as const
 
 // Profile type moved to types file for better organization
 // type Profile = {
