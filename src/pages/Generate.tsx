@@ -406,7 +406,7 @@ export default function Generate() {
           {/* Type */}
           <div className="rounded-lg xs:rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 xs:p-5 sm:p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Workout Type</h3>
+              <h3 className="font-semibold text-sm text-gray-900">Workout Type</h3>
               {type && <span className="text-xs text-gray-500">Selected: {type}</span>}
             </div>
 
@@ -458,7 +458,7 @@ export default function Generate() {
             {/* Duration */}
             <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Duration</h3>
+              <h3 className="font-semibold text-sm text-gray-900">Duration</h3>
               {duration && <span className="text-xs text-gray-500">{duration} min</span>}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -483,7 +483,7 @@ export default function Generate() {
             {/* Equipment */}
             <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Available Equipment</h3>
+                <h3 className="font-semibold text-sm text-gray-900">Available Equipment</h3>
                 {equipment.length > 0 && <span className="text-xs text-gray-500">{equipment.length} selected</span>}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -517,7 +517,7 @@ export default function Generate() {
         <section className="mt-6">
           <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
             <div className="mb-3">
-              <h3 className="font-semibold text-gray-900">Workout Preferences (Optional)</h3>
+              <h3 className="font-semibold text-sm text-gray-900">Workout Preferences (Optional)</h3>
               <p className="text-xs text-gray-500 mt-1">Add any specific preferences or notes for the AI to consider</p>
             </div>
             <textarea
