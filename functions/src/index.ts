@@ -38,9 +38,11 @@ async function generateSingleExerciseWithValidation(
 
   try {
     // Non-streaming with structured output for guaranteed valid JSON
+    // Typically completes in 2-5 seconds
     const completion = await client.chat.completions.create({
       model: OPENAI_MODEL,
       temperature: OPENAI_CONFIG.temperature,
+      top_p: OPENAI_CONFIG.topP,
       max_tokens: 1000,
       frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
       presence_penalty: OPENAI_CONFIG.presencePenalty,

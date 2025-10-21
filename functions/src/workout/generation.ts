@@ -142,6 +142,7 @@ export async function generateWorkoutOrchestrated(
     console.log('📤 Generating workout (non-streaming, structured output)');
 
     // Call OpenAI with structured JSON output (guarantees valid JSON)
+    // Non-streaming approach: typically completes in 3-8 seconds
     const response = await retryOnTransientError(async () => {
       return await openaiClient.chat.completions.create({
         model: OPENAI_MODEL,
@@ -156,7 +157,7 @@ export async function generateWorkoutOrchestrated(
           { role: 'system' as const, content: systemMessage },
           { role: 'user' as const, content: prompt },
         ],
-        // NO streaming - simpler, more robust
+        // NO streaming - simpler, more robust, guaranteed valid JSON
       });
     });
 
