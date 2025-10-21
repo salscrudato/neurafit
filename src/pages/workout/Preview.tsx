@@ -198,7 +198,7 @@ export default function Preview() {
 
           <div className="relative">
             {/* Compact Workout Title */}
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-lg md:text-xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
               {type} <span className="text-slate-400/60">—</span> {duration} min
             </h1>
           </div>
@@ -312,7 +312,7 @@ function ExerciseItem({
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-bold flex-shrink-0 shadow-sm shadow-blue-500/25">
               {index + 1}
             </span>
-            <h3 className="font-bold text-slate-900 group-hover:text-slate-800 transition-colors truncate text-base md:text-lg">
+            <h3 className="font-bold text-slate-900 group-hover:text-slate-800 transition-colors truncate text-sm md:text-base">
               {ex.name}
             </h3>
           </div>

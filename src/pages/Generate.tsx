@@ -467,7 +467,7 @@ export default function Generate() {
                   key={m}
                   onClick={() => setDuration(m)}
                   className={[
-                    'rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200',
+                    'rounded-lg border px-3 py-2 text-xs font-medium transition-all duration-200',
                     duration === m
                       ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-emerald-500 shadow-md scale-[1.02]'
                       : 'bg-white/70 border-gray-200 hover:border-emerald-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
@@ -498,7 +498,7 @@ export default function Generate() {
                       )
                     }}
                     className={[
-                      'rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200 text-left',
+                      'rounded-lg border px-3 py-2 text-xs font-medium transition-all duration-200 text-left',
                       equipment.includes(eq)
                         ? 'bg-gradient-to-br from-orange-500 to-amber-600 text-white border-orange-500 shadow-md scale-[1.02]'
                         : 'bg-white/70 border-gray-200 hover:border-orange-300 hover:bg-white text-gray-700 hover:scale-[1.01]'
