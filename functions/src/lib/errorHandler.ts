@@ -16,10 +16,14 @@ export interface ErrorResponse {
  * Provides user-friendly messages while logging technical details
  * Implements comprehensive error categorization and graceful degradation
  */
-export function handleApiError(error: unknown, res: Response, context: string = 'API'): void {
+export function handleApiError(error: unknown, res: Response, context: string = 'API', requestId?: string): void {
   // Prevent double-sending response
   if (res.headersSent) {
-    console.error(`❌ ${context} error (headers already sent):`, error);
+    console.error(`❌ ${context} error (headers already sent):`, {
+      error,
+      requestId,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
@@ -34,6 +38,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
     status: errorStatus,
     code: errorCode,
     type: error instanceof Error ? error.constructor.name : typeof error,
+    requestId,
     timestamp: new Date().toISOString(),
   });
 
@@ -142,5 +147,42 @@ export function validateRequestBody(body: unknown, requiredFields: string[]): { 
   }
 
   return { valid: true };
+}
+
+/**
+ * Sanitize string input - trim and validate length
+ */
+export function sanitizeString(input: unknown, maxLength: number = 500): string | null {
+  if (typeof input !== 'string') {
+    return null;
+  }
+
+  const trimmed = input.trim();
+  if (trimmed.length === 0 || trimmed.length > maxLength) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+/**
+ * Sanitize array of strings
+ */
+export function sanitizeStringArray(input: unknown, maxItems: number = 20, maxLength: number = 100): string[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return input
+    .slice(0, maxItems)
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0 && item.trim().length <= maxLength)
+    .map((item) => item.trim());
+}
+
+/**
+ * Generate a unique request ID for tracing
+ */
+export function generateRequestId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 

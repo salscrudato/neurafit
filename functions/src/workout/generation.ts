@@ -36,6 +36,7 @@ function fillMissingUsesWeight(exercises: WorkoutPlan['exercises']): WorkoutPlan
 async function retryOnTransientError<T>(
   fn: () => Promise<T>,
   maxRetries: number = 2,
+  operationName: string = 'API call',
 ): Promise<T> {
   let lastError: Error | null = null;
 
@@ -62,16 +63,18 @@ async function retryOnTransientError<T>(
         errorMsg.includes('rate_limit') ||
         errorMsg.includes('connection');
 
-      if (!isTransient || attempt >= maxRetries) throw lastError;
+      if (!isTransient || attempt >= maxRetries) {
+        throw new Error(`${operationName} failed (${status || code || 'unknown'}): ${lastError.message}`);
+      }
 
       // Exponential backoff: 200ms, 400ms, 800ms
       const delayMs = 200 * Math.pow(2, attempt);
-      console.warn(`⚠️ Transient error (${status || code}), retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`);
+      console.warn(`⚠️ Transient error in ${operationName} (${status || code}), retry ${attempt + 1}/${maxRetries} after ${delayMs}ms`);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 
-  throw lastError || new Error('API call failed');
+  throw lastError || new Error(`${operationName} failed after ${maxRetries} retries`);
 }
 
 /**
@@ -143,23 +146,27 @@ export async function generateWorkoutOrchestrated(
 
     // Call OpenAI with structured JSON output (guarantees valid JSON)
     // Non-streaming approach: typically completes in 3-8 seconds
-    const response = await retryOnTransientError(async () => {
-      return await openaiClient.chat.completions.create({
-        model: OPENAI_MODEL,
-        temperature: OPENAI_CONFIG.temperature,
-        top_p: OPENAI_CONFIG.topP,
-        max_tokens: OPENAI_CONFIG.maxTokens,
-        frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
-        presence_penalty: OPENAI_CONFIG.presencePenalty,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        response_format: responseFormat as any,
-        messages: [
-          { role: 'system' as const, content: systemMessage },
-          { role: 'user' as const, content: prompt },
-        ],
-        // NO streaming - simpler, more robust, guaranteed valid JSON
-      });
-    });
+    const response = await retryOnTransientError(
+      async () => {
+        return await openaiClient.chat.completions.create({
+          model: OPENAI_MODEL,
+          temperature: OPENAI_CONFIG.temperature,
+          top_p: OPENAI_CONFIG.topP,
+          max_tokens: OPENAI_CONFIG.maxTokens,
+          frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
+          presence_penalty: OPENAI_CONFIG.presencePenalty,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          response_format: responseFormat as any,
+          messages: [
+            { role: 'system' as const, content: systemMessage },
+            { role: 'user' as const, content: prompt },
+          ],
+          // NO streaming - simpler, more robust, guaranteed valid JSON
+        });
+      },
+      2,
+      'OpenAI workout generation',
+    );
 
     // Extract content (guaranteed valid JSON from structured output)
     const content = response.choices[0]?.message?.content;
@@ -215,7 +222,7 @@ export async function generateWorkoutOrchestrated(
     throw new Error('Failed to generate valid workout');
   }
 
-  // Collect metadata
+  // Collect metadata (reuse validation from above)
   const durationValidation = validateAndAdjustDuration(candidate, duration, minExerciseCount);
   const metadata: GenerationMetadata = {
     model: OPENAI_MODEL,

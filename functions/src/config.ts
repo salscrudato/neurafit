@@ -5,7 +5,7 @@ export const OPENAI_CONFIG = {
   // gpt-4o-mini is fast, cost-effective, and excellent for structured outputs
   temperature: 0.3, // Balanced for consistency + diversity (0.3 optimal for structured generation with variety)
   topP: 0.95, // Higher for better quality outputs while maintaining focus
-  maxTokens: 1500, // Optimized for typical workout generation (exercises + descriptions + tips)
+  maxTokens: 3000, // Increased to 3000 for longer workouts with more exercises and detailed descriptions
 
   // Penalty parameters to reduce repetition and improve diversity
   frequencyPenalty: 0.4, // Increased to strongly discourage repeated exercises
@@ -16,6 +16,19 @@ export const OPENAI_CONFIG = {
   timeout: 45000, // 45 seconds for full workouts (non-streaming is very fast, 3-8s typical)
   singleExerciseTimeout: 30000, // 30 seconds for single exercises (typically 2-5s)
 } as const;
+
+// Input validation constraints
+export const INPUT_VALIDATION = {
+  minDuration: 5,
+  maxDuration: 150,
+  defaultDuration: 30,
+  defaultExperience: 'Intermediate',
+  defaultWorkoutType: 'Full Body',
+} as const;
+
+// Default arrays (not const to avoid readonly issues)
+export const DEFAULT_GOALS = ['General Fitness'];
+export const DEFAULT_EQUIPMENT = ['Bodyweight'];
 
 export const API_RETRY_CONFIG = {
   maxRetries: 2,

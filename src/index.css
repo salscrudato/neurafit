@@ -1,5 +1,83 @@
 @import "tailwindcss";
 
+/* ============================================ */
+/* MODERN DESIGN SYSTEM - INSPIRED BY GOOGLE, APPLE, TESLA */
+/* ============================================ */
+
+/* CSS Custom Properties for Design Tokens */
+:root {
+  /* Color Palette - Modern & Professional */
+  --color-primary: #3b82f6;
+  --color-primary-dark: #1e40af;
+  --color-primary-light: #dbeafe;
+
+  --color-secondary: #8b5cf6;
+  --color-secondary-dark: #6d28d9;
+  --color-secondary-light: #ede9fe;
+
+  --color-accent: #06b6d4;
+  --color-accent-dark: #0891b2;
+  --color-accent-light: #cffafe;
+
+  --color-success: #10b981;
+  --color-success-dark: #047857;
+  --color-success-light: #d1fae5;
+
+  --color-warning: #f59e0b;
+  --color-warning-dark: #d97706;
+  --color-warning-light: #fef3c7;
+
+  --color-error: #ef4444;
+  --color-error-dark: #dc2626;
+  --color-error-light: #fee2e2;
+
+  /* Neutral Colors - Premium Grays */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+
+  /* Typography Scale - Modern & Readable */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+
+  /* Spacing Scale - Consistent & Harmonious */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  /* Border Radius - Modern Curves */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Shadows - Depth & Elevation */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Transitions - Smooth & Intentional */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Futuristic loading animations */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
@@ -20,6 +98,9 @@ body {
   width: 100%;
   max-width: 100vw;
   position: relative;
+  font-family: var(--font-family-base);
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
 }
 
 /* Ensure all containers respect viewport width */
@@ -27,39 +108,109 @@ body {
   overflow-x: hidden;
   width: 100%;
   max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-/* Enhanced Mobile-First Design System */
+/* Modern Typography Base */
+body {
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
 
-/* Touch-friendly interactions */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+h5 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+h6 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ============================================ */
+/* ENHANCED MOBILE-FIRST DESIGN SYSTEM */
+/* ============================================ */
+
+/* Touch-friendly interactions - Apple & Google standards */
 @media (hover: none) and (pointer: coarse) {
-  /* Mobile devices - increase touch targets */
+  /* Mobile devices - increase touch targets to 48x48px minimum */
   button,
   [role="button"],
   input[type="button"],
-  input[type="submit"] {
-    min-height: 44px;
-    min-width: 44px;
+  input[type="submit"],
+  a[role="button"] {
+    min-height: 48px;
+    min-width: 48px;
   }
 
   /* Remove hover effects on touch devices */
-  .hover\:scale-105:hover {
+  .hover\:scale-105:hover,
+  .hover\:shadow-lg:hover {
     transform: none;
+    box-shadow: none;
   }
 
   /* Enhanced tap targets for links */
   a {
-    min-height: 44px;
+    min-height: 48px;
     display: inline-flex;
     align-items: center;
   }
+
+  /* Optimize touch feedback */
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    transition: transform 100ms ease-out;
+  }
 }
 
-/* Improved focus states for accessibility */
+/* ============================================ */
+/* ACCESSIBILITY & FOCUS STATES */
+/* ============================================ */
+
+/* Modern focus states - Apple & Google standards */
 *:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 /* Smooth scrolling for better UX */
@@ -100,63 +251,85 @@ input[type="reset"],
   }
 }
 
-/* Custom utility classes for common patterns */
+/* ============================================ */
+/* MODERN CARD & SURFACE UTILITIES */
+/* ============================================ */
+
+/* Premium Card Styles */
 .card {
   background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  padding: 1.5rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-base);
 }
 
-/* Standardized gradient utility classes */
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-elevated {
+  background-color: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-base);
+}
+
+.card-elevated:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+}
+
+/* Modern Gradient Utilities */
 .gradient-primary {
-  background: linear-gradient(to bottom right, rgb(59 130 246) 0%, rgb(79 70 229) 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
 }
 
 .gradient-primary-hover {
-  background: linear-gradient(to bottom right, rgb(37 99 235) 0%, rgb(67 56 202) 100%);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-secondary-dark) 100%);
 }
 
 .gradient-success {
-  background: linear-gradient(to bottom right, rgb(34 197 94) 0%, rgb(16 185 129) 100%);
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-accent) 100%);
 }
 
 .gradient-success-hover {
-  background: linear-gradient(to bottom right, rgb(22 163 74) 0%, rgb(5 150 105) 100%);
+  background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-accent-dark) 100%);
 }
 
 .gradient-danger {
-  background: linear-gradient(to bottom right, rgb(239 68 68) 0%, rgb(244 63 94) 100%);
+  background: linear-gradient(135deg, var(--color-error) 0%, var(--color-warning) 100%);
 }
 
 .gradient-danger-hover {
-  background: linear-gradient(to bottom right, rgb(220 38 38) 0%, rgb(225 29 72) 100%);
+  background: linear-gradient(135deg, var(--color-error-dark) 0%, var(--color-warning-dark) 100%);
 }
 
 .gradient-warning {
-  background: linear-gradient(to bottom right, rgb(245 158 11) 0%, rgb(249 115 22) 100%);
+  background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-accent) 100%);
 }
 
 .gradient-warning-hover {
-  background: linear-gradient(to bottom right, rgb(217 119 6) 0%, rgb(234 88 12) 100%);
-}
-
-.card-hover {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  padding: 1.5rem;
-  transition: all 0.2s;
-}
-
-.card-hover:hover {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  transform: scale(1.01);
+  background: linear-gradient(135deg, var(--color-warning-dark) 0%, var(--color-accent-dark) 100%);
 }
 
 .gradient-bg {
-  background: linear-gradient(to bottom right, rgb(249 250 251), rgb(243 244 246));
+  background: linear-gradient(135deg, var(--color-neutral-50) 0%, var(--color-neutral-100) 100%);
 }
+
+/* ============================================ */
+/* ENHANCED SAFE AREA SUPPORT - iOS & Android */
+/* ============================================ */
 
 /* Enhanced safe area support for mobile devices (iOS notch/status bar) */
 @supports (padding: max(0px)) {
@@ -221,9 +394,23 @@ input[type="reset"],
     left: max(1rem, env(safe-area-inset-left));
     max-width: calc(100vw - max(2rem, env(safe-area-inset-left) + env(safe-area-inset-right)));
   }
+
+  /* Modern viewport height utilities for iOS */
+  .h-screen-safe {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height - iOS 15+ */
+  }
+
+  .min-h-screen-safe {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
 }
 
-/* Improved text rendering */
+/* ============================================ */
+/* IMPROVED TEXT RENDERING & TYPOGRAPHY */
+/* ============================================ */
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -243,19 +430,51 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ============================================ */
+/* FORM ELEMENTS & INPUTS */
+/* ============================================ */
+
 /* Better button and input styling */
 button,
 input,
 select,
 textarea {
   font-family: inherit;
+  font-size: inherit;
 }
 
 /* Fix iOS Safari dark screen issue on input focus */
 input,
-textarea {
+textarea,
+select {
   -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
+  border-radius: var(--radius-md);
+}
+
+/* Modern input styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea,
+select {
+  background-color: white;
+  border: 1px solid var(--color-neutral-200);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all var(--transition-base);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Improve touch feedback for interactive elements */
@@ -263,7 +482,7 @@ button:active,
 a:active,
 [role="button"]:active {
   transform: scale(0.98);
-  transition: transform 0.1s ease;
+  transition: transform 100ms ease-out;
 }
 
 /* Prevent text selection on interactive elements during touch */
@@ -286,9 +505,10 @@ textarea,
 
 /* Touch-friendly minimum tap target sizes */
 button,
-a {
-  min-height: 44px;
-  min-width: 44px;
+a,
+[role="button"] {
+  min-height: 48px;
+  min-width: 48px;
 }
 
 /* Prevent iOS zoom on input focus while maintaining accessibility */
@@ -424,6 +644,10 @@ a {
   padding-bottom: env(safe-area-inset-bottom, 0.75rem);
 }
 
+/* ============================================ */
+/* RESPONSIVE DESIGN - MOBILE-FIRST APPROACH */
+/* ============================================ */
+
 /* Extra small screen responsive utilities - 375px to 428px phones */
 @media (min-width: 375px) {
   /* Spacing utilities for xs breakpoint */
@@ -482,7 +706,7 @@ a {
   .xs\:min-h-\[48px\] { min-height: 48px; }
   .xs\:min-h-\[56px\] { min-height: 56px; }
 
-  /* Text utilities */
+  /* Text utilities - Responsive typography */
   .xs\:text-\[10px\] { font-size: 10px; }
   .xs\:text-\[11px\] { font-size: 11px; }
   .xs\:text-xs { font-size: 0.75rem; }
@@ -509,7 +733,34 @@ a {
   .xs\:block { display: block; }
 }
 
-/* Improved gesture support */
+/* Tablet responsive utilities - 768px and up */
+@media (min-width: 768px) {
+  /* Improved spacing for tablet */
+  .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .sm\:py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+
+  /* Better typography scaling */
+  h1 { font-size: 2.5rem; }
+  h2 { font-size: 2rem; }
+  h3 { font-size: 1.75rem; }
+}
+
+/* Desktop responsive utilities - 1024px and up */
+@media (min-width: 1024px) {
+  /* Optimize spacing for desktop */
+  .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+  .lg\:py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+
+  /* Desktop typography */
+  h1 { font-size: 3rem; }
+  h2 { font-size: 2.25rem; }
+}
+
+/* ============================================ */
+/* MODERN GESTURE & INTERACTION SUPPORT */
+/* ============================================ */
+
+/* Improved gesture support - Apple & Google standards */
 .touch-manipulation {
   touch-action: manipulation;
 }
@@ -520,6 +771,21 @@ a {
 
 .touch-pan-y {
   touch-action: pan-y;
+}
+
+/* Modern container queries for responsive components */
+@supports (container-type: inline-size) {
+  .container-responsive {
+    container-type: inline-size;
+  }
+
+  @container (min-width: 400px) {
+    .container-responsive-sm { font-size: 0.875rem; }
+  }
+
+  @container (min-width: 600px) {
+    .container-responsive-md { font-size: 1rem; }
+  }
 }
 
 /* Enhanced backdrop blur support */
@@ -773,36 +1039,32 @@ a {
   }
 }
 
-/* Enhanced Shadow System - Multi-layer depth */
+/* ============================================ */
+/* MODERN SHADOW SYSTEM - ELEVATION & DEPTH */
+/* ============================================ */
+
+/* Subtle shadows for modern design */
 .shadow-depth-sm {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    0 4px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .shadow-depth-md {
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    0 4px 8px rgba(0, 0, 0, 0.06),
-    0 8px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .shadow-depth-lg {
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.06),
-    0 16px 48px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg);
 }
 
 .shadow-depth-xl {
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.05),
-    0 12px 32px rgba(0, 0, 0, 0.08),
-    0 24px 64px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-xl);
 }
 
-/* Colored shadow variants for cards */
+.shadow-depth-2xl {
+  box-shadow: var(--shadow-2xl);
+}
+
+/* Colored shadow variants for cards - Premium effect */
 .shadow-blue-depth {
   box-shadow:
     0 2px 8px rgba(59, 130, 246, 0.08),
@@ -822,6 +1084,13 @@ a {
     0 2px 8px rgba(99, 102, 241, 0.08),
     0 8px 24px rgba(99, 102, 241, 0.12),
     0 16px 48px rgba(99, 102, 241, 0.16);
+}
+
+.shadow-green-depth {
+  box-shadow:
+    0 2px 8px rgba(16, 185, 129, 0.08),
+    0 8px 24px rgba(16, 185, 129, 0.12),
+    0 16px 48px rgba(16, 185, 129, 0.16);
 }
 
 /* Inner border effect for depth */

@@ -17,10 +17,10 @@ import { getWorkoutTypeContext, type WorkoutContext } from './lib/promptBuilder'
 import { getProgrammingRecommendations } from './lib/exerciseDatabase';
 import { isSimilarExercise, isMinorExerciseVariation } from './lib/exerciseTaxonomy';
 import { generateWorkoutOrchestrated } from './workout/generation';
-import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL, CORS_ORIGINS, SINGLE_EXERCISE_CONFIG } from './config';
+import { FUNCTION_CONFIG, OPENAI_CONFIG, OPENAI_MODEL, CORS_ORIGINS, SINGLE_EXERCISE_CONFIG, INPUT_VALIDATION, DEFAULT_GOALS, DEFAULT_EQUIPMENT } from './config';
 import { buildSingleExerciseSchema } from './lib/jsonSchema/workoutPlan.schema';
 import { validateSingleExercise } from './lib/schemaValidator';
-import { handleApiError } from './lib/errorHandler';
+import { handleApiError, generateRequestId } from './lib/errorHandler';
 
 /**
  * Generate a single exercise with validation
@@ -123,6 +123,8 @@ export const generateWorkout = onRequest(
     memory: FUNCTION_CONFIG.memory,
   },
   async (req: Request, res: Response): Promise<void> => {
+    const requestId = generateRequestId();
+
     // Handle preflight
     if (req.method === 'OPTIONS') {
       res.status(204).send('');
@@ -130,7 +132,7 @@ export const generateWorkout = onRequest(
     }
 
     if (req.method !== 'POST') {
-      res.status(405).send('Method Not Allowed');
+      res.status(405).json({ error: 'Method not allowed', requestId, retryable: false });
       return;
     }
 
@@ -207,18 +209,18 @@ export const generateWorkout = onRequest(
 
       // Validate and provide fallbacks for required fields
       // Use sensible defaults to ensure robustness
-      const finalExperience = experience?.trim() || 'Intermediate';
-      const finalWorkoutType = workoutType?.trim() || 'Full Body';
-      const finalDuration = Math.max(5, Math.min(duration || 30, 150)); // Clamp between 5-150 minutes
+      const finalExperience = experience?.trim() || INPUT_VALIDATION.defaultExperience;
+      const finalWorkoutType = workoutType?.trim() || INPUT_VALIDATION.defaultWorkoutType;
+      const finalDuration = Math.max(INPUT_VALIDATION.minDuration, Math.min(duration || INPUT_VALIDATION.defaultDuration, INPUT_VALIDATION.maxDuration));
 
       // Filter out undefined/empty values from arrays and ensure string types
       const filteredGoals = Array.isArray(goals)
         ? goals.filter((g): g is string => typeof g === 'string' && g.trim().length > 0).map(g => g.trim())
-        : goals && typeof goals === 'string' && goals.trim().length > 0 ? [goals.trim()] : ['General Fitness'];
+        : goals && typeof goals === 'string' && goals.trim().length > 0 ? [goals.trim()] : DEFAULT_GOALS;
 
       const filteredEquipment = Array.isArray(equipment)
         ? equipment.filter((e): e is string => typeof e === 'string' && e.trim().length > 0).map(e => e.trim())
-        : equipment && typeof equipment === 'string' && equipment.trim().length > 0 ? [equipment.trim()] : ['Bodyweight'];
+        : equipment && typeof equipment === 'string' && equipment.trim().length > 0 ? [equipment.trim()] : DEFAULT_EQUIPMENT;
 
       // Build workout context with fallbacks
       const workoutContext: WorkoutContext = {
@@ -257,10 +259,10 @@ export const generateWorkout = onRequest(
       });
 
       // Return workout with metadata
-      res.json(result);
+      res.json({ ...result, requestId });
       return;
     } catch (e) {
-      handleApiError(e, res, 'Workout generation');
+      handleApiError(e, res, 'Workout generation', requestId);
       return;
     }
   },
@@ -280,8 +282,10 @@ export const addExerciseToWorkout = onRequest(
     memory: SINGLE_EXERCISE_CONFIG.memory,
   },
   async (req: Request, res: Response) => {
+    const requestId = generateRequestId();
+
     if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Method not allowed', retryable: false });
+      res.status(405).json({ error: 'Method not allowed', requestId, retryable: false });
       return;
     }
 
@@ -355,9 +359,9 @@ OUTPUT ONLY valid JSON with no markdown.`;
         currentWorkout,
       );
 
-      res.status(200).json(result);
+      res.status(200).json({ ...result, requestId });
     } catch (e) {
-      handleApiError(e, res, 'Add exercise');
+      handleApiError(e, res, 'Add exercise', requestId);
     }
   },
 );
@@ -376,8 +380,10 @@ export const swapExercise = onRequest(
     memory: SINGLE_EXERCISE_CONFIG.memory,
   },
   async (req: Request, res: Response) => {
+    const requestId = generateRequestId();
+
     if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Method not allowed', retryable: false });
+      res.status(405).json({ error: 'Method not allowed', requestId, retryable: false });
       return;
     }
 
@@ -461,9 +467,9 @@ OUTPUT ONLY valid JSON with no markdown.`;
         throw new Error('Replacement exercise is too similar to the original exercise - please provide a different movement pattern');
       }
 
-      res.status(200).json(result);
+      res.status(200).json({ ...result, requestId });
     } catch (e) {
-      handleApiError(e, res, 'Swap exercise');
+      handleApiError(e, res, 'Swap exercise', requestId);
     }
   },
 );
