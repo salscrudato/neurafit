@@ -88,14 +88,18 @@ export function buildWorkoutPrompt(
   let maxExerciseCount: number;
 
   if (isTimeBasedWorkout) {
-    minExerciseCount = Math.max(4, Math.floor(duration / 5));
-    maxExerciseCount = Math.ceil(duration / 3);
+    // Time-based workouts: 1 exercise per 5-7 minutes
+    // Cap at 8 max to keep AI generation reliable
+    minExerciseCount = Math.max(4, Math.floor(duration / 7));
+    maxExerciseCount = Math.min(8, Math.ceil(duration / 5));
   } else {
+    // Strength workouts: calculate based on sets and rest
     const avgRest = (programming.restSeconds[0] + programming.restSeconds[1]) / 2;
     const avgSets = (programming.sets[0] + programming.sets[1]) / 2;
     const avgTimePerExercise = avgSets + ((avgSets - 1) * avgRest / 60);
     minExerciseCount = Math.max(4, Math.floor(duration / avgTimePerExercise));
-    maxExerciseCount = Math.ceil(duration / (avgTimePerExercise * 0.75));
+    // Cap at 8 max to keep AI generation reliable
+    maxExerciseCount = Math.min(8, Math.ceil(duration / (avgTimePerExercise * 0.75)));
   }
 
   const workoutTypeGuidance = getWorkoutTypeContext(workoutType);
