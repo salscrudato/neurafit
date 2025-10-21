@@ -433,7 +433,7 @@ export default function Generate() {
                         key={t}
                         onClick={() => setType(t)}
                         className={[
-                          'rounded-xl border px-3 py-2.5 text-left transition-all duration-200 text-sm font-medium',
+                          'rounded-xl border px-3 py-2.5 text-left transition-all duration-200 text-xs font-medium',
                           type === t
                             ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-blue-500 shadow-md scale-[1.02]'
                             : 'bg-white/70 border-gray-200 hover:border-blue-300 hover:bg-white text-gray-700 hover:scale-[1.01]'

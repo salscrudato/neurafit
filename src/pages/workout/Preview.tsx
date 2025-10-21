@@ -198,7 +198,7 @@ export default function Preview() {
 
           <div className="relative">
             {/* Compact Workout Title */}
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
               {type} <span className="text-slate-400/60">—</span> {duration} min
             </h1>
           </div>

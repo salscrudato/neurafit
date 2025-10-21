@@ -49,6 +49,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Generation timeout',
       details: ['Workout generation took too long. Try a shorter duration or simpler workout type.'],
       retryable: true,
+      requestId,
     });
     return;
   }
@@ -59,6 +60,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Connection error',
       details: ['Network connection issue. Please try again.'],
       retryable: true,
+      requestId,
     });
     return;
   }
@@ -69,6 +71,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Service unavailable',
       details: ['Our AI service is temporarily unavailable. Please try again later.'],
       retryable: false,
+      requestId,
     });
     return;
   }
@@ -79,6 +82,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Rate limited',
       details: ['Too many requests. Please wait a moment before trying again.'],
       retryable: true,
+      requestId,
     });
     return;
   }
@@ -89,6 +93,18 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Service error',
       details: ['AI service temporarily unavailable. Please try again.'],
       retryable: true,
+      requestId,
+    });
+    return;
+  }
+
+  // Duplicate/similarity errors - retryable (check before generic validation)
+  if (msg.includes('duplicate') || msg.includes('similar')) {
+    res.status(400).json({
+      error: 'Exercise conflict',
+      details: ['Generated exercise is too similar to existing ones. Please try again.'],
+      retryable: true,
+      requestId,
     });
     return;
   }
@@ -99,16 +115,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Generation quality issue',
       details: ['Generated workout did not meet quality standards. Please try again.'],
       retryable: true,
-    });
-    return;
-  }
-
-  // Duplicate/similarity errors - retryable
-  if (msg.includes('duplicate') || msg.includes('similar')) {
-    res.status(400).json({
-      error: 'Exercise conflict',
-      details: ['Generated exercise is too similar to existing ones. Please try again.'],
-      retryable: true,
+      requestId,
     });
     return;
   }
@@ -119,6 +126,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
       error: 'Generation failed',
       details: ['AI did not generate a valid workout. Please try again.'],
       retryable: true,
+      requestId,
     });
     return;
   }
@@ -128,6 +136,7 @@ export function handleApiError(error: unknown, res: Response, context: string = 
     error: 'Unexpected error',
     details: ['An unexpected error occurred. Please try again.'],
     retryable: true,
+    requestId,
   });
 }
 

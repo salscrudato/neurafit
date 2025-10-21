@@ -26,6 +26,7 @@ import { handleApiError, generateRequestId } from './lib/errorHandler';
  * Generate a single exercise with validation
  * Simplified: Trust AI output, only validate critical constraints
  * Uses non-streaming structured output for guaranteed valid JSON
+ * Implements retry logic for similarity conflicts
  */
 async function generateSingleExerciseWithValidation(
   prompt: string,
@@ -36,74 +37,92 @@ async function generateSingleExerciseWithValidation(
 ): Promise<{ exercise: unknown }> {
   console.log('📤 Generating single exercise (non-streaming, structured output)');
 
-  try {
-    // Non-streaming with structured output for guaranteed valid JSON
-    // Typically completes in 2-5 seconds
-    const completion = await client.chat.completions.create({
-      model: OPENAI_MODEL,
-      temperature: OPENAI_CONFIG.temperature,
-      top_p: OPENAI_CONFIG.topP,
-      max_tokens: 1000,
-      frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
-      presence_penalty: OPENAI_CONFIG.presencePenalty,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      response_format: buildSingleExerciseSchema() as any,
-      messages: [
-        { role: 'system', content: systemMessage },
-        { role: 'user', content: prompt },
-      ],
-      // NO streaming - simpler, guaranteed valid JSON
-    });
+  let lastError: Error | null = null;
+  const maxAttempts = 2; // Retry once if similarity conflict
 
-    const content = completion.choices[0]?.message?.content?.trim() || '';
-    if (!content) {
-      throw new Error('Empty response from OpenAI');
-    }
-
-    // Parse JSON (guaranteed valid from structured output)
-    let exercise: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      exercise = JSON.parse(content);
-    } catch (e) {
-      throw new Error(`Failed to parse exercise JSON: ${e instanceof Error ? e.message : String(e)}`);
-    }
+      // Non-streaming with structured output for guaranteed valid JSON
+      // Typically completes in 2-5 seconds
+      const completion = await client.chat.completions.create({
+        model: OPENAI_MODEL,
+        temperature: OPENAI_CONFIG.temperature,
+        top_p: OPENAI_CONFIG.topP,
+        max_tokens: 1000,
+        frequency_penalty: OPENAI_CONFIG.frequencyPenalty,
+        presence_penalty: OPENAI_CONFIG.presencePenalty,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        response_format: buildSingleExerciseSchema() as any,
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt },
+        ],
+        // NO streaming - simpler, guaranteed valid JSON
+      });
 
-    // Validate schema - only fail on critical errors
-    const schemaCheck = validateSingleExercise(exercise);
-    if (!schemaCheck.valid) {
-      const hasCriticalError = schemaCheck.errors.some(
-        (err) => err.includes('missing required') || err.includes('invalid type'),
-      );
-      if (hasCriticalError) {
-        throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+      const content = completion.choices[0]?.message?.content?.trim() || '';
+      if (!content) {
+        throw new Error('Empty response from OpenAI');
       }
-      // Accept despite minor warnings - trust AI
-      if (schemaCheck.errors.length > 0) {
-        console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors.slice(0, 2));
+
+      // Parse JSON (guaranteed valid from structured output)
+      let exercise: unknown;
+      try {
+        exercise = JSON.parse(content);
+      } catch (e) {
+        throw new Error(`Failed to parse exercise JSON: ${e instanceof Error ? e.message : String(e)}`);
+      }
+
+      // Validate schema - only fail on critical errors
+      const schemaCheck = validateSingleExercise(exercise);
+      if (!schemaCheck.valid) {
+        const hasCriticalError = schemaCheck.errors.some(
+          (err) => err.includes('missing required') || err.includes('invalid type'),
+        );
+        if (hasCriticalError) {
+          throw new Error(`Schema validation failed: ${schemaCheck.errors.join(', ')}`);
+        }
+        // Accept despite minor warnings - trust AI
+        if (schemaCheck.errors.length > 0) {
+          console.warn('⚠️ Schema validation warnings (accepting):', schemaCheck.errors.slice(0, 2));
+        }
+      }
+
+      // Check for duplicates - critical constraint
+      const otherExercises = currentWorkout.exercises
+        .filter((ex: { name: string }) => !exerciseToReplace || ex.name !== exerciseToReplace.name)
+        .map((ex: { name: string }) => ex.name);
+
+      const exerciseName = (exercise as Record<string, unknown>)?.name as string | undefined;
+      if (!exerciseName) {
+        throw new Error('Generated exercise missing name');
+      }
+
+      const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exerciseName));
+      if (hasSimilar) {
+        lastError = new Error(`Generated exercise is too similar to existing exercises: ${exerciseName}`);
+        if (attempt < maxAttempts - 1) {
+          console.warn(`⚠️ Similarity conflict on attempt ${attempt + 1}, retrying...`);
+          continue; // Retry
+        }
+        throw lastError;
+      }
+
+      console.log('✅ Single exercise generated successfully', { exerciseName, attempt: attempt + 1 });
+      return { exercise };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Only retry on similarity conflicts
+      const isSimilarityError = lastError.message.includes('similar');
+      if (!isSimilarityError || attempt === maxAttempts - 1) {
+        throw lastError;
       }
     }
-
-    // Check for duplicates - critical constraint
-    const otherExercises = currentWorkout.exercises
-      .filter((ex: { name: string }) => !exerciseToReplace || ex.name !== exerciseToReplace.name)
-      .map((ex: { name: string }) => ex.name);
-
-    const exerciseName = (exercise as Record<string, unknown>)?.name as string | undefined;
-    if (!exerciseName) {
-      throw new Error('Generated exercise missing name');
-    }
-
-    const hasSimilar = otherExercises.some((name: string) => isSimilarExercise(name, exerciseName));
-    if (hasSimilar) {
-      throw new Error(`Generated exercise is too similar to existing exercises: ${exerciseName}`);
-    }
-
-    console.log('✅ Single exercise generated successfully', { exerciseName });
-    return { exercise };
-  } catch (error) {
-    // Re-throw with context for proper error handling
-    throw error;
   }
+
+  // Should not reach here, but throw last error if we do
+  throw lastError || new Error('Failed to generate exercise');
 }
 
 // Define the OpenAI API key secret
