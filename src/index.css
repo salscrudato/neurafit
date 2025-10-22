@@ -6,18 +6,18 @@
 
 /* CSS Custom Properties for Design Tokens */
 :root {
-  /* Color Palette - Modern & Professional */
-  --color-primary: #3b82f6;
-  --color-primary-dark: #1e40af;
-  --color-primary-light: #dbeafe;
+  /* Color Palette - Modern, Clean & AI-Inspired */
+  --color-primary: #0f172a;
+  --color-primary-dark: #020617;
+  --color-primary-light: #f0f9ff;
 
-  --color-secondary: #8b5cf6;
-  --color-secondary-dark: #6d28d9;
-  --color-secondary-light: #ede9fe;
+  --color-secondary: #3b82f6;
+  --color-secondary-dark: #1e40af;
+  --color-secondary-light: #dbeafe;
 
-  --color-accent: #06b6d4;
-  --color-accent-dark: #0891b2;
-  --color-accent-light: #cffafe;
+  --color-accent: #6366f1;
+  --color-accent-dark: #4f46e5;
+  --color-accent-light: #e0e7ff;
 
   --color-success: #10b981;
   --color-success-dark: #047857;
@@ -43,8 +43,8 @@
   --color-neutral-800: #1f2937;
   --color-neutral-900: #111827;
 
-  /* Typography Scale - Modern & Readable */
-  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  /* Typography Scale - Tesla-inspired Modern & Readable */
+  --font-family-base: 'Helvetica Neue', 'Helvetica', 'Arial', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 
   /* Spacing Scale - Consistent & Harmonious */
@@ -81,6 +81,76 @@
 /* Futuristic loading animations */
 .bg-gradient-radial {
   background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* ============================================ */
+/* HIDE BROWSER PROGRESS BAR */
+/* ============================================ */
+/* Remove the browser's native progress bar that appears at the top */
+::-webkit-progress-bar {
+  display: none !important;
+}
+
+::-webkit-progress-value {
+  display: none !important;
+}
+
+/* Firefox progress bar */
+progress {
+  display: none !important;
+}
+
+/* ============================================ */
+/* AI-INSPIRED ANIMATIONS & SUBTLE GLOW */
+/* ============================================ */
+
+/* Subtle pulsing glow for AI aesthetic */
+@keyframes ai-pulse-glow {
+  0%, 100% {
+    opacity: 0.3;
+    filter: blur(50px);
+  }
+  50% {
+    opacity: 0.6;
+    filter: blur(60px);
+  }
+}
+
+/* Gentle breathing animation for background orbs */
+@keyframes breathing {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.65;
+  }
+}
+
+/* Subtle glow pulse for interactive elements */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.4);
+  }
+}
+
+/* Apply AI pulse glow to background elements */
+.ai-pulse-glow {
+  animation: ai-pulse-glow 10s ease-in-out infinite;
+}
+
+/* Breathing animation */
+.breathing {
+  animation: breathing 8s ease-in-out infinite;
+}
+
+/* Glow pulse for elements */
+.glow-pulse {
+  animation: glow-pulse 5s ease-in-out infinite;
 }
 
 /* ============================================ */
@@ -1331,4 +1401,100 @@ a,
     animation: none;
     transition: none;
   }
+}
+
+/* ============================================ */
+/* PREMIUM GLASSMORPHISM ANIMATIONS */
+/* ============================================ */
+
+/* Smooth glass blur animation */
+@keyframes glass-blur-in {
+  from {
+    backdrop-filter: blur(0px);
+    opacity: 0.3;
+  }
+  to {
+    backdrop-filter: blur(20px);
+    opacity: 1;
+  }
+}
+
+.animate-glass-blur-in {
+  animation: glass-blur-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Subtle glow pulse for glass elements */
+@keyframes glass-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+  }
+}
+
+.animate-glass-glow-pulse {
+  animation: glass-glow-pulse 3s ease-in-out infinite;
+}
+
+/* Smooth glass border animation */
+@keyframes glass-border-glow {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.animate-glass-border-glow {
+  animation: glass-border-glow 2s ease-in-out infinite;
+}
+
+/* Refined hover lift effect */
+@keyframes hover-lift {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(-4px);
+  }
+}
+
+.hover-lift:hover {
+  animation: hover-lift 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Smooth backdrop blur transition */
+.transition-backdrop-blur {
+  transition: backdrop-filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Premium glass surface effect */
+.glass-surface {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+}
+
+.glass-surface:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth color transition for glass elements */
+.glass-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced focus state for glass inputs */
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }

@@ -6,7 +6,6 @@ import { useOptimisticUpdate, createWeightUpdateAction } from '../../lib/optimis
 import {
   WorkoutProgressHeader,
   SetProgressIndicator,
-  MotivationalMessage,
   WorkoutStats
 } from '../../components/WorkoutProgress'
 import { SmartWeightInput } from '../../components/SmartWeightInput'
@@ -282,47 +281,6 @@ export default function Exercise() {
     nav('/workout/complete')
   }
 
-  const skipSet = () => {
-    // Haptic feedback for skip action
-    triggerHaptic('light')
-
-    // RULE 2: If a set is skipped, it should be marked as incomplete
-    const action = {
-      optimisticUpdate: (prev: Record<number, Record<number, number | null>>) => ({
-        ...prev,
-        [i]: {
-          ...prev[i],
-          [setNo]: null // null indicates skipped set (incomplete)
-        }
-      }),
-      serverUpdate: async () => {
-        const updated = {
-          ...workoutWeights,
-          [i]: {
-            ...workoutWeights[i],
-            [setNo]: null
-          }
-        }
-        sessionStorage.setItem('nf_workout_weights', JSON.stringify(updated))
-
-        if (import.meta.env.MODE === 'development') {
-          console.log(`[SKIP] Set ${setNo} of ${ex.name} marked as SKIPPED (incomplete):`, null)
-        }
-
-        return updated
-      }
-    }
-
-    weightState.executeOptimisticUpdate(action)
-
-    // more sets remaining in current exercise
-    if (setNo < ex.sets) return goRest(i, setNo + 1)
-    // move to next exercise
-    if (i < list.length - 1) return goRest(i + 1, 1)
-    // workout finished
-    nav('/workout/complete')
-  }
-
   const skipExercise = () => {
     // Haptic feedback for skip exercise
     triggerHaptic('warning')
@@ -387,13 +345,7 @@ export default function Exercise() {
           skippedSets={skippedSets}
         />
 
-        {/* Motivational Message */}
-        <MotivationalMessage
-          progress={progressPct}
-          completedSets={completedSets.length}
-          totalSets={ex.sets}
-          exerciseName={ex.name}
-        />
+        {/* Motivational Message - REMOVED */}
 
         {/* Workout Stats */}
         <div className="mb-6">
@@ -408,7 +360,6 @@ export default function Exercise() {
 
         <div className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white/70 backdrop-blur-sm p-6 shadow-lg">
           <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-tr from-blue-400/20 to-indigo-400/20 blur-3xl" />
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">{ex.name}</h1>
 
           {/* chips */}
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
@@ -477,31 +428,22 @@ export default function Exercise() {
 
       {/* Sticky controls */}
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gray-200 bg-white/80 backdrop-blur fixed-bottom-safe">
-        <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-4xl px-5 py-4 flex items-center justify-center gap-3">
           <button
             onClick={skipExercise}
-            className="rounded-xl border border-gray-300 bg-white/70 px-3 py-3 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 text-sm touch-manipulation min-h-[44px]"
+            className="flex-1 rounded-lg border border-gray-300 bg-white/70 px-3 py-1.5 text-gray-700 hover:bg-white hover:border-gray-400 transition-all duration-200 text-[11px] touch-manipulation min-h-[36px] font-medium"
             aria-label="Skip this exercise and move to next"
           >
             Skip Exercise
           </button>
 
-          <div className="flex gap-2">
-            <button
-              onClick={skipSet}
-              className="rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-700 hover:bg-orange-100 hover:border-orange-400 transition-all duration-200 active:scale-95 touch-manipulation min-h-[44px]"
-              aria-label={`Skip set ${setNo} of ${ex.sets}`}
-            >
-              Skip Set
-            </button>
-            <button
-              onClick={completeSet}
-              className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 touch-manipulation min-h-[44px]"
-              aria-label={`Complete set ${setNo} of ${ex.sets} for ${ex.name}`}
-            >
-              Complete Set
-            </button>
-          </div>
+          <button
+            onClick={completeSet}
+            className="flex-1 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 px-3 py-1.5 font-semibold text-white hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 touch-manipulation min-h-[36px] text-[11px]"
+            aria-label={`Complete set ${setNo} of ${ex.sets} for ${ex.name}`}
+          >
+            Complete Set
+          </button>
         </div>
       </div>
     </div>

@@ -13,9 +13,6 @@ import {
 } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { Button } from '../ui/Button'
-import { Card } from '../ui/Card'
-import { MotivationalBanner } from '../components/MotivationalBanner'
-import { DeferredRender } from '../components/DeferredRender'
 import { usePrefetchOnIdle } from '../hooks/usePrefetch'
 
 interface WorkoutItem {
@@ -291,60 +288,52 @@ export default function Dashboard() {
 
       <AppHeader />
 
-      {/* Hero Section - Premium Design */}
+      {/* Hero Section - Modern Redesign */}
       <section className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 pt-3 xs:pt-4 sm:pt-5 animate-slide-in-up">
-        <div className="group relative rounded-lg xs:rounded-2xl sm:rounded-[24px] border border-gray-200/60 bg-white/70 backdrop-blur-xl p-4 xs:p-6 sm:p-7 overflow-hidden shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 ease-out">
-          {/* Animated gradient overlays */}
-          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-gradient-to-tr from-blue-400/20 via-indigo-400/15 to-purple-400/10 opacity-50 blur-3xl group-hover:opacity-70 transition-opacity duration-700" aria-hidden="true" />
-          <div className="absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-300/15 via-teal-300/10 to-transparent opacity-40 blur-3xl group-hover:opacity-60 transition-opacity duration-700" aria-hidden="true" />
+        <div className="relative overflow-hidden rounded-2xl xs:rounded-3xl sm:rounded-[32px]">
+          {/* Dynamic gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.2),transparent_60%)]" />
+          <div className="absolute -right-32 -top-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
 
-          {/* Subtle shimmer effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" aria-hidden="true" />
-
-          <div className="relative">
-            <div className="flex items-start justify-between gap-3 xs:gap-4">
+          {/* Content */}
+          <div className="relative p-6 xs:p-8 sm:p-10 md:p-12">
+            <div className="flex items-start justify-between gap-4 xs:gap-6">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight mb-1.5 xs:mb-2 drop-shadow-sm">
+                <h1 className="text-3xl xs:text-4xl sm:text-5xl font-bold tracking-tight text-white leading-tight mb-2 xs:mb-3">
                   Welcome Back
                 </h1>
-                <p className="text-gray-600 text-sm xs:text-base sm:text-lg leading-relaxed font-normal max-w-2xl">
+                <p className="text-blue-100 text-base xs:text-lg sm:text-xl leading-relaxed font-medium max-w-2xl">
                   {dashboardStats?.totalWorkouts === 0
                     ? "Ready to start your fitness journey?"
-                    : "Keep up the momentum!"
+                    : "Keep crushing your goals!"
                   }
                 </p>
               </div>
+              {/* Decorative icon */}
+              <div className="flex-shrink-0 hidden xs:block">
+                <div className="w-16 xs:w-20 sm:w-24 h-16 xs:h-20 sm:h-24 rounded-2xl xs:rounded-3xl bg-white/15 backdrop-blur-xl flex items-center justify-center border border-white/20">
+                  <Zap className="w-8 xs:w-10 sm:w-12 h-8 xs:h-10 sm:h-12 text-white/80" strokeWidth={1.5} />
+                </div>
+              </div>
             </div>
+
+
           </div>
         </div>
       </section>
 
-      {/* Motivational Banner - Premium */}
-      {dashboardStats && dashboardStats.totalWorkouts > 0 && (
-        <section className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 mt-4 xs:mt-5 sm:mt-6 animate-slide-in-up" style={{ animationDelay: '0.1s' }}>
-          <DeferredRender
-            minHeight="120px"
-            placeholder={
-              <div className="h-24 xs:h-28 bg-white/70 backdrop-blur-xl rounded-lg xs:rounded-2xl sm:rounded-[24px] shadow-xl shadow-gray-200/50 border border-gray-200/60 animate-pulse" />
-            }
-          >
-            <MotivationalBanner
-              totalWorkouts={dashboardStats.totalWorkouts}
-              weeklyWorkouts={dashboardStats.weeklyWorkouts}
-              streak={dashboardStats.recentStreak}
-              consistencyScore={dashboardStats.consistencyScore}
-            />
-          </DeferredRender>
-        </section>
-      )}
 
-      {/* Quick Actions - Premium Design */}
-      <section className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 mt-5 xs:mt-6 sm:mt-8 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
-        <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-gray-900 mb-3 xs:mb-4 sm:mb-5 tracking-tight">
+
+      {/* Quick Actions - Modern Grid */}
+      <section className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 mt-6 xs:mt-8 sm:mt-10 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
+        <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900 mb-4 xs:mb-6 sm:mb-8 tracking-tight">
           Quick Actions
         </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 xs:gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xs:gap-5 sm:gap-6">
+          {/* Generate Workout Card */}
           <div
             className="group relative cursor-pointer touch-manipulation"
             onClick={handleGenerateClick}
@@ -352,40 +341,36 @@ export default function Dashboard() {
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
           >
-            <Card
-              variant="elevated"
-              rounded="2xl"
-              className="relative p-5 xs:p-6 sm:p-8 border border-gray-200/60 bg-white/70 backdrop-blur-xl shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-blue-200/30 transition-all duration-700 active:scale-[0.99] overflow-hidden group-hover:-translate-y-1 focus-visible-enhanced min-h-[100px] xs:min-h-[110px] sm:min-h-[120px]"
-            >
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" aria-hidden="true" />
+            <div className="relative h-full rounded-2xl xs:rounded-3xl sm:rounded-[32px] overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 p-6 xs:p-8 sm:p-10 border border-blue-400/30 shadow-xl shadow-blue-500/20 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-700 active:scale-[0.98] group-hover:-translate-y-1 focus-visible-enhanced">
+              {/* Animated background elements */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+              <div className="absolute -right-20 -top-20 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+              <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
 
-              <div className="relative flex items-center gap-4 xs:gap-5 sm:gap-6">
-                <div className="relative flex-shrink-0">
-                  <div className="w-14 xs:w-16 sm:w-20 h-14 xs:h-16 sm:h-20 rounded-xl xs:rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-blue-500/40 group-hover:shadow-2xl group-hover:shadow-blue-500/50 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
-                    <Zap className="h-7 xs:h-8 sm:h-10 w-7 xs:w-8 sm:w-10 drop-shadow-sm" strokeWidth={2} />
+              <div className="relative flex flex-col h-full justify-between">
+                <div>
+                  <div className="w-12 xs:w-14 sm:w-16 h-12 xs:h-14 sm:h-16 rounded-2xl xs:rounded-3xl bg-white/20 backdrop-blur-xl flex items-center justify-center mb-4 xs:mb-6 border border-white/30 group-hover:scale-110 transition-transform duration-500">
+                    <Zap className="w-6 xs:w-7 sm:w-8 h-6 xs:h-7 sm:h-8 text-white" strokeWidth={2} />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl xs:rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700" aria-hidden="true" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg xs:text-xl sm:text-2xl font-bold text-gray-900 leading-tight tracking-tight">
+                  <h3 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white leading-tight mb-2 xs:mb-3">
                     Generate Workout
                   </h3>
-                  <p className="text-gray-600 text-sm xs:text-base leading-snug font-normal mt-1">
+                  <p className="text-blue-100 text-sm xs:text-base leading-relaxed font-medium">
                     AI-tailored plans for your goals
                   </p>
                 </div>
                 <Button
                   size="sm"
-                  className="haptic-feedback flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-500 min-h-[44px] xs:min-h-[48px]"
+                  className="mt-6 xs:mt-8 w-full bg-white text-blue-600 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-500 font-semibold"
                   onClick={handleGenerateClick}
                 >
-                  Start
+                  Start Now
                 </Button>
               </div>
-            </Card>
+            </div>
           </div>
 
+          {/* Workout History Card */}
           <div
             className="group relative cursor-pointer touch-manipulation"
             onClick={handleHistoryClick}
@@ -393,65 +378,57 @@ export default function Dashboard() {
             tabIndex={0}
             onKeyDown={(e) => e.key === 'Enter' && handleHistoryClick()}
           >
-            <Card
-              variant="elevated"
-              rounded="2xl"
-              className="relative p-5 xs:p-6 sm:p-8 border border-gray-200/60 bg-white/70 backdrop-blur-xl shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 active:scale-[0.99] overflow-hidden group-hover:-translate-y-1 focus-visible-enhanced min-h-[100px] xs:min-h-[110px] sm:min-h-[120px]"
-            >
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 via-gray-500/5 to-slate-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" aria-hidden="true" />
+            <div className="relative h-full rounded-2xl xs:rounded-3xl sm:rounded-[32px] overflow-hidden bg-gradient-to-br from-slate-600 to-slate-700 p-6 xs:p-8 sm:p-10 border border-slate-500/30 shadow-xl shadow-slate-600/20 hover:shadow-2xl hover:shadow-slate-600/30 transition-all duration-700 active:scale-[0.98] group-hover:-translate-y-1 focus-visible-enhanced">
+              {/* Animated background elements */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.1),transparent_60%)]" />
+              <div className="absolute -right-20 -top-20 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
+              <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/[0.02] rounded-full blur-2xl" />
 
-              <div className="relative flex items-center gap-4 xs:gap-5 sm:gap-6">
-                <div className="relative flex-shrink-0">
-                  <div className="w-14 xs:w-16 sm:w-20 h-14 xs:h-16 sm:h-20 rounded-xl xs:rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center text-white shadow-xl shadow-slate-500/40 group-hover:shadow-2xl group-hover:shadow-slate-500/50 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
-                    <History className="h-7 xs:h-8 sm:h-10 w-7 xs:w-8 sm:w-10 drop-shadow-sm" strokeWidth={2} />
+              <div className="relative flex flex-col h-full justify-between">
+                <div>
+                  <div className="w-12 xs:w-14 sm:w-16 h-12 xs:h-14 sm:h-16 rounded-2xl xs:rounded-3xl bg-white/15 backdrop-blur-xl flex items-center justify-center mb-4 xs:mb-6 border border-white/20 group-hover:scale-110 transition-transform duration-500">
+                    <History className="w-6 xs:w-7 sm:w-8 h-6 xs:h-7 sm:h-8 text-white" strokeWidth={2} />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-500 to-gray-600 rounded-xl xs:rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700" aria-hidden="true" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg xs:text-xl sm:text-2xl font-bold text-gray-900 leading-tight tracking-tight">
+                  <h3 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white leading-tight mb-2 xs:mb-3">
                     Workout History
                   </h3>
-                  <p className="text-gray-600 text-sm xs:text-base leading-snug font-normal mt-1">
+                  <p className="text-slate-200 text-sm xs:text-base leading-relaxed font-medium">
                     Review and track progress
                   </p>
                 </div>
                 <Button
                   size="sm"
-                  variant="secondary"
-                  className="haptic-feedback flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-500 min-h-[44px] xs:min-h-[48px]"
+                  className="mt-6 xs:mt-8 w-full bg-white/20 text-white hover:bg-white/30 border border-white/30 shadow-lg hover:shadow-xl transition-all duration-500 font-semibold backdrop-blur-xl"
                   onClick={handleHistoryClick}
                 >
-                  View
+                  View History
                 </Button>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Profile Settings - Premium Design */}
-      <section className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 mt-5 xs:mt-6 sm:mt-8 mb-4 xs:mb-5 sm:mb-6 pb-6 xs:pb-8 sm:pb-10 animate-slide-in-up" style={{ animationDelay: '0.3s' }}>
+      {/* Profile Settings - Modern Card */}
+      <section className="relative mx-auto max-w-6xl px-3 xs:px-4 sm:px-6 mt-6 xs:mt-8 sm:mt-10 mb-6 xs:mb-8 sm:mb-10 pb-6 xs:pb-8 sm:pb-10 animate-slide-in-up" style={{ animationDelay: '0.3s' }}>
         <div className="group relative cursor-pointer touch-manipulation" onClick={handleProfileClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleProfileClick()}>
-          <div className="relative bg-white/70 backdrop-blur-xl rounded-lg xs:rounded-2xl sm:rounded-[24px] p-5 xs:p-6 sm:p-8 border border-gray-200/60 shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 active:scale-[0.99] overflow-hidden hover:-translate-y-1 focus-visible-enhanced min-h-[100px] xs:min-h-[110px] sm:min-h-[120px]">
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 via-gray-500/5 to-slate-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" aria-hidden="true" />
+          <div className="relative rounded-2xl xs:rounded-3xl sm:rounded-[32px] overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 p-6 xs:p-8 sm:p-10 border border-emerald-400/30 shadow-xl shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30 transition-all duration-700 active:scale-[0.98] group-hover:-translate-y-1 focus-visible-enhanced">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+            <div className="absolute -right-20 -top-20 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+            <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
 
-            <div className="relative flex items-center gap-4 xs:gap-5 sm:gap-6">
-              <div className="relative flex-shrink-0">
-                <div className="w-14 xs:w-16 sm:w-20 h-14 xs:h-16 sm:h-20 rounded-xl xs:rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-500 via-slate-600 to-gray-600 flex items-center justify-center shadow-xl shadow-slate-500/40 group-hover:shadow-2xl group-hover:shadow-slate-500/50 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6">
-                  <UserIcon className="h-7 xs:h-8 sm:h-10 w-7 xs:w-8 sm:w-10 text-white drop-shadow-sm" strokeWidth={2} />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-500 to-gray-600 rounded-xl xs:rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700" aria-hidden="true" />
+            <div className="relative flex items-center gap-4 xs:gap-6 sm:gap-8">
+              <div className="w-14 xs:w-16 sm:w-20 h-14 xs:h-16 sm:h-20 rounded-2xl xs:rounded-3xl bg-white/20 backdrop-blur-xl flex items-center justify-center flex-shrink-0 border border-white/30 group-hover:scale-110 transition-transform duration-500">
+                <UserIcon className="w-7 xs:w-8 sm:w-10 h-7 xs:h-8 sm:h-10 text-white" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg xs:text-xl sm:text-2xl font-bold text-gray-900 leading-tight tracking-tight">Profile Settings</h3>
-                <p className="text-gray-600 text-sm xs:text-base leading-snug font-normal mt-1">Update goals & equipment</p>
+                <h3 className="text-xl xs:text-2xl sm:text-3xl font-bold text-white leading-tight mb-1 xs:mb-2">Profile Settings</h3>
+                <p className="text-emerald-100 text-sm xs:text-base leading-relaxed font-medium">Update goals & equipment</p>
               </div>
               <Button
                 size="sm"
-                variant="outline"
-                className="haptic-feedback flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-500 min-h-[44px] xs:min-h-[48px]"
+                className="flex-shrink-0 bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg hover:shadow-xl transition-all duration-500 font-semibold min-h-[44px] xs:min-h-[48px]"
                 onClick={handleProfileClick}
               >
                 Edit

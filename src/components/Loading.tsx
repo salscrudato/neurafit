@@ -189,29 +189,29 @@ export function EnhancedWorkoutLoader({
             </div>
           </div>
 
-          {/* Futuristic Loading Spinner */}
+          {/* Modern Minimalist Loading Spinner */}
           <div className="flex justify-center items-center py-6">
-            <div className="relative w-24 h-24">
-              {/* Outer rotating ring */}
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-indigo-500 animate-spin" style={{ animationDuration: '1.5s' }} />
-
-              {/* Middle rotating ring - opposite direction */}
-              <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-purple-500 border-l-pink-500 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} />
-
-              {/* Inner pulsing core */}
-              <div className="absolute inset-6 rounded-full bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-600 animate-pulse shadow-lg shadow-blue-500/50" />
-
-              {/* Center dot */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-white shadow-lg animate-pulse" />
+            <div className="relative w-20 h-20">
+              {/* Outer gradient ring with smooth rotation */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 animate-spin" style={{ animationDuration: '2.5s' }}>
+                <div className="absolute inset-1 rounded-full bg-white/95" />
               </div>
 
-              {/* Orbiting particles */}
-              <div className="absolute inset-0">
-                <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-400 rounded-full -translate-x-1/2 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-indigo-400 rounded-full -translate-x-1/2 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-                <div className="absolute left-0 top-1/2 w-2 h-2 bg-purple-400 rounded-full -translate-y-1/2 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }} />
-                <div className="absolute right-0 top-1/2 w-2 h-2 bg-pink-400 rounded-full -translate-y-1/2 animate-ping" style={{ animationDuration: '2s', animationDelay: '1.5s' }} />
+              {/* Inner animated dots in circular pattern */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-12 h-12">
+                  {/* Dot 1 - Top */}
+                  <div className="absolute top-0 left-1/2 w-1.5 h-1.5 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full -translate-x-1/2 animate-pulse" style={{ animationDuration: '1.5s' }} />
+
+                  {/* Dot 2 - Right */}
+                  <div className="absolute right-0 top-1/2 w-1.5 h-1.5 bg-gradient-to-l from-indigo-500 to-purple-500 rounded-full -translate-y-1/2 animate-pulse" style={{ animationDuration: '1.5s', animationDelay: '0.375s' }} />
+
+                  {/* Dot 3 - Bottom */}
+                  <div className="absolute bottom-0 left-1/2 w-1.5 h-1.5 bg-gradient-to-t from-purple-500 to-pink-500 rounded-full -translate-x-1/2 animate-pulse" style={{ animationDuration: '1.5s', animationDelay: '0.75s' }} />
+
+                  {/* Dot 4 - Left */}
+                  <div className="absolute left-0 top-1/2 w-1.5 h-1.5 bg-gradient-to-r from-pink-500 to-blue-500 rounded-full -translate-y-1/2 animate-pulse" style={{ animationDuration: '1.5s', animationDelay: '1.125s' }} />
+                </div>
               </div>
             </div>
           </div>

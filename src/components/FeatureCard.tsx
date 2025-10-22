@@ -46,12 +46,12 @@ export default function FeatureCard({
   const colors = accentColorMap[accentColor]
 
   return (
-    <div className={`group relative p-5 xs:p-6 sm:p-7 rounded-[20px] xs:rounded-[22px] sm:rounded-[24px] border ${colors.border} bg-white/70 backdrop-blur-xl hover:bg-white hover:shadow-2xl ${colors.glow} transition-all duration-700 hover:scale-[1.01] overflow-hidden shadow-lg shadow-gray-200/50`}>
+    <div className={`group relative p-5 xs:p-6 sm:p-7 rounded-[20px] xs:rounded-[22px] sm:rounded-[24px] border border-white/50 bg-white/35 backdrop-blur-2xl hover:bg-white/45 hover:shadow-2xl ${colors.glow} transition-all duration-700 hover:scale-[1.02] overflow-hidden shadow-lg shadow-gray-200/30`}>
       {/* Animated shimmer background */}
       <div className={`absolute inset-0 bg-gradient-to-r ${colors.shimmer} opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
 
       {/* Subtle gradient overlay on hover */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} opacity-30 group-hover:opacity-0 transition-opacity duration-700`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${bgGradient} opacity-20 group-hover:opacity-10 transition-opacity duration-700`} />
 
       <div className="relative z-10 flex items-start gap-4 xs:gap-4.5 sm:gap-5">
         {/* Premium Icon Container */}

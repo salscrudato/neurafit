@@ -84,26 +84,14 @@ function validStep(step: number, d: Draft): boolean {
 
 /** -------------- UI PRIMITIVES -------------- */
 function Progress({ step, total }: { step: number; total: number }) {
-  const pct = Math.round((step / total) * 100)
   return (
-    <div className="w-full mb-6 xs:mb-7 sm:mb-8" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={total} aria-label={`Progress: Step ${step} of ${total}`}>
-      <div className="mb-2 xs:mb-3 flex items-center justify-between text-xs xs:text-sm text-gray-600">
-        <span className="font-medium">Step {step} of {total}</span>
-        <span className="text-blue-600 font-semibold">{pct}%</span>
-      </div>
-      <div className="h-2.5 xs:h-3 w-full overflow-hidden rounded-full bg-gray-100 shadow-inner">
-        <div
-          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out rounded-full shadow-sm will-change-transform"
-          style={{ width: `${pct}%` }}
-          aria-hidden="true"
-        />
-      </div>
-      <div className="mt-2 xs:mt-2.5 flex justify-between gap-1.5">
+    <div className="w-full mb-8 xs:mb-9 sm:mb-10" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={total} aria-label={`Progress: Step ${step} of ${total}`}>
+      <div className="flex justify-between gap-2">
         {Array.from({ length: total }, (_, i) => (
           <div
             key={i}
-            className={`h-1.5 xs:h-2 w-1.5 xs:w-2 rounded-full transition-all duration-300 ${
-              i < step ? 'bg-blue-500 scale-110' : 'bg-gray-200'
+            className={`h-2 xs:h-2.5 flex-1 rounded-full transition-all duration-300 ${
+              i < step ? 'bg-blue-500 scale-105 shadow-md shadow-blue-500/30' : 'bg-gray-200/60'
             }`}
           />
         ))}
@@ -114,8 +102,8 @@ function Progress({ step, total }: { step: number; total: number }) {
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <div className="mb-5 xs:mb-6 sm:mb-7 text-center">
-      <h2 className="text-xl xs:text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">{title}</h2>
+    <div className="mb-8 xs:mb-9 sm:mb-10 text-center">
+      <h2 className="text-2xl xs:text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-tight">{title}</h2>
     </div>
   )
 }
@@ -174,13 +162,13 @@ function PrimaryButton({
       disabled={disabled}
       aria-disabled={disabled}
       className={[
-        'px-4 xs:px-6 py-2.5 xs:py-3 rounded-lg xs:rounded-xl font-semibold transition-all duration-300 shadow-sm touch-manipulation min-h-[44px] xs:min-h-[48px] focus-visible-enhanced',
+        'group relative px-8 xs:px-10 py-3 xs:py-3.5 rounded-xl xs:rounded-2xl font-semibold transition-all duration-300 shadow-md touch-manipulation min-h-[44px] xs:min-h-[48px] focus-visible-enhanced',
         disabled
-          ? 'bg-gray-300 text-gray-500 pointer-events-none cursor-not-allowed'
-          : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95',
+          ? 'bg-gray-200 text-gray-400 pointer-events-none cursor-not-allowed'
+          : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-95',
       ].join(' ')}
     >
-      {children}
+      <span className="relative">{children}</span>
     </button>
   )
 }
@@ -193,10 +181,10 @@ function SecondaryButton({ children, onClick, disabled }: { children: React.Reac
       disabled={disabled}
       aria-disabled={disabled}
       className={[
-        'px-4 xs:px-5 py-2.5 xs:py-3 rounded-lg xs:rounded-xl border font-medium transition-all duration-300 touch-manipulation min-h-[44px] xs:min-h-[48px] focus-visible-enhanced',
+        'group relative px-8 xs:px-10 py-3 xs:py-3.5 rounded-xl xs:rounded-2xl border-2 font-semibold transition-all duration-300 touch-manipulation min-h-[44px] xs:min-h-[48px] focus-visible-enhanced',
         disabled
-          ? 'border-gray-200 text-gray-400 pointer-events-none cursor-not-allowed'
-          : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md hover:scale-105 active:scale-95',
+          ? 'border-gray-200 text-gray-400 bg-gray-50 pointer-events-none cursor-not-allowed'
+          : 'border-gray-300 text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-400 hover:shadow-lg hover:shadow-gray-200/50 hover:scale-[1.02] active:scale-95',
       ].join(' ')}
     >
       {children}
@@ -535,8 +523,8 @@ export default function Onboarding() {
       </div>
 
       {/* Fixed Footer Nav */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200/50 bg-white/90 backdrop-blur-md shadow-lg fixed-bottom-safe">
-        <div className="mx-auto max-w-3xl px-4 xs:px-5 sm:px-6 py-3 xs:py-4 flex items-center justify-between gap-3 xs:gap-4">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200/30 bg-gradient-to-t from-white via-white/95 to-white/90 backdrop-blur-xl shadow-2xl shadow-gray-200/20 fixed-bottom-safe">
+        <div className="mx-auto max-w-3xl px-4 xs:px-5 sm:px-6 py-4 xs:py-5 flex items-center justify-between gap-4 xs:gap-6">
           <SecondaryButton onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={atStart}>
             Back
           </SecondaryButton>

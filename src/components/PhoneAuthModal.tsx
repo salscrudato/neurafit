@@ -145,15 +145,15 @@ export default function PhoneAuthModal({
       aria-modal="true"
       aria-labelledby="phone-auth-title"
     >
-      {/* Backdrop */}
+      {/* Backdrop - Premium Glass Effect */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+        className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl xs:rounded-2.5xl sm:rounded-3xl shadow-2xl max-w-md w-full p-6 xs:p-7 sm:p-8 animate-scale-in-smooth max-h-[90vh] overflow-y-auto" role="document">
+      {/* Modal - Liquid Glass */}
+      <div className="relative bg-white/50 backdrop-blur-2xl rounded-2xl xs:rounded-2.5xl sm:rounded-3xl shadow-2xl shadow-black/20 max-w-md w-full p-6 xs:p-7 sm:p-8 animate-scale-in-smooth max-h-[90vh] overflow-y-auto border border-white/60" role="document">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -166,11 +166,11 @@ export default function PhoneAuthModal({
 
         {/* Header */}
         <div className="text-center mb-6 xs:mb-7 sm:mb-8">
-          <div className="inline-flex items-center justify-center w-14 xs:w-15 sm:w-16 h-14 xs:h-15 sm:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl xs:rounded-2xl sm:rounded-2xl mb-3 xs:mb-4 shadow-lg transition-transform duration-300 hover:scale-105">
+          <div className="inline-flex items-center justify-center w-14 xs:w-15 sm:w-16 h-14 xs:h-15 sm:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl xs:rounded-2xl sm:rounded-2xl mb-3 xs:mb-4 shadow-xl shadow-blue-500/30 transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-blue-400/40">
             {step === 'phone' ? (
-              <Phone className="h-7 xs:h-7.5 sm:h-8 w-7 xs:w-7.5 sm:w-8 text-white" aria-hidden="true" />
+              <Phone className="h-7 xs:h-7.5 sm:h-8 w-7 xs:w-7.5 sm:w-8 text-white transition-transform duration-300" aria-hidden="true" />
             ) : (
-              <Shield className="h-7 xs:h-7.5 sm:h-8 w-7 xs:w-7.5 sm:w-8 text-white" aria-hidden="true" />
+              <Shield className="h-7 xs:h-7.5 sm:h-8 w-7 xs:w-7.5 sm:w-8 text-white transition-transform duration-300" aria-hidden="true" />
             )}
           </div>
           <h2 id="phone-auth-title" className="text-xl xs:text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 xs:mb-2">
@@ -214,7 +214,7 @@ export default function PhoneAuthModal({
                   value={localPhoneNumber}
                   onChange={handlePhoneChange}
                   placeholder="(555) 123-4567"
-                  className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 touch-manipulation min-h-[48px] text-base"
+                  className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl border border-white/50 bg-white/40 backdrop-blur-xl hover:bg-white/50 hover:border-white/70 hover:shadow-lg hover:shadow-blue-400/10 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/60 transition-all duration-300 touch-manipulation min-h-[48px] text-base"
                   disabled={loading}
                   required
                   autoComplete="tel"
@@ -222,7 +222,7 @@ export default function PhoneAuthModal({
                   aria-label="Phone number"
                   aria-describedby="phone-hint"
                 />
-                <div className="absolute inset-0 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-400/10 to-indigo-400/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
               </div>
               <p id="phone-hint" className="mt-1.5 xs:mt-2 text-[10px] xs:text-xs text-gray-500">
                 US numbers only. Standard messaging rates may apply.
@@ -232,10 +232,10 @@ export default function PhoneAuthModal({
             <button
               type="submit"
               disabled={loading || !localPhoneNumber}
-              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 xs:px-6 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
+              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 xs:px-6 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-blue-600/30 overflow-hidden group touch-manipulation min-h-[48px]"
               aria-label="Send verification code"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
               <span className="relative z-10 flex items-center justify-center gap-2 text-sm xs:text-base">
                 {loading && (
                   <div className="animate-spin rounded-full h-4 xs:h-4 w-4 xs:w-4 border-2 border-white border-t-transparent flex-shrink-0" role="status" aria-label="Loading" />
@@ -262,7 +262,7 @@ export default function PhoneAuthModal({
                   value={verificationCode}
                   onChange={handleCodeChange}
                   placeholder="123456"
-                  className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl border border-gray-200/80 bg-white/80 backdrop-blur-sm hover:bg-white hover:border-gray-300 hover:shadow-md font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 touch-manipulation min-h-[48px] text-base xs:text-lg sm:text-xl text-center tracking-widest"
+                  className="w-full pl-10 xs:pl-12 pr-3 xs:pr-4 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl border border-white/50 bg-white/40 backdrop-blur-xl hover:bg-white/50 hover:border-white/70 hover:shadow-lg hover:shadow-blue-400/10 font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/60 transition-all duration-300 touch-manipulation min-h-[48px] text-base xs:text-lg sm:text-xl text-center tracking-widest"
                   disabled={loading}
                   required
                   autoComplete="one-time-code"
@@ -272,7 +272,7 @@ export default function PhoneAuthModal({
                   aria-label="Verification code"
                   aria-describedby="code-hint"
                 />
-                <div className="absolute inset-0 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg xs:rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-400/10 to-indigo-400/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
               </div>
               <p id="code-hint" className="mt-1.5 xs:mt-2 text-[10px] xs:text-xs text-gray-500 text-center">
                 Enter the 6-digit code sent to your phone
@@ -282,10 +282,10 @@ export default function PhoneAuthModal({
             <button
               type="submit"
               disabled={loading || verificationCode.length !== 6}
-              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 xs:px-6 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.02] active:scale-[0.98] shadow-lg overflow-hidden group touch-manipulation min-h-[48px]"
+              className="relative w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 xs:px-6 py-3 xs:py-4 rounded-lg xs:rounded-xl sm:rounded-2xl font-semibold hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-blue-600/30 overflow-hidden group touch-manipulation min-h-[48px]"
               aria-label="Verify code and sign in"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer-slow" />
               <span className="relative z-10 flex items-center justify-center gap-2 text-sm xs:text-base">
                 {loading && (
                   <div className="animate-spin rounded-full h-4 xs:h-4 w-4 xs:w-4 border-2 border-white border-t-transparent flex-shrink-0" role="status" aria-label="Loading" />

@@ -351,35 +351,38 @@ export default function Auth() {
   ], [])
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden" role="main" aria-label="NeuraFit Authentication Page">
-      {/* Premium Background with Mesh Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/20" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.08),transparent_50%)]" />
+    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100/50 text-gray-900 relative overflow-hidden" role="main" aria-label="NeuraFit Authentication Page">
+      {/* Premium Glassmorphic Background Layers */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-slate-50/70 to-slate-100/50 backdrop-blur-3xl" />
 
-      {/* Animated Mesh Grid */}
-      <div className="absolute inset-0 opacity-[0.015]">
+      {/* AI-Inspired Subtle Animated Radial Glows */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.08),transparent_70%)] ai-pulse-glow" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(99,102,241,0.06),transparent_70%)] ai-pulse-glow" style={{ animationDelay: '3s' }} />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.04),transparent_80%)] ai-pulse-glow" style={{ animationDelay: '6s' }} />
+
+      {/* Subtle Animated Mesh Grid - Ultra-refined */}
+      <div className="absolute inset-0 opacity-[0.008]">
         <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
-          backgroundSize: '64px 64px'
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
+          backgroundSize: '80px 80px'
         }} />
       </div>
 
-      {/* Floating Orbs - More Subtle and Elegant */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-float-enhanced will-change-transform" />
-      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-emerald-400/15 to-teal-500/15 rounded-full blur-3xl animate-float-enhanced will-change-transform" style={{ animationDelay: '2s' }} />
-      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float-enhanced will-change-transform" style={{ animationDelay: '4s' }} />
+      {/* Floating Orbs - Premium Glassmorphic Effect with Breathing Animation */}
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-full blur-3xl animate-float-enhanced will-change-transform opacity-50 breathing" />
+      <div className="absolute top-1/3 -right-20 w-80 h-80 bg-gradient-to-br from-indigo-400/8 to-purple-500/8 rounded-full blur-3xl animate-float-enhanced will-change-transform opacity-40 breathing" style={{ animationDelay: '2s' }} />
+      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-purple-400/6 to-indigo-500/6 rounded-full blur-3xl animate-float-enhanced will-change-transform opacity-30 breathing" style={{ animationDelay: '4s' }} />
 
       {/* Main Content Container */}
       <div className="relative max-w-lg mx-auto px-4 xs:px-5 sm:px-6 py-8 xs:py-10 sm:py-12 md:py-16 animate-fade-in-up safe-area-inset-top safe-area-inset-bottom" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-        {/* Premium Header Badge */}
+        {/* Premium Header Badge - Liquid Glass */}
         <div className="flex items-center justify-center mb-8 xs:mb-9 sm:mb-10 md:mb-14">
-          <div className="group inline-flex items-center gap-2 xs:gap-2.5 sm:gap-3 px-4 xs:px-5 sm:px-7 py-2 xs:py-2.5 sm:py-3.5 bg-white/60 backdrop-blur-xl border border-gray-200/60 rounded-full shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-blue-200/30 transition-all duration-700 hover:scale-[1.03] cursor-default touch-manipulation">
+          <div className="group inline-flex items-center gap-2 xs:gap-2.5 sm:gap-3 px-4 xs:px-5 sm:px-7 py-2 xs:py-2.5 sm:py-3.5 bg-white/40 backdrop-blur-2xl border border-white/60 rounded-full shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-400/20 transition-all duration-700 hover:scale-[1.04] hover:bg-white/50 cursor-default touch-manipulation">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity duration-700" />
-              <Zap className="h-3.5 xs:h-4 sm:h-4.5 w-3.5 xs:w-4 sm:w-4.5 text-blue-600 group-hover:text-indigo-600 transition-all duration-700 relative z-10" strokeWidth={2.5} />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-lg opacity-25 group-hover:opacity-50 transition-opacity duration-700" />
+              <Zap className="h-3.5 xs:h-4 sm:h-4.5 w-3.5 xs:w-4 sm:w-4.5 text-blue-600 group-hover:text-indigo-600 transition-all duration-700 relative z-10 group-hover:scale-110" strokeWidth={2.5} />
             </div>
-            <span className="text-[11px] xs:text-xs sm:text-sm font-semibold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent tracking-wide group-hover:from-blue-600 group-hover:to-indigo-600 transition-all duration-700">
+            <span className="text-[11px] xs:text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-wide group-hover:from-blue-500 group-hover:via-indigo-500 group-hover:to-purple-500 transition-all duration-700">
               AI-Powered Fitness Technology
             </span>
           </div>
@@ -392,17 +395,11 @@ export default function Auth() {
             <span className="block mb-1.5 xs:mb-2 sm:mb-2.5 md:mb-3">
               <span className="text-gray-900">with </span>
               <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-gradient-x">
-                  AI-Powered
+                <span className="bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 bg-clip-text text-transparent animate-gradient-x">
+                  AI-Powered Precision
                 </span>
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 blur-2xl -z-10 opacity-50" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-indigo-600/20 to-purple-600/20 blur-2xl -z-10 opacity-50" />
               </span>
-            </span>
-            <span className="relative inline-block">
-              <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent animate-gradient-x">
-                Precision
-              </span>
-              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-cyan-600/20 blur-2xl -z-10 opacity-50" />
             </span>
           </h1>
           <p className="text-gray-600 text-sm xs:text-base sm:text-lg leading-relaxed max-w-md mx-auto px-2 xs:px-3 sm:px-4 font-normal">
@@ -412,17 +409,17 @@ export default function Auth() {
           </p>
         </div>
 
-        {/* Premium CTA Buttons */}
+        {/* Premium CTA Buttons - Liquid Glass */}
         <div className="space-y-3 xs:space-y-3.5 sm:space-y-4 mb-12 xs:mb-14 sm:mb-16 md:mb-20">
           <button
             onClick={googleLogin}
             disabled={loading}
-            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
+            className="group relative w-full bg-white/40 backdrop-blur-2xl border border-white/60 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-white/50 hover:border-white/80 hover:shadow-2xl hover:shadow-blue-400/15 transition-all duration-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-gray-200/20 hover:scale-[1.02] active:scale-[0.98] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
             aria-label="Sign in with Google"
             type="button"
           >
             {/* Animated gradient border effect */}
-            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10" />
+            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-blue-400/15 via-purple-400/15 to-pink-400/15" />
 
             {/* Google glyph */}
             <svg className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10 flex-shrink-0" viewBox="0 0 48 48" aria-hidden="true">
@@ -448,12 +445,12 @@ export default function Auth() {
           <button
             onClick={handlePhoneSignIn}
             disabled={loading}
-            className="group relative w-full bg-white backdrop-blur-xl border border-gray-200 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gray-50 hover:border-gray-300 hover:shadow-2xl hover:shadow-gray-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-gray-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
+            className="group relative w-full bg-white/40 backdrop-blur-2xl border border-white/60 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-white/50 hover:border-white/80 hover:shadow-2xl hover:shadow-emerald-400/15 transition-all duration-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-gray-200/20 hover:scale-[1.02] active:scale-[0.98] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
             aria-label="Sign in with Phone"
             type="button"
           >
             {/* Animated gradient border effect */}
-            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10" />
+            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-emerald-400/15 via-teal-400/15 to-cyan-400/15" />
 
             <Smartphone className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 text-gray-700 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 relative z-10 flex-shrink-0" strokeWidth={2} />
             <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-sm xs:text-[15px] sm:text-[15px] font-medium">
@@ -465,12 +462,12 @@ export default function Auth() {
           <button
             onClick={handleContinueAsGuest}
             disabled={loading}
-            className="group relative w-full bg-gradient-to-r from-amber-50 to-orange-50 backdrop-blur-xl border border-amber-200 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gradient-to-r hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 hover:shadow-2xl hover:shadow-amber-300/30 transition-all duration-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-amber-200/40 hover:scale-[1.01] active:scale-[0.99] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
+            className="group relative w-full bg-gradient-to-r from-amber-50/40 to-orange-50/40 backdrop-blur-2xl border border-amber-200/60 text-gray-800 px-4 xs:px-5 sm:px-6 py-4 xs:py-4.5 sm:py-5 rounded-[18px] xs:rounded-[20px] font-semibold hover:bg-gradient-to-r hover:from-amber-100/50 hover:to-orange-100/50 hover:border-amber-300/80 hover:shadow-2xl hover:shadow-amber-400/15 transition-all duration-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2.5 xs:gap-3 sm:gap-3.5 shadow-xl shadow-amber-200/15 hover:scale-[1.02] active:scale-[0.98] overflow-hidden touch-manipulation min-h-[52px] xs:min-h-[56px] sm:min-h-[60px]"
             aria-label="Continue as Guest"
             type="button"
           >
             {/* Animated gradient border effect */}
-            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10" />
+            <div className="absolute inset-0 rounded-[18px] xs:rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-r from-amber-400/15 via-orange-400/15 to-red-400/15" />
 
             <ZapIcon className="h-5 xs:h-5.5 sm:h-5.5 w-5 xs:w-5.5 sm:w-5.5 text-amber-600 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 relative z-10 flex-shrink-0" strokeWidth={2} />
             <span className="transition-all duration-500 group-hover:text-gray-900 relative z-10 text-sm xs:text-[15px] sm:text-[15px] font-medium">
@@ -479,16 +476,16 @@ export default function Auth() {
           </button>
         </div>
 
-        {/* Why Choose NeuraFit Section - Premium Design */}
+        {/* Why Choose neurafit Section - Premium Design */}
         <div className="mb-12 xs:mb-14 sm:mb-16">
           <div className="text-center mb-10 xs:mb-12 sm:mb-14">
             <h2 className="text-2xl xs:text-2.5xl sm:text-3xl md:text-4xl font-bold mb-3 xs:mb-4 sm:mb-5 text-gray-900 tracking-tight px-1">
               Why Choose{' '}
               <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  NeuraFit
+                <span className="bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  neurafit
                 </span>
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 blur-xl -z-10 opacity-40" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-indigo-600/20 to-purple-600/20 blur-xl -z-10 opacity-40" />
               </span>
               ?
             </h2>
@@ -514,15 +511,15 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Premium Footer */}
-        <div className="text-center pt-8 xs:pt-9 sm:pt-10 border-t border-gray-200/60">
-          <p className="text-[11px] xs:text-xs sm:text-xs text-gray-500 leading-relaxed px-2">
+        {/* Premium Footer - Glass Border */}
+        <div className="text-center pt-8 xs:pt-9 sm:pt-10 border-t border-white/40 backdrop-blur-sm">
+          <p className="text-[11px] xs:text-xs sm:text-xs text-gray-600 leading-relaxed px-2">
             By continuing, you agree to our{' '}
-            <Link to="/terms" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 underline-offset-2 hover:underline">terms of service</Link>
+            <Link to="/terms" className="text-blue-600 hover:text-blue-700 font-medium transition-all duration-300 underline-offset-2 hover:underline hover:scale-105 inline-block">terms of service</Link>
             {' '}and{' '}
-            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300 underline-offset-2 hover:underline">privacy policy</Link>.
+            <Link to="/privacy" className="text-blue-600 hover:text-blue-700 font-medium transition-all duration-300 underline-offset-2 hover:underline hover:scale-105 inline-block">privacy policy</Link>.
             <br />
-            <span className="text-gray-400 font-medium mt-2 inline-block text-[10px] xs:text-[11px]">Secure authentication powered by Firebase • v1.0.0</span>
+            <span className="text-gray-500 font-medium mt-2 inline-block text-[10px] xs:text-[11px]">Secure authentication powered by Firebase • v1.0.0</span>
           </p>
         </div>
       </div>

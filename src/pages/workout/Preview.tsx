@@ -61,19 +61,19 @@ export default function Preview() {
 
   const { type, duration } = parsedData
 
-  // Add exercise handler - uses initial workout context
+  // Add exercise handler - uses current exercises (may have been modified)
   const handleAddExercise = async () => {
     setLoadingAdd(true)
     try {
       // Validate we have exercises to work with
-      if (!initialWorkoutContext.exercises || initialWorkoutContext.exercises.length === 0) {
+      if (!exercises || exercises.length === 0) {
         alert('No exercises found in workout. Please try again.')
         return
       }
 
       const payload = {
-        // Use initial workout context, not current modified exercises
-        currentWorkout: { exercises: initialWorkoutContext.exercises },
+        // Use current exercises (may have been swapped/deleted), not initial
+        currentWorkout: { exercises },
         workoutType: initialWorkoutContext.type,
         experience: profile?.experience,
         goals: profile?.goals,
@@ -82,7 +82,7 @@ export default function Preview() {
       }
 
       logger.debug('Adding exercise with payload:', {
-        exerciseCount: initialWorkoutContext.exercises.length,
+        exerciseCount: exercises.length,
         workoutType: initialWorkoutContext.type,
         hasProfile: !!profile,
       })
@@ -198,7 +198,7 @@ export default function Preview() {
 
           <div className="relative">
             {/* Compact Workout Title */}
-            <h1 className="text-lg md:text-xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
+            <h1 style={{ fontSize: '16px' }} className="md:text-sm font-bold tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 bg-clip-text text-transparent leading-tight">
               {type} <span className="text-slate-400/60">—</span> {duration} min
             </h1>
           </div>
@@ -304,7 +304,7 @@ function ExerciseItem({
   return (
     <li className="group overflow-hidden rounded-xl border border-white/60 bg-gradient-to-br from-white/95 to-white/85 backdrop-blur-xl shadow-md shadow-slate-200/25 hover:shadow-lg hover:shadow-slate-300/15 transition-all duration-200 active:scale-[0.98]">
       <button
-        className="w-full px-4 py-4 text-left flex items-start justify-between gap-3 hover:bg-white/50 transition-colors duration-200"
+        className="w-full px-3 py-3 text-left flex items-start justify-between gap-3 hover:bg-white/50 transition-colors duration-200"
         onClick={() => setOpen(o => !o)}
       >
         <div className="flex-1 min-w-0">
@@ -312,11 +312,11 @@ function ExerciseItem({
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-bold flex-shrink-0 shadow-sm shadow-blue-500/25">
               {index + 1}
             </span>
-            <h3 className="font-bold text-slate-900 group-hover:text-slate-800 transition-colors truncate text-sm md:text-base">
+            <h3 style={{ fontSize: '14px' }} className="font-bold text-slate-900 group-hover:text-slate-800 transition-colors truncate leading-tight">
               {ex.name}
             </h3>
           </div>
-          <div className="text-sm text-slate-600 ml-9">
+          <div className="text-xs text-slate-600 ml-9 leading-tight">
             <span className="font-semibold">{ex.sets}</span> sets • <span className="font-semibold">{ex.reps}</span> reps
             {ex.restSeconds ? <span className="ml-2 text-slate-500 hidden sm:inline">• <span className="font-semibold">{ex.restSeconds}s</span></span> : null}
           </div>

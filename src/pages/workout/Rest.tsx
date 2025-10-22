@@ -57,7 +57,7 @@ export default function Rest() {
   return (
     <>
       <WorkoutFlowHeader
-        title="Rest Period"
+        title=""
         showBackButton={true}
         onBack={() => nav('/workout/run')}
       />

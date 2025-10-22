@@ -156,6 +156,13 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
     }
   }, [handleSubmit])
 
+  // Auto-save weight on blur
+  const handleInputBlur = useCallback(() => {
+    if (inputValue.trim() !== '') {
+      handleSubmit()
+    }
+  }, [inputValue, handleSubmit])
+
   const handleSuggestionClick = useCallback((weight: number) => {
     setInputValue(weight.toString())
     onWeightChange(weight)
@@ -242,7 +249,10 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
               setValidationError(null) // Clear error on input change
             }}
             onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onBlur={() => {
+              setTimeout(() => setShowSuggestions(false), 200)
+              handleInputBlur() // Auto-save on blur
+            }}
             onKeyDown={handleKeyDown}
             placeholder="0"
             min={MIN_WEIGHT}
@@ -334,18 +344,7 @@ export const SmartWeightInput = React.memo(function SmartWeightInput({
         </div>
       )}
 
-      {/* Submit Button */}
-      <button
-        onClick={handleSubmit}
-        disabled={isSubmitting}
-        className={`w-full mt-4 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-          isSubmitting
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 hover:scale-[1.02] shadow-md'
-        }`}
-      >
-        {isSubmitting ? 'Saving...' : 'Save Weight'}
-      </button>
+      {/* Auto-save on blur - no submit button needed */}
     </div>
   )
 }, (prevProps, nextProps) => {

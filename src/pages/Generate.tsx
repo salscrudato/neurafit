@@ -405,8 +405,8 @@ export default function Generate() {
         <section className="mt-6 xs:mt-8 sm:mt-10 space-y-4 xs:space-y-5 sm:space-y-6 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
           {/* Type */}
           <div className="rounded-lg xs:rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-4 xs:p-5 sm:p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-gray-900">Workout Type</h3>
+            <div className="mb-3 xs:mb-4 flex items-center justify-between">
+              <h3 className="font-semibold text-xs xs:text-sm text-gray-900 tracking-tight">Workout Type</h3>
               {type && <span className="text-xs text-gray-500">Selected: {type}</span>}
             </div>
 
@@ -415,8 +415,8 @@ export default function Generate() {
               {WORKOUT_CATEGORIES.map((category, categoryIndex) => (
                 <div key={category.name}>
                   {/* Category Header */}
-                  <div className="mb-2.5 flex items-center gap-2">
-                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <div className="mb-2 flex items-center gap-2">
+                    <h4 className="text-[10px] xs:text-xs font-semibold text-gray-400 uppercase tracking-wider">
                       {category.name}
                     </h4>
                     <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
@@ -458,7 +458,7 @@ export default function Generate() {
             {/* Duration */}
             <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-gray-900">Duration</h3>
+              <h3 className="font-semibold text-xs xs:text-sm text-gray-900 tracking-tight">Duration</h3>
               {duration && <span className="text-xs text-gray-500">{duration} min</span>}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -483,7 +483,7 @@ export default function Generate() {
             {/* Equipment */}
             <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-sm text-gray-900">Available Equipment</h3>
+                <h3 className="font-semibold text-xs xs:text-sm text-gray-900 tracking-tight">Available Equipment</h3>
                 {equipment.length > 0 && <span className="text-xs text-gray-500">{equipment.length} selected</span>}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -517,8 +517,8 @@ export default function Generate() {
         <section className="mt-6">
           <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm p-5 shadow-sm">
             <div className="mb-3">
-              <h3 className="font-semibold text-sm text-gray-900">Workout Preferences (Optional)</h3>
-              <p className="text-xs text-gray-500 mt-1">Add any specific preferences or notes for the AI to consider</p>
+              <h3 className="font-semibold text-xs xs:text-sm text-gray-900 tracking-tight">Workout Preferences (Optional)</h3>
+              <p className="text-xs text-gray-500 mt-1.5">Add any specific preferences or notes for the AI to consider</p>
             </div>
             <textarea
               value={preferenceNotes}
